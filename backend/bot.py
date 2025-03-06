@@ -12,6 +12,7 @@ TOKEN = '7998946498:AAGu847Zq6HYrHdnEwSw2xwJDLF2INd3f4g'
 BASE_URL = 'http://185.204.171.107:8000/api/'
 BOT_FILE = os.path.abspath(__file__)
 TIMESTAMP_FILE = '/home/ubuntu/Bivaset-Service-app/backend/last_update.txt'
+print("Synced and updated from GitHub!")
 
 async def get_user_phone(telegram_id):
     try:
