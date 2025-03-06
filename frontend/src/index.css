@@ -1,0 +1,58 @@
+@font-face {
+  font-family: 'IranSans';
+  src: url('../public/fonts/IRANSans.woff2') format('woff2');
+  font-weight: normal;
+  font-style: normal;
+}
+
+body {
+  margin: 0;
+  font-family: 'IranSans', sans-serif;
+  direction: rtl;
+  text-align: right;
+}
+
+.container {
+  padding: 20px;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+h2 {
+  font-size: 24px;
+}
+
+input, select, textarea {
+  width: 100%;
+  padding: 8px;
+  margin: 5px 0;
+  font-family: 'IranSans', sans-serif;
+}
+
+button {
+  padding: 10px 20px;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  cursor: pointer;
+  font-family: 'IranSans', sans-serif;
+}
+
+button:hover {
+  background-color: #0056b3;
+}
+
+nav {
+  padding: 10px;
+  background-color: #f8f9fa;
+}
+
+nav a {
+  margin: 0 10px;
+  text-decoration: none;
+  color: #007bff;
+}
+
+nav a:hover {
+  color: #0056b3;
+}
