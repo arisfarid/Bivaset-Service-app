@@ -238,6 +238,22 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
             reply_markup=ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
         )
 
+def create_dynamic_keyboard(context):
+    buttons = []
+    if 'files' not in context.user_data:
+        buttons.append(KeyboardButton("📸 تصاویر یا فایل"))
+    if 'need_date' not in context.user_data:
+        buttons.append(KeyboardButton("📅 تاریخ نیاز"))
+    if 'deadline' not in context.user_data:
+        buttons.append(KeyboardButton("⏳ مهلت انجام"))
+    if 'budget' not in context.user_data:
+        buttons.append(KeyboardButton("💰 بودجه"))
+    if 'quantity' not in context.user_data:
+        buttons.append(KeyboardButton("📏 مقدار و واحد"))
+    buttons.append(KeyboardButton("➡️ ادامه"))
+    buttons.append(KeyboardButton("⬅️ بازگشت"))
+    return ReplyKeyboardMarkup([buttons], resize_keyboard=True)
+
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = update.message.text
     name = update.effective_user.full_name or "کاربر"
@@ -372,16 +388,10 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 await update.message.reply_text("❌ لطفاً اول لوکیشن رو ثبت کن!")
                 return
             context.user_data['state'] = 'new_project_details'
-            keyboard = [
-                [KeyboardButton("📸 تصاویر یا فایل"), KeyboardButton("📅 تاریخ نیاز")],
-                [KeyboardButton("⏳ مهلت انجام"), KeyboardButton("💰 بودجه")],
-                [KeyboardButton("📏 مقدار و واحد"), KeyboardButton("➡️ ادامه")],
-                [KeyboardButton("⬅️ بازگشت")]
-            ]
             await update.message.reply_text(
                 f"📋 جزئیات درخواست\n"
                 "اگه بخوای می‌تونی برای راهنمایی بهتر مجری‌ها این اطلاعات رو هم وارد کنی:",
-                reply_markup=ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
+                reply_markup=create_dynamic_keyboard(context)
             )
         else:
             context.user_data['service_location'] = {'🏠 محل کارفرما': 'client_site', '🔧 محل مجری': 'contractor_site', '💻 غیرحضوری': 'remote'}[text]
@@ -401,16 +411,10 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
             else:
                 context.user_data['location'] = None
                 context.user_data['state'] = 'new_project_details'
-                keyboard = [
-                    [KeyboardButton("📸 تصاویر یا فایل"), KeyboardButton("📅 تاریخ نیاز")],
-                    [KeyboardButton("⏳ مهلت انجام"), KeyboardButton("💰 بودجه")],
-                    [KeyboardButton("📏 مقدار و واحد"), KeyboardButton("➡️ ادامه")],
-                    [KeyboardButton("⬅️ بازگشت")]
-                ]
                 await update.message.reply_text(
                     f"📋 جزئیات درخواست\n"
                     "اگه بخوای می‌تونی برای راهنمایی بهتر مجری‌ها این اطلاعات رو هم وارد کنی:",
-                    reply_markup=ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
+                    reply_markup=create_dynamic_keyboard(context)
                 )
 
     elif context.user_data.get('state') == 'new_project_location_input':
@@ -429,16 +433,10 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 await update.message.reply_text("❌ لطفاً اول لوکیشن رو ثبت کن!")
                 return
             context.user_data['state'] = 'new_project_details'
-            keyboard = [
-                [KeyboardButton("📸 تصاویر یا فایل"), KeyboardButton("📅 تاریخ نیاز")],
-                [KeyboardButton("⏳ مهلت انجام"), KeyboardButton("💰 بودجه")],
-                [KeyboardButton("📏 مقدار و واحد"), KeyboardButton("➡️ ادامه")],
-                [KeyboardButton("⬅️ بازگشت")]
-            ]
             await update.message.reply_text(
                 f"📋 جزئیات درخواست\n"
                 "اگه بخوای می‌تونی برای راهنمایی بهتر مجری‌ها این اطلاعات رو هم وارد کنی:",
-                reply_markup=ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
+                reply_markup=create_dynamic_keyboard(context)
             )
         elif text == "📍 انتخاب از نقشه":
             await update.message.reply_text(
@@ -591,16 +589,10 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     elif context.user_data.get('state') == 'new_project_details_files':
         if text == "⬅️ بازگشت" or text == "🏁 اتمام ارسال تصاویر":
             context.user_data['state'] = 'new_project_details'
-            keyboard = [
-                [KeyboardButton("📸 تصاویر یا فایل"), KeyboardButton("📅 تاریخ نیاز")],
-                [KeyboardButton("⏳ مهلت انجام"), KeyboardButton("💰 بودجه")],
-                [KeyboardButton("📏 مقدار و واحد"), KeyboardButton("➡️ ادامه")],
-                [KeyboardButton("⬅️ بازگشت")]
-            ]
             await update.message.reply_text(
                 f"📋 جزئیات درخواست\n"
                 "اگه بخوای می‌تونی برای راهنمایی بهتر مجری‌ها این اطلاعات رو هم وارد کنی:",
-                reply_markup=ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
+                reply_markup=create_dynamic_keyboard(context)
             )
         else:
             await update.message.reply_text("📸 لطفاً فقط عکس بفرست، متن قبول نیست!")
@@ -608,32 +600,20 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     elif context.user_data.get('state') == 'new_project_details_date':
         if text == "⬅️ بازگشت":
             context.user_data['state'] = 'new_project_details'
-            keyboard = [
-                [KeyboardButton("📸 تصاویر یا فایل"), KeyboardButton("📅 تاریخ نیاز")],
-                [KeyboardButton("⏳ مهلت انجام"), KeyboardButton("💰 بودجه")],
-                [KeyboardButton("📏 مقدار و واحد"), KeyboardButton("➡️ ادامه")],
-                [KeyboardButton("⬅️ بازگشت")]
-            ]
             await update.message.reply_text(
                 f"📋 جزئیات درخواست\n"
                 "اگه بخوای می‌تونی برای راهنمایی بهتر مجری‌ها این اطلاعات رو هم وارد کنی:",
-                reply_markup=ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
+                reply_markup=create_dynamic_keyboard(context)
             )
         else:
             if validate_date(text):
                 context.user_data['need_date'] = text
                 await update.message.reply_text("📅 تاریخ نیاز ثبت شد.")
                 context.user_data['state'] = 'new_project_details'
-                keyboard = [
-                    [KeyboardButton("📸 تصاویر یا فایل"), KeyboardButton("📅 تاریخ نیاز")],
-                    [KeyboardButton("⏳ مهلت انجام"), KeyboardButton("💰 بودجه")],
-                    [KeyboardButton("📏 مقدار و واحد"), KeyboardButton("➡️ ادامه")],
-                    [KeyboardButton("⬅️ بازگشت")]
-                ]
                 await update.message.reply_text(
                     f"📋 جزئیات درخواست\n"
                     "اگه بخوای می‌تونی برای راهنمایی بهتر مجری‌ها این اطلاعات رو هم وارد کنی:",
-                    reply_markup=ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
+                    reply_markup=create_dynamic_keyboard(context)
                 )
             else:
                 await update.message.reply_text(
@@ -643,16 +623,10 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     elif context.user_data.get('state') == 'new_project_details_deadline':
         if text == "⬅️ بازگشت":
             context.user_data['state'] = 'new_project_details'
-            keyboard = [
-                [KeyboardButton("📸 تصاویر یا فایل"), KeyboardButton("📅 تاریخ نیاز")],
-                [KeyboardButton("⏳ مهلت انجام"), KeyboardButton("💰 بودجه")],
-                [KeyboardButton("📏 مقدار و واحد"), KeyboardButton("➡️ ادامه")],
-                [KeyboardButton("⬅️ بازگشت")]
-            ]
             await update.message.reply_text(
                 f"📋 جزئیات درخواست\n"
                 "اگه بخوای می‌تونی برای راهنمایی بهتر مجری‌ها این اطلاعات رو هم وارد کنی:",
-                reply_markup=ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
+                reply_markup=create_dynamic_keyboard(context)
             )
         else:
             deadline = validate_deadline(text)
@@ -660,16 +634,10 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 context.user_data['deadline'] = deadline
                 await update.message.reply_text("⏳ مهلت انجام ثبت شد.")
                 context.user_data['state'] = 'new_project_details'
-                keyboard = [
-                    [KeyboardButton("📸 تصاویر یا فایل"), KeyboardButton("📅 تاریخ نیاز")],
-                    [KeyboardButton("⏳ مهلت انجام"), KeyboardButton("💰 بودجه")],
-                    [KeyboardButton("📏 مقدار و واحد"), KeyboardButton("➡️ ادامه")],
-                    [KeyboardButton("⬅️ بازگشت")]
-                ]
                 await update.message.reply_text(
                     f"📋 جزئیات درخواست\n"
                     "اگه بخوای می‌تونی برای راهنمایی بهتر مجری‌ها این اطلاعات رو هم وارد کنی:",
-                    reply_markup=ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
+                    reply_markup=create_dynamic_keyboard(context)
                 )
             else:
                 await update.message.reply_text("❌ لطفاً فقط عدد روز وارد کن (مثلاً '3')!")
@@ -677,16 +645,10 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     elif context.user_data.get('state') == 'new_project_details_budget':
         if text == "⬅️ بازگشت":
             context.user_data['state'] = 'new_project_details'
-            keyboard = [
-                [KeyboardButton("📸 تصاویر یا فایل"), KeyboardButton("📅 تاریخ نیاز")],
-                [KeyboardButton("⏳ مهلت انجام"), KeyboardButton("💰 بودجه")],
-                [KeyboardButton("📏 مقدار و واحد"), KeyboardButton("➡️ ادامه")],
-                [KeyboardButton("⬅️ بازگشت")]
-            ]
             await update.message.reply_text(
                 f"📋 جزئیات درخواست\n"
                 "اگه بخوای می‌تونی برای راهنمایی بهتر مجری‌ها این اطلاعات رو هم وارد کنی:",
-                reply_markup=ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
+                reply_markup=create_dynamic_keyboard(context)
             )
         else:
             budget = clean_budget(text)
@@ -694,16 +656,10 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 context.user_data['budget'] = str(budget)
                 await update.message.reply_text("💰 بودجه ثبت شد.")
                 context.user_data['state'] = 'new_project_details'
-                keyboard = [
-                    [KeyboardButton("📸 تصاویر یا فایل"), KeyboardButton("📅 تاریخ نیاز")],
-                    [KeyboardButton("⏳ مهلت انجام"), KeyboardButton("💰 بودجه")],
-                    [KeyboardButton("📏 مقدار و واحد"), KeyboardButton("➡️ ادامه")],
-                    [KeyboardButton("⬅️ بازگشت")]
-                ]
                 await update.message.reply_text(
                     f"📋 جزئیات درخواست\n"
                     "اگه بخوای می‌تونی برای راهنمایی بهتر مجری‌ها این اطلاعات رو هم وارد کنی:",
-                    reply_markup=ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
+                    reply_markup=create_dynamic_keyboard(context)
                 )
             else:
                 await update.message.reply_text("❌ لطفاً فقط عدد به تومان وارد کن (مثلاً '500000')!")
@@ -711,31 +667,19 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     elif context.user_data.get('state') == 'new_project_details_quantity':
         if text == "⬅️ بازگشت":
             context.user_data['state'] = 'new_project_details'
-            keyboard = [
-                [KeyboardButton("📸 تصاویر یا فایل"), KeyboardButton("📅 تاریخ نیاز")],
-                [KeyboardButton("⏳ مهلت انجام"), KeyboardButton("💰 بودجه")],
-                [KeyboardButton("📏 مقدار و واحد"), KeyboardButton("➡️ ادامه")],
-                [KeyboardButton("⬅️ بازگشت")]
-            ]
             await update.message.reply_text(
                 f"📋 جزئیات درخواست\n"
                 "اگه بخوای می‌تونی برای راهنمایی بهتر مجری‌ها این اطلاعات رو هم وارد کنی:",
-                reply_markup=ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
+                reply_markup=create_dynamic_keyboard(context)
             )
         else:
             context.user_data['quantity'] = text
             await update.message.reply_text("📏 مقدار و واحد ثبت شد.")
             context.user_data['state'] = 'new_project_details'
-            keyboard = [
-                [KeyboardButton("📸 تصاویر یا فایل"), KeyboardButton("📅 تاریخ نیاز")],
-                [KeyboardButton("⏳ مهلت انجام"), KeyboardButton("💰 بودجه")],
-                [KeyboardButton("📏 مقدار و واحد"), KeyboardButton("➡️ ادامه")],
-                [KeyboardButton("⬅️ بازگشت")]
-            ]
             await update.message.reply_text(
                 f"📋 جزئیات درخواست\n"
                 "اگه بخوای می‌تونی برای راهنمایی بهتر مجری‌ها این اطلاعات رو هم وارد کنی:",
-                reply_markup=ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
+                reply_markup=create_dynamic_keyboard(context)
             )
 
     elif text == "⬅️ بازگشت":
