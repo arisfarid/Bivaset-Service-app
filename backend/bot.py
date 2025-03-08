@@ -268,7 +268,8 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         context.user_data['state'] = None
         keyboard = [
             [KeyboardButton("📋 درخواست خدمات جدید")],
-            [KeyboardButton("💬 مشاهده پیشنهادات"), KeyboardButton("📊 مشاهده درخواست‌ها")],
+            [KeyboardButton("💬 مشاهده پیشنهادات")],
+            [KeyboardButton("📊 مشاهده درخواست‌ها")],
             [KeyboardButton("⬅️ بازگشت")]
         ]
         await update.message.reply_text(
@@ -281,7 +282,8 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         context.user_data['state'] = None
         keyboard = [
             [KeyboardButton("📋 مشاهده درخواست‌های باز")],
-            [KeyboardButton("💡 ارسال پیشنهاد"), KeyboardButton("📊 وضعیت پیشنهادات من")],
+            [KeyboardButton("💡 ارسال پیشنهاد")],
+            [KeyboardButton("📊 وضعیت پیشنهادات من")],
             [KeyboardButton("⬅️ بازگشت")]
         ]
         await update.message.reply_text(
