@@ -371,7 +371,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
             context.user_data['state'] = 'new_project_location'
             keyboard = [
                 [KeyboardButton("🏠 محل کارفرما"), KeyboardButton("🔧 محل مجری"), KeyboardButton("💻 غیرحضوری")],
-                [KeyboardButton("⬅️ بازگشت"), KeyboardButton("✅ ثبت درخواست", request_location=('location' not in context.user_data and text == "🏠 محل کارفرما"))]
+                [KeyboardButton("⬅️ بازگشت"), KeyboardButton("➡️ ادامه", request_location=('location' not in context.user_data and text == "🏠 محل کارفرما"))]
             ]
             await update.message.reply_text(
                 f"🌟 محل انجام خدماتت رو انتخاب کن:",
@@ -385,7 +385,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 f"🌟 حالا توضیحات خدماتت رو بگو تا مجری بهتر بتونه قیمت بده.\n"
                 "نمونه خوب: 'نصب 2 شیر پیسوار توی آشپزخونه، جنس استیل، تا آخر هفته نیاز دارم.'"
             )
-        elif text == "✅ ثبت درخواست":
+        elif text == "➡️ ادامه":
             if 'location' not in context.user_data and context.user_data.get('service_location') == 'client_site':
                 await update.message.reply_text("❌ لطفاً اول لوکیشن رو ثبت کن!")
                 return
@@ -401,7 +401,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 context.user_data['state'] = 'new_project_location_input'
                 keyboard = [
                     [KeyboardButton("📍 انتخاب از نقشه"), KeyboardButton("📲 ارسال موقعیت فعلی", request_location=True)],
-                    [KeyboardButton("⬅️ بازگشت"), KeyboardButton("✅ ثبت درخواست", request_location=('location' not in context.user_data))]
+                    [KeyboardButton("⬅️ بازگشت"), KeyboardButton("➡️ ادامه", request_location=('location' not in context.user_data))]
                 ]
                 await update.message.reply_text(
                     f"📍 انتخاب محل از روی نقشه باعث می‌شه مجریان نزدیک‌تر با قیمت مناسب‌تر بهت پیشنهاد بدن.\n"
@@ -424,13 +424,13 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
             context.user_data['state'] = 'new_project_location'
             keyboard = [
                 [KeyboardButton("🏠 محل کارفرما"), KeyboardButton("🔧 محل مجری"), KeyboardButton("💻 غیرحضوری")],
-                [KeyboardButton("⬅️ بازگشت"), KeyboardButton("✅ ثبت درخواست", request_location=('location' not in context.user_data and context.user_data.get('service_location') == 'client_site'))]
+                [KeyboardButton("⬅️ بازگشت"), KeyboardButton("➡️ ادامه", request_location=('location' not in context.user_data and context.user_data.get('service_location') == 'client_site'))]
             ]
             await update.message.reply_text(
                 f"🌟 محل انجام خدماتت رو انتخاب کن:",
                 reply_markup=ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
             )
-        elif text == "✅ ثبت درخواست":
+        elif text == "➡️ ادامه":
             if 'location' not in context.user_data:
                 await update.message.reply_text("❌ لطفاً اول لوکیشن رو ثبت کن!")
                 return
@@ -455,7 +455,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 context.user_data['state'] = 'new_project_location_input'
                 keyboard = [
                     [KeyboardButton("📍 انتخاب از نقشه"), KeyboardButton("📲 ارسال موقعیت فعلی", request_location=True)],
-                    [KeyboardButton("⬅️ بازگشت"), KeyboardButton("✅ ثبت درخواست", request_location=('location' not in context.user_data))]
+                    [KeyboardButton("⬅️ بازگشت"), KeyboardButton("➡️ ادامه", request_location=('location' not in context.user_data))]
                 ]
                 await update.message.reply_text(
                     f"📍 انتخاب محل از روی نقشه باعث می‌شه مجریان نزدیک‌تر با قیمت مناسب‌تر بهت پیشنهاد بدن.\n"
@@ -468,7 +468,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 context.user_data['state'] = 'new_project_location'
                 keyboard = [
                     [KeyboardButton("🏠 محل کارفرما"), KeyboardButton("🔧 محل مجری"), KeyboardButton("💻 غیرحضوری")],
-                    [KeyboardButton("⬅️ بازگشت"), KeyboardButton("✅ ثبت درخواست")]
+                    [KeyboardButton("⬅️ بازگشت"), KeyboardButton("➡️ ادامه")]
                 ]
                 await update.message.reply_text(
                     f"🌟 محل انجام خدماتت رو انتخاب کن:",
