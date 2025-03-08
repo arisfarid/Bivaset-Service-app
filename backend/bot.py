@@ -188,16 +188,10 @@ async def handle_location(update: Update, context: ContextTypes.DEFAULT_TYPE):
     location = update.message.location
     context.user_data['location'] = {'longitude': location.longitude, 'latitude': location.latitude}
     context.user_data['state'] = 'new_project_details'
-    keyboard = [
-        [KeyboardButton("📸 تصاویر یا فایل"), KeyboardButton("📅 تاریخ نیاز")],
-        [KeyboardButton("⏳ مهلت انجام"), KeyboardButton("💰 بودجه")],
-        [KeyboardButton("📏 مقدار و واحد"), KeyboardButton("➡️ ادامه")],
-        [KeyboardButton("⬅️ بازگشت")]
-    ]
     await update.message.reply_text(
         f"📋 جزئیات درخواست\n"
         "اگه بخوای می‌تونی برای راهنمایی بهتر مجری‌ها این اطلاعات رو هم وارد کنی:",
-        reply_markup=ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
+        reply_markup=create_dynamic_keyboard(context)
     )
 
 async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -226,16 +220,10 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     if len(context.user_data['files']) >= 5:
         context.user_data['state'] = 'new_project_details'
-        keyboard = [
-            [KeyboardButton("📸 تصاویر یا فایل"), KeyboardButton("📅 تاریخ نیاز")],
-            [KeyboardButton("⏳ مهلت انجام"), KeyboardButton("💰 بودجه")],
-            [KeyboardButton("📏 مقدار و واحد"), KeyboardButton("➡️ ادامه")],
-            [KeyboardButton("⬅️ بازگشت")]
-        ]
         await update.message.reply_text(
             f"📋 جزئیات درخواست\n"
             "اگه بخوای می‌تونی برای راهنمایی بهتر مجری‌ها این اطلاعات رو هم وارد کنی:",
-            reply_markup=ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
+            reply_markup=create_dynamic_keyboard(context)
         )
 
 def create_dynamic_keyboard(context):
