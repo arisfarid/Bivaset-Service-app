@@ -241,18 +241,18 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
 def create_dynamic_keyboard(context):
     buttons = []
     if 'files' not in context.user_data:
-        buttons.append(KeyboardButton("📸 تصاویر یا فایل"))
+        buttons.append([KeyboardButton("📸 تصاویر یا فایل")])
     if 'need_date' not in context.user_data:
-        buttons.append(KeyboardButton("📅 تاریخ نیاز"))
+        buttons.append([KeyboardButton("📅 تاریخ نیاز")])
     if 'deadline' not in context.user_data:
-        buttons.append(KeyboardButton("⏳ مهلت انجام"))
+        buttons.append([KeyboardButton("⏳ مهلت انجام")])
     if 'budget' not in context.user_data:
-        buttons.append(KeyboardButton("💰 بودجه"))
+        buttons.append([KeyboardButton("💰 بودجه")])
     if 'quantity' not in context.user_data:
-        buttons.append(KeyboardButton("📏 مقدار و واحد"))
-    buttons.append(KeyboardButton("➡️ ادامه"))
-    buttons.append(KeyboardButton("⬅️ بازگشت"))
-    return ReplyKeyboardMarkup([buttons], resize_keyboard=True)
+        buttons.append([KeyboardButton("📏 مقدار و واحد")])
+    buttons.append([KeyboardButton("➡️ ادامه")])
+    buttons.append([KeyboardButton("⬅️ بازگشت")])
+    return ReplyKeyboardMarkup(buttons, resize_keyboard=True)
 
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = update.message.text
