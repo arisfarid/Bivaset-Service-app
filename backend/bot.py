@@ -277,13 +277,13 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
 
     elif text == "📋 درخواست خدمات جدید":
-    context.user_data.clear()  # ریست کردن داده‌های قبلی
-    context.user_data['categories'] = await get_categories()  # دوباره لود کردن دسته‌بندی‌ها
-    context.user_data['state'] = 'new_project_category'
-    categories = context.user_data['categories']
-    if not categories:
-        await update.message.reply_text("❌ خطا: دسته‌بندی‌ها در دسترس نیست! احتمالاً سرور API مشکل داره.")
-        return
+        context.user_data.clear()  # ریست کردن داده‌های قبلی
+        context.user_data['categories'] = await get_categories()  # دوباره لود کردن دسته‌بندی‌ها
+        context.user_data['state'] = 'new_project_category'
+        categories = context.user_data['categories']
+        if not categories:
+            await update.message.reply_text("❌ خطا: دسته‌بندی‌ها در دسترس نیست! احتمالاً سرور API مشکل داره.")
+            return
         root_cats = [cat_id for cat_id, cat in categories.items() if cat['parent'] is None]
         keyboard = [[KeyboardButton(categories[cat_id]['name']) for cat_id in root_cats], [KeyboardButton("⬅️ بازگشت")]]
         await update.message.reply_text(
