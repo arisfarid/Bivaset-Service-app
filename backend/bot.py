@@ -6,7 +6,7 @@ from telegram import Update, KeyboardButton, ReplyKeyboardMarkup, InlineKeyboard
 from telegram.ext import Application, CommandHandler, ContextTypes, MessageHandler, filters
 import requests
 import re
-from khayyam import JalaliDatetime  # برای تاریخ شمسی
+from khayyam import JalaliDatetime
 
 TOKEN = '7998946498:AAGu847Zq6HYrHdnEwSw2xwJDLF2INd3f4g'
 BASE_URL = 'http://185.204.171.107:8000/api/'
@@ -34,14 +34,21 @@ async def get_categories():
     except requests.exceptions.ConnectionError:
         return {}
 
-async def upload_file(file_id, context):
-    file = await context.bot.get_file(file_id)
-    file_data = await file.download_as_bytearray()
-    files = {'file': ('image.jpg', file_data, 'image/jpeg')}
-    response = requests.post(f"{BASE_URL}upload/", files=files)
-    if response.status_code == 201:
-        return response.json().get('file_url')
-    return None
+async def upload_files(file_ids, context):
+    uploaded_urls = []
+    for file_id in file_ids:
+        try:
+            file = await context.bot.get_file(file_id)
+            file_data = await file.download_as_bytearray()
+            files = {'file': ('image.jpg', file_data, 'image/jpeg')}
+            response = requests.post(f"{BASE_URL}upload/", files=files)
+            if response.status_code == 201:
+                uploaded_urls.append(response.json().get('file_url'))
+            else:
+                uploaded_urls.append(None)
+        except Exception as e:
+            uploaded_urls.append(None)
+    return uploaded_urls
 
 def get_last_mod_time():
     return os.path.getmtime(BOT_FILE)
@@ -195,6 +202,7 @@ async def handle_location(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if context.user_data.get('state') != 'new_project_details_files':
+        await update.message.reply_text("❌ لطفاً اول '📸 تصاویر یا فایل' رو انتخاب کن!")
         return
     if 'files' not in context.user_data:
         context.user_data['files'] = []
@@ -269,6 +277,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
 
     elif text == "📋 درخواست خدمات جدید":
+        context.user_data.clear()  # ریست کردن داده‌های قبلی
         context.user_data['state'] = 'new_project_category'
         categories = context.user_data['categories']
         if not categories:
@@ -307,6 +316,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     )
             else:
                 await update.message.reply_text("❌ دسته‌بندی نامعتبر! دوباره انتخاب کن.")
+
     elif context.user_data.get('state') == 'new_project_subcategory':
         if text == "⬅️ بازگشت":
             context.user_data['state'] = 'new_project_category'
@@ -515,7 +525,14 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
             if 'need_date' in context.user_data:
                 data['start_date'] = context.user_data['need_date']
             try:
-                response = requests.post(url, json=data)
+                if 'files' in context.user_data and context.user_data['files']:
+                    file_urls = await upload_files(context.user_data['files'], context)
+                    data['files'] = [url for url in file_urls if url]  # فقط URLهای موفق
+                if 'files' in data and data['files']:
+                    files_to_upload = [(f"files[{i}]", (None, url)) for i, url in enumerate(data['files'])]
+                    response = requests.post(url, data=data, files=files_to_upload)
+                else:
+                    response = requests.post(url, json=data)
                 if response.status_code == 201:
                     project_data = response.json()
                     project_id = project_data.get('id', 'نامشخص')
@@ -538,14 +555,14 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
                         summary += f"📍 *موقعیت*: [نمایش روی نقشه](https://maps.google.com/maps?q={lat},{lon})\n"
                     else:
                         summary += f"📍 *موقعیت*: غیرحضوری\n"
-                    if 'files' in context.user_data and len(context.user_data['files']) > 1:
-                        summary += "📸 *تصاویر اضافی*:\n"
-                        for i, file_id in enumerate(context.user_data['files'][1:], 1):
-                            file_url = await upload_file(file_id, context)
-                            if file_url:
-                                summary += f"- [عکس {i+1}]({file_url})\n"
+                    if 'files' in context.user_data and context.user_data['files']:
+                        file_urls = await upload_files(context.user_data['files'], context)
+                        summary += "📸 *تصاویر*:\n"
+                        for i, url in enumerate(file_urls, 1):
+                            if url:
+                                summary += f"- [عکس {i}]({url})\n"
                             else:
-                                summary += f"- عکس {i+1} (خطا در آپلود)\n"
+                                summary += f"- عکس {i} (خطا در آپلود)\n"
 
                     inline_keyboard = [
                         [InlineKeyboardButton("✏️ ویرایش", callback_data=f"edit_{project_id}"),
@@ -568,7 +585,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
                             reply_markup=InlineKeyboardMarkup(inline_keyboard)
                         )
                 else:
-                    await update.message.reply_text(f"❌ خطا در ثبت خدمات: {response.text[:50]}...")
+                    await update.message.reply_text(f"❌ خطا در ثبت خدمات: {response.status_code} - {response.text[:50]}...")
             except requests.exceptions.ConnectionError:
                 await update.message.reply_text("❌ خطا: سرور بک‌اند در دسترس نیست.")
             context.user_data['state'] = None
