@@ -207,17 +207,13 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if 'files' not in context.user_data:
         context.user_data['files'] = []
     
-    new_photos = update.message.photo
-    for photo in new_photos:
-        if len(context.user_data['files']) < 5:
-            context.user_data['files'].append(photo.file_id)
-            await update.message.reply_text(f"📸 عکس {len(context.user_data['files'])} از 5 دریافت شد.")
-        else:
-            context.user_data['files'].pop(0)
-            context.user_data['files'].append(photo.file_id)
-            await update.message.reply_text(
-                "📸 تعداد تصاویر قابل ارسال پر شده. عکس جدید جایگزین اولین عکس شد."
-            )
+    if len(context.user_data['files']) >= 5:
+        await update.message.reply_text("📸 تعداد تصاویر قابل ارسال پر شده. عکس جدید جایگزین اولین عکس شد.")
+        context.user_data['files'].pop(0)
+    
+    photo = update.message.photo[-1]
+    context.user_data['files'].append(photo.file_id)
+    await update.message.reply_text(f"📸 عکس {len(context.user_data['files'])} از 5 دریافت شد.")
     
     keyboard = [
         [KeyboardButton("🏁 اتمام ارسال تصاویر")],
@@ -227,6 +223,7 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "📸 اگه دیگه عکسی نداری، 'اتمام ارسال تصاویر' رو بزن:",
         reply_markup=ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
     )
+
     if len(context.user_data['files']) >= 5:
         context.user_data['state'] = 'new_project_details'
         keyboard = [
