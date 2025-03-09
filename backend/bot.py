@@ -3,7 +3,7 @@ import sys
 import time
 from datetime import datetime, timedelta
 from telegram import Update, KeyboardButton, ReplyKeyboardMarkup, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import Application, CommandHandler, ContextTypes, MessageHandler, filters
+from telegram.ext import Application, CommandHandler, ContextTypes, MessageHandler, filters, CallbackQueryHandler
 import requests
 import re
 from khayyam import JalaliDatetime
@@ -712,6 +712,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     elif text == "📊 مشاهده درخواست‌ها":
         context.user_data['state'] = 'view_projects_initial'
+        telegram_id = str(update.effective_user.id)  # اضافه کردن telegram_id
         try:
             response = requests.get(f"{BASE_URL}projects/?user_telegram_id={telegram_id}&limit=5")
             if response.status_code == 200:

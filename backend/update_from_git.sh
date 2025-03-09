@@ -9,15 +9,15 @@ git fetch origin
 git reset --hard origin/main
 echo "Git repository updated."
 
-# نصب وابستگی‌ها (در صورت تغییر requirements.txt)
+# نصب وابستگی‌ها
 pip install -r requirements.txt
 echo "Dependencies updated."
 
-# اعمال migrations برای بک‌اند (Django)
+# اعمال migrations برای بک‌اند
 echo "Applying database migrations..."
 python3 manage.py migrate --noinput || { echo "Migration failed"; exit 1; }
 
-# ری‌استارت سرویس بک‌اند (فرض می‌کنیم از Gunicorn و systemd استفاده می‌کنی)
+# ری‌استارت سرویس بک‌اند (Gunicorn)
 echo "Restarting backend service..."
 sudo systemctl restart gunicorn || { echo "Failed to restart Gunicorn"; exit 1; }
 sudo systemctl status gunicorn --no-pager | head -n 10
