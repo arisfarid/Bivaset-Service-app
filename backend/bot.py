@@ -504,7 +504,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 'description': context.user_data['description'],
                 'address': ''
             }
-            if 'location' in context.user_data and context.user_data['location']:
+            if 'location' in context.user_data and context.user_data['location'] is not None:
                 data['location'] = f"POINT({context.user_data['location']['longitude']} {context.user_data['location']['latitude']})"
             if 'deadline' in context.user_data:
                 data['deadline_date'] = convert_deadline_to_date(context.user_data['deadline'])
@@ -536,7 +536,8 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
                         summary += f"💰 *بودجه*: {budget} تومان\n"
                     if 'quantity' in context.user_data:
                         summary += f"📏 *مقدار*: {context.user_data['quantity']}\n"
-                    if 'location' in context.user_data and context.user_data['service_location'] != 'remote':
+                    if ('location' in context.user_data and context.user_data['location'] is not None 
+                        and context.user_data['service_location'] != 'remote'):
                         lat, lon = context.user_data['location']['latitude'], context.user_data['location']['longitude']
                         summary += f"📍 *موقعیت*: [نمایش روی نقشه](https://maps.google.com/maps?q={lat},{lon})\n"
                     else:
@@ -570,6 +571,8 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
                             parse_mode='Markdown',
                             reply_markup=InlineKeyboardMarkup(inline_keyboard)
                         )
+                    # Redirect to main client menu after successful submission
+                    await handle_message(update, context.__class__(text="📋 درخواست خدمات (کارفرما)"))
                 else:
                     await update.message.reply_text(f"❌ خطا در ثبت خدمات: {response.status_code} - {response.text[:50]}...")
             except requests.exceptions.ConnectionError:
