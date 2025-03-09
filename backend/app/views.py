@@ -1,5 +1,8 @@
 from rest_framework import serializers, viewsets
-from .models import Category, User, Project, Proposal
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
+from .models import Category, User, Project, Proposal, ProjectFile
+from .serializers import ProjectSerializer
 
 class CategorySerializer(serializers.ModelSerializer):
     children = serializers.PrimaryKeyRelatedField(many=True, read_only=True)
@@ -36,6 +39,15 @@ class ProposalSerializer(serializers.ModelSerializer):
         model = Proposal
         fields = '__all__'
 
+@api_view(['POST'])
+def upload_file(request):
+    file = request.FILES.get('file')
+    if file:
+        project_file = ProjectFile(file=file)
+        project_file.save()
+        return Response({'file_url': project_file.file.url}, status=201)
+    return Response({'error': 'No file provided'}, status=400)
+
 class CategoryViewSet(viewsets.ModelViewSet):
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
@@ -47,6 +59,19 @@ class UserViewSet(viewsets.ModelViewSet):
 class ProjectViewSet(viewsets.ModelViewSet):
     queryset = Project.objects.all()
     serializer_class = ProjectSerializer
+
+    def create(self, request, *args, **kwargs):
+        data = request.data.copy()
+        files = request.FILES.getlist('files') or data.get('files', [])
+        serializer = self.get_serializer(data=data)
+        serializer.is_valid(raise_exception=True)
+        project = serializer.save()
+        for file in files:
+            if isinstance(file, str):  # اگر URL هست
+                ProjectFile.objects.create(project=project, file=file)
+            else:  # اگر فایل آپلود شده هست
+                ProjectFile.objects.create(project=project, file=file)
+        return Response(serializer.data, status=201)
 
 class ProposalViewSet(viewsets.ModelViewSet):
     queryset = Proposal.objects.all()

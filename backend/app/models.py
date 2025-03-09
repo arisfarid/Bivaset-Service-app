@@ -21,6 +21,8 @@ class User(models.Model):
 
 class Project(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
+    user_telegram_id = models.CharField(max_length=50)
+    title = models.CharField(max_length=200)
     category = models.ForeignKey(Category, on_delete=models.SET_NULL, null=True)
     service_location = models.CharField(max_length=20, choices=[("client_site", "محل کارفرما"), ("contractor_site", "محل مجری"), ("remote", "غیرحضوری")])
     location = gis_models.PointField(null=True, blank=True)  # اصلاح‌شده
@@ -31,9 +33,15 @@ class Project(models.Model):
     status = models.CharField(max_length=20, default="open", choices=[("open", "باز"), ("in_progress", "در حال اجرا"), ("completed", "تکمیل‌شده")])
     expiry_date = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
+    deadline_date = models.DateField(null=True, blank=True)
+    start_date = models.CharField(max_length=20, blank=True)
 
     def __str__(self):
         return self.title
+
+class ProjectFile(models.Model):
+    project = models.ForeignKey(Project, related_name='files', on_delete=models.CASCADE)
+    file = models.FileField(upload_to='uploads/')
 
 class Proposal(models.Model):
     project = models.ForeignKey(Project, on_delete=models.CASCADE)

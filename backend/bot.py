@@ -151,7 +151,8 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if phone and phone != f"tg_{telegram_id}":
         context.user_data['phone'] = phone
     keyboard = [
-        [KeyboardButton("📋 درخواست خدمات (کارفرما)"), KeyboardButton("🔧 پیشنهاد قیمت (مجری)")]
+        [KeyboardButton("📋 درخواست خدمات (کارفرما)")],
+        [KeyboardButton("🔧 پیشنهاد قیمت (مجری)")]
     ]
     reply_markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
     await update.message.reply_text(
@@ -238,7 +239,7 @@ def create_dynamic_keyboard(context):
         buttons.append([KeyboardButton("💰 بودجه")])
     if 'quantity' not in context.user_data:
         buttons.append([KeyboardButton("📏 مقدار و واحد")])
-    buttons.append([KeyboardButton("✅ ثبت درخواست"), KeyboardButton("⬅️ بازگشت")])
+    buttons.append([KeyboardButton("⬅️ بازگشت"), KeyboardButton("✅ ثبت درخواست")])
     return ReplyKeyboardMarkup(buttons, resize_keyboard=True)
 
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -402,14 +403,21 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     "اگه بخوای می‌تونی برای راهنمایی بهتر مجری‌ها این اطلاعات رو هم وارد کنی:",
                     reply_markup=create_dynamic_keyboard(context)
                 )
+        keyboard = [
+            [KeyboardButton("🏠 محل کارفرما"), KeyboardButton("🔧 محل مجری"), KeyboardButton("💻 غیرحضوری")],
+            [KeyboardButton("⬅️ بازگشت"), KeyboardButton("➡️ ادامه")]
+        ]
+        await update.message.reply_text(
+            f"🌟 محل انجام خدماتت رو انتخاب کن:",
+            reply_markup=ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
+        )
 
     elif context.user_data.get('state') == 'new_project_location_input':
         if text == "⬅️ بازگشت":
             context.user_data['state'] = 'new_project_location'
             keyboard = [
-                [KeyboardButton("🏠 محل کارفرما"), KeyboardButton("🔧 محل مجری")],
-                [KeyboardButton("💻 غیرحضوری"), KeyboardButton("⬅️ بازگشت")],
-                [KeyboardButton("➡️ ادامه")]
+                [KeyboardButton("🏠 محل کارفرما"), KeyboardButton("🔧 محل مجری"), KeyboardButton("💻 غیرحضوری")],
+                [KeyboardButton("⬅️ بازگشت"), KeyboardButton("➡️ ادامه")]
             ]
             await update.message.reply_text(
                 f"🌟 محل انجام خدماتت رو انتخاب کن:",
@@ -431,7 +439,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
             )
         else:
             await update.message.reply_text(
-                f"📍 لطفاً لوکیشن خدماتت رو بفرست (اجباری). از 'انتخاب از نقشه' یا 'ارسال موقعیت فعلی' استفاده کن."
+                f"❌ لطفاً فقط لوکیشن بفرست! از 'انتخاب از نقشه' یا 'ارسال موقعیت فعلی' استفاده کن یا لوکیشن رو مستقیم از تلگرام بفرست."
             )
 
     elif context.user_data.get('state') == 'new_project_details':
@@ -604,6 +612,22 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 "اگه بخوای می‌تونی برای راهنمایی بهتر مجری‌ها این اطلاعات رو هم وارد کنی:",
                 reply_markup=create_dynamic_keyboard(context)
             )
+        elif text in ["امروز", "فردا", "پس‌فردا"]:
+            today = JalaliDatetime.now()
+            if text == "امروز":
+                date_str = today.strftime('%Y/%m/%d')
+            elif text == "فردا":
+                date_str = (today + timedelta(days=1)).strftime('%Y/%m/%d')
+            else:  # پس‌فردا
+                date_str = (today + timedelta(days=2)).strftime('%Y/%m/%d')
+            context.user_data['need_date'] = date_str
+            await update.message.reply_text(f"📅 تاریخ نیاز ({text}) ثبت شد.")
+            context.user_data['state'] = 'new_project_details'
+            await update.message.reply_text(
+                f"📋 جزئیات درخواست\n"
+                "اگه بخوای می‌تونی برای راهنمایی بهتر مجری‌ها این اطلاعات رو هم وارد کنی:",
+                reply_markup=create_dynamic_keyboard(context)
+            )
         else:
             if validate_date(text):
                 context.user_data['need_date'] = text
@@ -616,7 +640,11 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 )
             else:
                 await update.message.reply_text(
-                    "❌ فرمت تاریخ اشتباهه یا تاریخ قبل از امروز انتخاب شده! لطفاً به شکل '1403/12/20' و بزرگ‌تر یا مساوی امروز وارد کن."
+                    "❌ فرمت تاریخ اشتباهه یا تاریخ قبل از امروزه! لطفاً به شکل '1403/12/20' وارد کن یا یکی از دکمه‌ها رو انتخاب کن:",
+                    reply_markup=ReplyKeyboardMarkup([
+                        [KeyboardButton("امروز"), KeyboardButton("فردا"), KeyboardButton("پس‌فردا")],
+                        [KeyboardButton("⬅️ بازگشت")]
+                    ], resize_keyboard=True)
                 )
 
     elif context.user_data.get('state') == 'new_project_details_deadline':
@@ -628,10 +656,11 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 reply_markup=create_dynamic_keyboard(context)
             )
         else:
-            deadline = validate_deadline(text)
-            if deadline:
-                context.user_data['deadline'] = deadline
-                await update.message.reply_text("⏳ مهلت انجام ثبت شد.")
+            # استخراج عدد از متن
+            numbers = ''.join(filter(str.isdigit, persian_to_english(text)))
+            if numbers:
+                context.user_data['deadline'] = numbers
+                await update.message.reply_text(f"⏳ مهلت انجام ({numbers} روز) ثبت شد.")
                 context.user_data['state'] = 'new_project_details'
                 await update.message.reply_text(
                     f"📋 جزئیات درخواست\n"
@@ -639,7 +668,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     reply_markup=create_dynamic_keyboard(context)
                 )
             else:
-                await update.message.reply_text("❌ لطفاً فقط عدد روز وارد کن (مثلاً '3')!")
+                await update.message.reply_text("❌ لطفاً یه عدد برای روز وارد کن (مثلاً '3' یا '3 روز')!")
 
     elif context.user_data.get('state') == 'new_project_details_budget':
         if text == "⬅️ بازگشت":
@@ -681,8 +710,121 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 reply_markup=create_dynamic_keyboard(context)
             )
 
+    elif text == "📊 مشاهده درخواست‌ها":
+        context.user_data['state'] = 'view_projects_initial'
+        try:
+            response = requests.get(f"{BASE_URL}projects/?user_telegram_id={telegram_id}&limit=5")
+            if response.status_code == 200:
+                projects = response.json()
+                if not projects:
+                    await update.message.reply_text("📭 هنوز درخواستی ثبت نکردی!")
+                    return
+                message = "📋 آخرین درخواست‌های شما (حداکثر ۵ تا):\n\n"
+                for i, project in enumerate(projects, 1):
+                    message += f"{i}. *{project['title']}* (کد: {project['id']})\n"
+                inline_keyboard = [
+                    [InlineKeyboardButton(f"مدیریت درخواست {p['id']}", callback_data=f"manage_{p['id']}")] for p in projects
+                ]
+                await update.message.reply_text(
+                    message + "\nیکی رو انتخاب کن یا وضعیت درخواست‌ها رو ببین:",
+                    parse_mode='Markdown',
+                    reply_markup=InlineKeyboardMarkup(inline_keyboard)
+                )
+                keyboard = [
+                    [KeyboardButton("درخواست‌های باز"), KeyboardButton("درخواست‌های بسته")],
+                    [KeyboardButton("⬅️ بازگشت")]
+                ]
+                await update.message.reply_text(
+                    "📊 وضعیت درخواست‌ها رو انتخاب کن:",
+                    reply_markup=ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
+                )
+            else:
+                await update.message.reply_text(f"❌ خطا در دریافت درخواست‌ها: {response.status_code}")
+        except requests.exceptions.ConnectionError:
+            await update.message.reply_text("❌ خطا: سرور بک‌اند در دسترس نیست.")
+
+    elif context.user_data.get('state') == 'view_projects_initial' and text in ["درخواست‌های باز", "درخواست‌های بسته"]:
+        context.user_data['state'] = 'view_projects_list'
+        context.user_data['project_status'] = 'open' if text == "درخواست‌های باز" else 'closed'
+        context.user_data['project_offset'] = 0
+        try:
+            status = context.user_data['project_status']
+            offset = context.user_data['project_offset']
+            response = requests.get(f"{BASE_URL}projects/?user_telegram_id={telegram_id}&status={status}&limit=10&offset={offset}")
+            if response.status_code == 200:
+                projects = response.json()
+                if not projects:
+                    await update.message.reply_text(f"📭 هیچ درخواست {text} پیدا نشد!")
+                    return
+                message = f"📋 لیست {text} (حداکثر ۱۰ تا):\n\n"
+                for i, project in enumerate(projects, 1):
+                    message += f"{i}. *{project['title']}* (کد: {project['id']})\n"
+                inline_keyboard = [
+                    [InlineKeyboardButton(f"مدیریت درخواست {p['id']}", callback_data=f"manage_{p['id']}")] for p in projects
+                ]
+                if len(projects) == 10:
+                    inline_keyboard.append([InlineKeyboardButton("ادامه لیست", callback_data="next_projects")])
+                await update.message.reply_text(
+                    message,
+                    parse_mode='Markdown',
+                    reply_markup=InlineKeyboardMarkup(inline_keyboard)
+                )
+            else:
+                await update.message.reply_text(f"❌ خطا در دریافت درخواست‌ها: {response.status_code}")
+        except requests.exceptions.ConnectionError:
+            await update.message.reply_text("❌ خطا: سرور بک‌اند در دسترس نیست.")
+
     elif text == "⬅️ بازگشت" and context.user_data.get('state') is None:
         await start(update, context)
+
+async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+    if query.data.startswith("manage_"):
+        project_id = query.data.split("_")[1]
+        try:
+            response = requests.get(f"{BASE_URL}projects/{project_id}/")
+            if response.status_code == 200:
+                project = response.json()
+                summary = f"📋 *درخواست {project['id']}*\n" \
+                          f"📌 *دسته‌بندی*: {context.user_data['categories'][project['category']]['name']}\n" \
+                          f"📝 *توضیحات*: {project['description']}\n" \
+                          f"📍 *موقعیت*: {'غیرحضوری' if project['service_location'] == 'remote' else 'نمایش روی نقشه'}\n"
+                inline_keyboard = [
+                    [InlineKeyboardButton("✏️ ویرایش", callback_data=f"edit_{project_id}"),
+                     InlineKeyboardButton("⏰ تمدید", callback_data=f"extend_{project_id}")],
+                    [InlineKeyboardButton("🗑 حذف", callback_data=f"delete_{project_id}"),
+                     InlineKeyboardButton("✅ بستن", callback_data=f"close_{project_id}")]
+                ]
+                await query.edit_message_text(summary, parse_mode='Markdown', reply_markup=InlineKeyboardMarkup(inline_keyboard))
+            else:
+                await query.edit_message_text(f"❌ خطا در دریافت اطلاعات: {response.status_code}")
+        except requests.exceptions.ConnectionError:
+            await query.edit_message_text("❌ خطا: سرور بک‌اند در دسترس نیست.")
+    elif query.data == "next_projects":
+        context.user_data['project_offset'] += 10
+        status = context.user_data['project_status']
+        offset = context.user_data['project_offset']
+        try:
+            response = requests.get(f"{BASE_URL}projects/?user_telegram_id={telegram_id}&status={status}&limit=10&offset={offset}")
+            if response.status_code == 200:
+                projects = response.json()
+                if not projects:
+                    await query.edit_message_text("📭 اتمام درخواست‌ها")
+                    return
+                message = f"📋 لیست {status} (حداکثر ۱۰ تا):\n\n"
+                for i, project in enumerate(projects, 1):
+                    message += f"{i}. *{project['title']}* (کد: {project['id']})\n"
+                inline_keyboard = [
+                    [InlineKeyboardButton(f"مدیریت درخواست {p['id']}", callback_data=f"manage_{p['id']}")] for p in projects
+                ]
+                if len(projects) == 10:
+                    inline_keyboard.append([InlineKeyboardButton("ادامه لیست", callback_data="next_projects")])
+                await query.edit_message_text(message, parse_mode='Markdown', reply_markup=InlineKeyboardMarkup(inline_keyboard))
+            else:
+                await query.edit_message_text(f"❌ خطا در دریافت درخواست‌ها: {response.status_code}")
+        except requests.exceptions.ConnectionError:
+            await query.edit_message_text("❌ خطا: سرور بک‌اند در دسترس نیست.")
 
 def main():
     app = Application.builder().token(TOKEN).build()
@@ -691,6 +833,7 @@ def main():
     app.add_handler(MessageHandler(filters.LOCATION, handle_location))
     app.add_handler(MessageHandler(filters.PHOTO, handle_photo))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
+    app.add_handler(CallbackQueryHandler(handle_callback))
     app.job_queue.run_repeating(check_for_updates, interval=10)
     save_timestamp()
     app.run_polling()
