@@ -5,3 +5,4 @@ psycopg2-binary==2.9.9
 python-telegram-bot==20.8
 gunicorn==23.0.0
 requests==2.32.3
+khayyam==3.0.17
