@@ -371,7 +371,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 "نمونه خوب: 'نصب 2 شیر پیسوار توی آشپزخونه، جنس استیل، تا آخر هفته نیاز دارم.'"
             )
         elif text == "➡️ ادامه":
-            if 'location' not in context.user_data and context.user_data.get('service_location') == 'client_site':
+            if context.user_data.get('service_location') == 'client_site' and 'location' not in context.user_data:
                 await update.message.reply_text("❌ لطفاً اول لوکیشن رو ثبت کن!")
                 return
             context.user_data['state'] = 'new_project_details'
@@ -380,7 +380,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 "اگه بخوای می‌تونی برای راهنمایی بهتر مجری‌ها این اطلاعات رو هم وارد کنی:",
                 reply_markup=create_dynamic_keyboard(context)
             )
-        else:
+        elif text in ["🏠 محل کارفرما", "🔧 محل مجری", "💻 غیرحضوری"]:
             context.user_data['service_location'] = {'🏠 محل کارفرما': 'client_site', '🔧 محل مجری': 'contractor_site', '💻 غیرحضوری': 'remote'}[text]
             if text == "🏠 محل کارفرما":
                 context.user_data['state'] = 'new_project_location_input'
@@ -403,14 +403,8 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     "اگه بخوای می‌تونی برای راهنمایی بهتر مجری‌ها این اطلاعات رو هم وارد کنی:",
                     reply_markup=create_dynamic_keyboard(context)
                 )
-        keyboard = [
-            [KeyboardButton("🏠 محل کارفرما"), KeyboardButton("🔧 محل مجری"), KeyboardButton("💻 غیرحضوری")],
-            [KeyboardButton("⬅️ بازگشت"), KeyboardButton("➡️ ادامه")]
-        ]
-        await update.message.reply_text(
-            f"🌟 محل انجام خدماتت رو انتخاب کن:",
-            reply_markup=ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
-        )
+        else:
+            await update.message.reply_text("❌ گزینه نامعتبر! لطفاً از منو انتخاب کن.")
 
     elif context.user_data.get('state') == 'new_project_location_input':
         if text == "⬅️ بازگشت":
@@ -757,19 +751,12 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 if not projects:
                     await update.message.reply_text(f"📭 هیچ درخواست {text} پیدا نشد!")
                     return
-                message = f"📋 لیست {text} (حداکثر ۱۰ تا):\n\n"
-                for i, project in enumerate(projects, 1):
-                    message += f"{i}. *{project['title']}* (کد: {project['id']})\n"
-                inline_keyboard = [
-                    [InlineKeyboardButton(f"مدیریت درخواست {p['id']}", callback_data=f"manage_{p['id']}")] for p in projects
-                ]
-                if len(projects) == 10:
-                    inline_keyboard.append([InlineKeyboardButton("ادامه لیست", callback_data="next_projects")])
-                await update.message.reply_text(
-                    message,
-                    parse_mode='Markdown',
-                    reply_markup=InlineKeyboardMarkup(inline_keyboard)
-                )
+                message = "📋 برای مشاهده جزئیات یا مدیریت درخواست، روی آن ضربه بزنید:\n\n"
+                for i, project in enumerate(projects[:10], 1):  # فقط 10 تا
+                    message += f"{i}. [{project['title']} (کد: {project['id']})]({BASE_URL}projects/{project['id']}/)\n"
+                if len(projects) > 10:
+                    message += "\nبرای دیدن بقیه، دوباره 'درخواست‌های باز' رو بزن."
+                await update.message.reply_text(message, parse_mode='Markdown', disable_web_page_preview=True)
             else:
                 await update.message.reply_text(f"❌ خطا در دریافت درخواست‌ها: {response.status_code}")
         except requests.exceptions.ConnectionError:
