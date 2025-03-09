@@ -1,6 +1,5 @@
 #!/bin/bash
 
-# مسیر پروژه
 PROJECT_DIR="/home/ubuntu/Bivaset-Service-app/backend"
 
 echo "Updating from GitHub..."
@@ -9,15 +8,26 @@ git fetch origin
 git reset --hard origin/main
 echo "Git repository updated."
 
+# فعال‌سازی محیط مجازی
+VENV_PATH="/home/ubuntu/Bivaset-Service-app/backend/venv"
+if [ -d "$VENV_PATH" ]; then
+    source "$VENV_PATH/bin/activate"
+    echo "Virtual environment activated."
+else
+    echo "Warning: Virtual environment not found at $VENV_PATH. Creating one..."
+    python3 -m venv "$VENV_PATH"
+    source "$VENV_PATH/bin/activate"
+fi
+
 # نصب وابستگی‌ها
 pip install -r requirements.txt
 echo "Dependencies updated."
 
-# اعمال migrations برای بک‌اند
+# اعمال migrations
 echo "Applying database migrations..."
 python3 manage.py migrate --noinput || { echo "Migration failed"; exit 1; }
 
-# ری‌استارت سرویس بک‌اند (Gunicorn)
+# ری‌استارت Gunicorn
 echo "Restarting backend service..."
 sudo systemctl restart gunicorn || { echo "Failed to restart Gunicorn"; exit 1; }
 sudo systemctl status gunicorn --no-pager | head -n 10
