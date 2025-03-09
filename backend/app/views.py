@@ -2,7 +2,6 @@ from rest_framework import serializers, viewsets
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from .models import Category, User, Project, Proposal, ProjectFile
-from api.serializers import ProjectSerializer
 
 class CategorySerializer(serializers.ModelSerializer):
     children = serializers.PrimaryKeyRelatedField(many=True, read_only=True)
