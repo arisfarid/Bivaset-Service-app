@@ -706,31 +706,24 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     elif text == "📊 مشاهده درخواست‌ها":
         context.user_data['state'] = 'view_projects_initial'
-        telegram_id = str(update.effective_user.id)  # اضافه کردن telegram_id
+        telegram_id = str(update.effective_user.id)
         try:
-            response = requests.get(f"{BASE_URL}projects/?user_telegram_id={telegram_id}&limit=5")
+            response = requests.get(f"{BASE_URL}projects/?user_telegram_id={telegram_id}&ordering=-id&limit=5")
             if response.status_code == 200:
                 projects = response.json()
                 if not projects:
                     await update.message.reply_text("📭 هنوز درخواستی ثبت نکردی!")
                     return
-                message = "📋 آخرین درخواست‌های شما (حداکثر ۵ تا):\n\n"
+                message = "📋 لیست 5 درخواست اخیر شما به شرح زیر است، می‌توانید با ضربه زدن روی هرکدام جزئیات بیشتر مشاهده و درخواست را مدیریت کنید:\n\n"
                 for i, project in enumerate(projects, 1):
-                    message += f"{i}. *{project['title']}* (کد: {project['id']})\n"
-                inline_keyboard = [
-                    [InlineKeyboardButton(f"مدیریت درخواست {p['id']}", callback_data=f"manage_{p['id']}")] for p in projects
-                ]
-                await update.message.reply_text(
-                    message + "\nیکی رو انتخاب کن یا وضعیت درخواست‌ها رو ببین:",
-                    parse_mode='Markdown',
-                    reply_markup=InlineKeyboardMarkup(inline_keyboard)
-                )
+                    message += f"{i}. [{project['title']} (کد: {project['id']})](tg://btn/{project['id']})\n"
+                await update.message.reply_text(message, parse_mode='Markdown', disable_web_page_preview=True)
                 keyboard = [
                     [KeyboardButton("درخواست‌های باز"), KeyboardButton("درخواست‌های بسته")],
                     [KeyboardButton("⬅️ بازگشت")]
                 ]
                 await update.message.reply_text(
-                    "📊 وضعیت درخواست‌ها رو انتخاب کن:",
+                    "📊 وضعیت درخواست‌ها رو انتخاب کن یا برگرد:",
                     reply_markup=ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
                 )
             else:
@@ -738,79 +731,67 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         except requests.exceptions.ConnectionError:
             await update.message.reply_text("❌ خطا: سرور بک‌اند در دسترس نیست.")
 
-    elif context.user_data.get('state') == 'view_projects_initial' and text in ["درخواست‌های باز", "درخواست‌های بسته"]:
+    elif context.user_data.get('state') in ['view_projects_initial', 'view_projects_list'] and text in ["درخواست‌های باز", "درخواست‌های بسته"]:
         context.user_data['state'] = 'view_projects_list'
-        context.user_data['project_status'] = 'open' if text == "درخواست‌های باز" else 'closed'
-        context.user_data['project_offset'] = 0
+        status = 'open' if text == "درخواست‌های باز" else 'closed'
+        offset = context.user_data.get('project_offset', 0)
         try:
-            status = context.user_data['project_status']
-            offset = context.user_data['project_offset']
-            response = requests.get(f"{BASE_URL}projects/?user_telegram_id={telegram_id}&status={status}&limit=10&offset={offset}")
+            response = requests.get(f"{BASE_URL}projects/?user_telegram_id={telegram_id}&status={status}&ordering=-id&limit=10&offset={offset}")
             if response.status_code == 200:
                 projects = response.json()
                 if not projects:
                     await update.message.reply_text(f"📭 هیچ درخواست {text} پیدا نشد!")
                     return
-                message = "📋 برای مشاهده جزئیات یا مدیریت درخواست، روی آن ضربه بزنید:\n\n"
-                for i, project in enumerate(projects[:10], 1):  # فقط 10 تا
-                    message += f"{i}. [{project['title']} (کد: {project['id']})]({BASE_URL}projects/{project['id']}/)\n"
-                if len(projects) > 10:
-                    message += "\nبرای دیدن بقیه، دوباره 'درخواست‌های باز' رو بزن."
+                message = f"📋 لیست {text} (حداکثر ۱۰ تا):\nبرای مشاهده جزئیات یا مدیریت، روی درخواست ضربه بزنید:\n\n"
+                for i, project in enumerate(projects, 1):
+                    message += f"{i}. [{project['title']} (کد: {project['id']})](tg://btn/{project['id']})\n"
+                if len(projects) == 10:
+                    context.user_data['project_offset'] = offset + 10
+                    message += "\nبرای دیدن ادامه، دوباره '{text}' رو بزن."
+                else:
+                    context.user_data['project_offset'] = 0  # ریست برای دفعه بعد
                 await update.message.reply_text(message, parse_mode='Markdown', disable_web_page_preview=True)
             else:
                 await update.message.reply_text(f"❌ خطا در دریافت درخواست‌ها: {response.status_code}")
         except requests.exceptions.ConnectionError:
             await update.message.reply_text("❌ خطا: سرور بک‌اند در دسترس نیست.")
 
-    elif text == "⬅️ بازگشت" and context.user_data.get('state') is None:
+    elif text == "⬅️ بازگشت" and context.user_data.get('state') in [None, 'view_projects_initial', 'view_projects_list']:
+        context.user_data['state'] = None
         await start(update, context)
 
 async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
-    if query.data.startswith("manage_"):
-        project_id = query.data.split("_")[1]
+    if query.data.startswith("manage_") or query.data.isdigit():
+        project_id = query.data.split("_")[-1] if query.data.startswith("manage_") else query.data
         try:
             response = requests.get(f"{BASE_URL}projects/{project_id}/")
             if response.status_code == 200:
                 project = response.json()
+                cat_name = context.user_data['categories'][project['category']]['name']
                 summary = f"📋 *درخواست {project['id']}*\n" \
-                          f"📌 *دسته‌بندی*: {context.user_data['categories'][project['category']]['name']}\n" \
+                          f"📌 *دسته‌بندی*: {cat_name}\n" \
                           f"📝 *توضیحات*: {project['description']}\n" \
                           f"📍 *موقعیت*: {'غیرحضوری' if project['service_location'] == 'remote' else 'نمایش روی نقشه'}\n"
+                if project.get('budget'):
+                    summary += f"💰 *بودجه*: {project['budget']} تومان\n"
+                if project.get('deadline_date'):
+                    summary += f"⏳ *مهلت*: {project['deadline_date']}\n"
+                if project.get('start_date'):
+                    summary += f"📅 *شروع*: {project['start_date']}\n"
+                if project.get('files'):
+                    summary += "📸 *تصاویر*:\n" + "\n".join([f"- [عکس]({f})" for f in project['files']])
                 inline_keyboard = [
                     [InlineKeyboardButton("✏️ ویرایش", callback_data=f"edit_{project_id}"),
                      InlineKeyboardButton("⏰ تمدید", callback_data=f"extend_{project_id}")],
                     [InlineKeyboardButton("🗑 حذف", callback_data=f"delete_{project_id}"),
-                     InlineKeyboardButton("✅ بستن", callback_data=f"close_{project_id}")]
+                     InlineKeyboardButton("✅ بستن", callback_data=f"close_{project_id}")],
+                    [InlineKeyboardButton("💬 پیشنهادها", callback_data=f"proposals_{project_id}")]
                 ]
                 await query.edit_message_text(summary, parse_mode='Markdown', reply_markup=InlineKeyboardMarkup(inline_keyboard))
             else:
                 await query.edit_message_text(f"❌ خطا در دریافت اطلاعات: {response.status_code}")
-        except requests.exceptions.ConnectionError:
-            await query.edit_message_text("❌ خطا: سرور بک‌اند در دسترس نیست.")
-    elif query.data == "next_projects":
-        context.user_data['project_offset'] += 10
-        status = context.user_data['project_status']
-        offset = context.user_data['project_offset']
-        try:
-            response = requests.get(f"{BASE_URL}projects/?user_telegram_id={telegram_id}&status={status}&limit=10&offset={offset}")
-            if response.status_code == 200:
-                projects = response.json()
-                if not projects:
-                    await query.edit_message_text("📭 اتمام درخواست‌ها")
-                    return
-                message = f"📋 لیست {status} (حداکثر ۱۰ تا):\n\n"
-                for i, project in enumerate(projects, 1):
-                    message += f"{i}. *{project['title']}* (کد: {project['id']})\n"
-                inline_keyboard = [
-                    [InlineKeyboardButton(f"مدیریت درخواست {p['id']}", callback_data=f"manage_{p['id']}")] for p in projects
-                ]
-                if len(projects) == 10:
-                    inline_keyboard.append([InlineKeyboardButton("ادامه لیست", callback_data="next_projects")])
-                await query.edit_message_text(message, parse_mode='Markdown', reply_markup=InlineKeyboardMarkup(inline_keyboard))
-            else:
-                await query.edit_message_text(f"❌ خطا در دریافت درخواست‌ها: {response.status_code}")
         except requests.exceptions.ConnectionError:
             await query.edit_message_text("❌ خطا: سرور بک‌اند در دسترس نیست.")
 
