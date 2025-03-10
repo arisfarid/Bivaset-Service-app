@@ -1,9 +1,6 @@
 from telegram import Update, KeyboardButton, ReplyKeyboardMarkup
 from telegram.ext import ContextTypes
-
-def create_dynamic_keyboard(context):
-    # Define the function or import it if defined elsewhere
-    return ReplyKeyboardMarkup([[KeyboardButton("Example")]], resize_keyboard=True)
+from utils import create_dynamic_keyboard
 
 async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if context.user_data.get('state') != 'new_project_details_files':
