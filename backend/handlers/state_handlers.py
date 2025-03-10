@@ -1,6 +1,6 @@
-from telegram import Update, KeyboardButton, ReplyKeyboardMarkup
+from telegram import Update, KeyboardButton, ReplyKeyboardMarkup, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ContextTypes
-from utils import create_dynamic_keyboard, clean_budget, validate_date, validate_deadline, generate_title, upload_files, convert_deadline_to_date
+from utils import get_categories, clean_budget, generate_title, upload_files, convert_deadline_to_date, validate_date, persian_to_english, create_dynamic_keyboard
 import requests
 from .start_handler import start
 
@@ -31,7 +31,6 @@ async def handle_view_projects(update: Update, context: ContextTypes.DEFAULT_TYP
             if not projects:
                 await update.message.reply_text("📭 هنوز درخواستی ثبت نکردی!")
                 return
-            from telegram import InlineKeyboardButton, InlineKeyboardMarkup
             message = "📋 برای مشاهده جزئیات و مدیریت هر کدام از درخواست‌ها روی دکمه مربوطه ضربه بزنید:\n"
             inline_keyboard = [
                 [InlineKeyboardButton(f"{project['title']} (کد: {project['id']})", callback_data=f"{project['id']}")]
@@ -48,8 +47,24 @@ async def handle_view_projects(update: Update, context: ContextTypes.DEFAULT_TYP
             )
         else:
             await update.message.reply_text(f"❌ خطا در دریافت درخواست‌ها: {response.status_code}")
+            keyboard = [
+                [KeyboardButton("درخواست‌های باز"), KeyboardButton("درخواست‌های بسته")],
+                [KeyboardButton("⬅️ بازگشت")]
+            ]
+            await update.message.reply_text(
+                "📊 وضعیت درخواست‌ها رو انتخاب کن یا برگرد:",
+                reply_markup=ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
+            )
     except requests.exceptions.ConnectionError:
         await update.message.reply_text("❌ خطا: سرور بک‌اند در دسترس نیست.")
+        keyboard = [
+            [KeyboardButton("درخواست‌های باز"), KeyboardButton("درخواست‌های بسته")],
+            [KeyboardButton("⬅️ بازگشت")]
+        ]
+        await update.message.reply_text(
+            "📊 ادامه بده یا برگرد:",
+            reply_markup=ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
+        )
 
 async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_TYPE, text: str):
     telegram_id = str(update.effective_user.id)
@@ -59,28 +74,28 @@ async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_T
         if text == "⬅️ بازگشت":
             context.user_data['state'] = None
             await start(update, context)
-        else:
-            categories = context.user_data['categories']
-            selected_cat = next((cat_id for cat_id, cat in categories.items() if cat['name'] == text and cat['parent'] is None), None)
-            if selected_cat:
-                context.user_data['category_group'] = selected_cat
-                sub_cats = categories[selected_cat]['children']
-                if sub_cats:
-                    context.user_data['state'] = 'new_project_subcategory'
-                    keyboard = [[KeyboardButton(categories[cat_id]['name'])] for cat_id in sub_cats] + [[KeyboardButton("⬅️ بازگشت")]]
-                    await update.message.reply_text(
-                        f"📌 زیرمجموعه '{text}' رو انتخاب کن:",
-                        reply_markup=ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
-                    )
-                else:
-                    context.user_data['category_id'] = selected_cat
-                    context.user_data['state'] = 'new_project_desc'
-                    await update.message.reply_text(
-                        f"🌟 حالا توضیحات خدماتت رو بگو تا مجری بهتر بتونه قیمت بده.\n"
-                        "نمونه خوب: 'نصب 2 شیر پیسوار توی آشپزخونه، جنس استیل، تا آخر هفته نیاز دارم.'"
-                    )
+            return
+        categories = context.user_data['categories']
+        selected_cat = next((cat_id for cat_id, cat in categories.items() if cat['name'] == text and cat['parent'] is None), None)
+        if selected_cat:
+            context.user_data['category_group'] = selected_cat
+            sub_cats = categories[selected_cat]['children']
+            if sub_cats:
+                context.user_data['state'] = 'new_project_subcategory'
+                keyboard = [[KeyboardButton(categories[cat_id]['name'])] for cat_id in sub_cats] + [[KeyboardButton("⬅️ بازگشت")]]
+                await update.message.reply_text(
+                    f"📌 زیرمجموعه '{text}' رو انتخاب کن:",
+                    reply_markup=ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
+                )
             else:
-                await update.message.reply_text("❌ دسته‌بندی نامعتبر! دوباره انتخاب کن.")
+                context.user_data['category_id'] = selected_cat
+                context.user_data['state'] = 'new_project_desc'
+                await update.message.reply_text(
+                    f"🌟 حالا توضیحات خدماتت رو بگو تا مجری بهتر بتونه قیمت بده.\n"
+                    "نمونه خوب: 'نصب 2 شیر پیسوار توی آشپزخونه، جنس استیل، تا آخر هفته نیاز دارم.'"
+                )
+        else:
+            await update.message.reply_text("❌ دسته‌بندی نامعتبر! دوباره انتخاب کن.")
 
     elif state == 'new_project_subcategory':
         if text == "⬅️ بازگشت":
@@ -92,18 +107,18 @@ async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_T
                 f"🌟 دسته‌بندی خدماتت رو انتخاب کن:",
                 reply_markup=ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
             )
+            return
+        categories = context.user_data['categories']
+        selected_subcat = next((cat_id for cat_id, cat in categories.items() if cat['name'] == text and cat['parent'] == context.user_data['category_group']), None)
+        if selected_subcat:
+            context.user_data['category_id'] = selected_subcat
+            context.user_data['state'] = 'new_project_desc'
+            await update.message.reply_text(
+                f"🌟 حالا توضیحات خدماتت رو بگو تا مجری بهتر بتونه قیمت بده.\n"
+                "نمونه خوب: 'نصب 2 شیر پیسوار توی آشپزخونه، جنس استیل، تا آخر هفته نیاز دارم.'"
+            )
         else:
-            categories = context.user_data['categories']
-            selected_subcat = next((cat_id for cat_id, cat in categories.items() if cat['name'] == text and cat['parent'] == context.user_data['category_group']), None)
-            if selected_subcat:
-                context.user_data['category_id'] = selected_subcat
-                context.user_data['state'] = 'new_project_desc'
-                await update.message.reply_text(
-                    f"🌟 حالا توضیحات خدماتت رو بگو تا مجری بهتر بتونه قیمت بده.\n"
-                    "نمونه خوب: 'نصب 2 شیر پیسوار توی آشپزخونه، جنس استیل، تا آخر هفته نیاز دارم.'"
-                )
-            else:
-                await update.message.reply_text("❌ زیرمجموعه نامعتبر! دوباره انتخاب کن.")
+            await update.message.reply_text("❌ زیرمجموعه نامعتبر! دوباره انتخاب کن.")
 
     elif state == 'new_project_desc':
         if text == "⬅️ بازگشت":
@@ -115,18 +130,18 @@ async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_T
                 f"📌 زیرمجموعه '{categories[context.user_data['category_group']]['name']}' رو انتخاب کن:",
                 reply_markup=ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
             )
-        else:
-            context.user_data['description'] = text
-            context.user_data['state'] = 'new_project_location'
-            keyboard = [
-                [KeyboardButton("🏠 محل کارفرما"), KeyboardButton("🔧 محل مجری")],
-                [KeyboardButton("💻 غیرحضوری"), KeyboardButton("⬅️ بازگشت")],
-                [KeyboardButton("➡️ ادامه")]
-            ]
-            await update.message.reply_text(
-                f"🌟 محل انجام خدماتت رو انتخاب کن:",
-                reply_markup=ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
-            )
+            return
+        context.user_data['description'] = text
+        context.user_data['state'] = 'new_project_location'
+        keyboard = [
+            [KeyboardButton("🏠 محل کارفرما"), KeyboardButton("🔧 محل مجری")],
+            [KeyboardButton("💻 غیرحضوری"), KeyboardButton("⬅️ بازگشت")],
+            [KeyboardButton("➡️ ادامه")]
+        ]
+        await update.message.reply_text(
+            f"🌟 محل انجام خدماتت رو انتخاب کن:",
+            reply_markup=ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
+        )
 
     elif state == 'new_project_location':
         if text == "⬅️ بازگشت":
@@ -134,6 +149,7 @@ async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_T
             await update.message.reply_text(
                 f"🌟 توضیحات خدماتت رو بگو:"
             )
+            return
         elif text == "➡️ ادامه":
             if context.user_data.get('service_location') == 'client_site' and 'location' not in context.user_data:
                 await update.message.reply_text("❌ لطفاً لوکیشن رو ثبت کن!")
@@ -164,6 +180,32 @@ async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_T
                     reply_markup=create_dynamic_keyboard(context)
                 )
 
+    elif state == 'new_project_location_input':
+        if text == "⬅️ بازگشت":
+            context.user_data['state'] = 'new_project_location'
+            keyboard = [
+                [KeyboardButton("🏠 محل کارفرما"), KeyboardButton("🔧 محل مجری")],
+                [KeyboardButton("💻 غیرحضوری"), KeyboardButton("⬅️ بازگشت")],
+                [KeyboardButton("➡️ ادامه")]
+            ]
+            await update.message.reply_text(
+                f"🌟 محل انجام خدماتت رو انتخاب کن:",
+                reply_markup=ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
+            )
+            return
+        elif text == "➡️ ادامه":
+            if 'location' not in context.user_data:
+                await update.message.reply_text("❌ لطفاً لوکیشن رو ثبت کن!")
+                return
+            context.user_data['state'] = 'new_project_details'
+            await update.message.reply_text(
+                f"📋 جزئیات درخواست\n"
+                "اگه بخوای می‌تونی برای راهنمایی بهتر مجری‌ها این اطلاعات رو هم وارد کنی:",
+                reply_markup=create_dynamic_keyboard(context)
+            )
+        else:
+            await update.message.reply_text("❌ گزینه نامعتبر! لطفاً لوکیشن بفرست یا ادامه بده.")
+
     elif state == 'new_project_details':
         if text == "⬅️ بازگشت":
             context.user_data['state'] = 'new_project_location'
@@ -176,6 +218,7 @@ async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_T
                 f"🌟 محل انجام خدماتت رو انتخاب کن:",
                 reply_markup=ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
             )
+            return
         elif text == "✅ ثبت درخواست":
             await submit_project(update, context)
         elif text == "📸 تصاویر یا فایل":
@@ -203,16 +246,25 @@ async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_T
                 f"📋 جزئیات درخواست:",
                 reply_markup=create_dynamic_keyboard(context)
             )
+            return
         elif text == "⬅️ بازگشت":
             context.user_data['state'] = 'new_project_details'
             await update.message.reply_text(
                 f"📋 جزئیات درخواست:",
                 reply_markup=create_dynamic_keyboard(context)
             )
+            return
         else:
             await update.message.reply_text("❌ لطفاً فقط تصاویر ارسال کنید یا 'اتمام ارسال تصاویر' را بزنید.")
 
     elif state == 'new_project_details_date':
+        if text == "⬅️ بازگشت":
+            context.user_data['state'] = 'new_project_details'
+            await update.message.reply_text(
+                f"📋 جزئیات درخواست:",
+                reply_markup=create_dynamic_keyboard(context)
+            )
+            return
         if validate_date(text):
             context.user_data['need_date'] = text
             context.user_data['state'] = 'new_project_details'
@@ -224,6 +276,13 @@ async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_T
             await update.message.reply_text("❌ تاریخ نامعتبر! لطفاً به فرمت 1403/10/15 وارد کنید.")
 
     elif state == 'new_project_details_deadline':
+        if text == "⬅️ بازگشت":
+            context.user_data['state'] = 'new_project_details'
+            await update.message.reply_text(
+                f"📋 جزئیات درخواست:",
+                reply_markup=create_dynamic_keyboard(context)
+            )
+            return
         deadline = validate_deadline(text)
         if deadline:
             context.user_data['deadline'] = deadline
@@ -236,6 +295,13 @@ async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_T
             await update.message.reply_text("❌ مهلت نامعتبر! لطفاً یک عدد وارد کنید.")
 
     elif state == 'new_project_details_budget':
+        if text == "⬅️ بازگشت":
+            context.user_data['state'] = 'new_project_details'
+            await update.message.reply_text(
+                f"📋 جزئیات درخواست:",
+                reply_markup=create_dynamic_keyboard(context)
+            )
+            return
         budget = clean_budget(text)
         if budget:
             context.user_data['budget'] = budget
@@ -248,12 +314,85 @@ async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_T
             await update.message.reply_text("❌ بودجه نامعتبر! لطفاً یک عدد وارد کنید.")
 
     elif state == 'new_project_details_quantity':
+        if text == "⬅️ بازگشت":
+            context.user_data['state'] = 'new_project_details'
+            await update.message.reply_text(
+                f"📋 جزئیات درخواست:",
+                reply_markup=create_dynamic_keyboard(context)
+            )
+            return
         context.user_data['quantity'] = text
         context.user_data['state'] = 'new_project_details'
         await update.message.reply_text(
             f"📏 مقدار و واحد ثبت شد: {text}",
             reply_markup=create_dynamic_keyboard(context)
         )
+
+    elif state == 'view_projects_initial' or state == 'view_projects_list':
+        if text == "⬅️ بازگشت":
+            context.user_data['state'] = None
+            await start(update, context)
+            return
+        if text in ["درخواست‌های باز", "درخواست‌های بسته"]:
+            context.user_data['state'] = 'view_projects_list'
+            status = 'open' if text == "درخواست‌های باز" else 'closed'
+            offset = context.user_data.get('project_offset', 0)
+            try:
+                response = requests.get(f"{BASE_URL}projects/?user_telegram_id={telegram_id}&status={status}&ordering=-id&limit=10&offset={offset}")
+                if response.status_code == 200:
+                    projects = response.json()
+                    if not projects:
+                        await update.message.reply_text(f"📭 هیچ درخواست {text} پیدا نشد!")
+                        keyboard = [
+                            [KeyboardButton("درخواست‌های باز"), KeyboardButton("درخواست‌های بسته")],
+                            [KeyboardButton("⬅️ بازگشت")]
+                        ]
+                        await update.message.reply_text(
+                            "📊 ادامه بده یا برگرد:",
+                            reply_markup=ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
+                        )
+                        return
+                    message = f"📋 برای مشاهده جزئیات و مدیریت هر کدام از {text} روی دکمه مربوطه ضربه بزنید:\n"
+                    inline_keyboard = [
+                        [InlineKeyboardButton(f"{project['title']} (کد: {project['id']})", callback_data=f"{project['id']}")]
+                        for project in projects[:10]
+                    ]
+                    if len(projects) > 10:
+                        context.user_data['project_offset'] = offset + 10
+                        message += f"\nبرای دیدن ادامه، دوباره '{text}' رو بزن."
+                    else:
+                        context.user_data['project_offset'] = 0
+                    await update.message.reply_text(message, reply_markup=InlineKeyboardMarkup(inline_keyboard))
+                    keyboard = [
+                        [KeyboardButton("درخواست‌های باز"), KeyboardButton("درخواست‌های بسته")],
+                        [KeyboardButton("⬅️ بازگشت")]
+                    ]
+                    await update.message.reply_text(
+                        "📊 ادامه بده یا برگرد:",
+                        reply_markup=ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
+                    )
+                else:
+                    await update.message.reply_text(f"❌ خطا در دریافت درخواست‌ها: {response.status_code}")
+                    keyboard = [
+                        [KeyboardButton("درخواست‌های باز"), KeyboardButton("درخواست‌های بسته")],
+                        [KeyboardButton("⬅️ بازگشت")]
+                    ]
+                    await update.message.reply_text(
+                        "📊 ادامه بده یا برگرد:",
+                        reply_markup=ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
+                    )
+            except requests.exceptions.ConnectionError:
+                await update.message.reply_text("❌ خطا: سرور بک‌اند در دسترس نیست.")
+                keyboard = [
+                    [KeyboardButton("درخواست‌های باز"), KeyboardButton("درخواست‌های بسته")],
+                    [KeyboardButton("⬅️ بازگشت")]
+                ]
+                await update.message.reply_text(
+                    "📊 ادامه بده یا برگرد:",
+                    reply_markup=ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
+                )
+        else:
+            await update.message.reply_text("❌ گزینه نامعتبر! لطفاً یکی از دکمه‌ها را انتخاب کنید.")
 
 async def submit_project(update: Update, context: ContextTypes.DEFAULT_TYPE):
     data = {
