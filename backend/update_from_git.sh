@@ -34,7 +34,6 @@ sudo systemctl status gunicorn --no-pager | head -n 10
 
 # ری‌استارت ربات
 echo "Restarting bot..."
-export TELEGRAM_BOT_TOKEN='7998946498:AAGu847Zq6HYrHdnEwSw2xwJDLF2INd3f4g'  # تنظیم متغیر محیطی
 pkill -f "python3 bot.py"
 nohup python3 bot.py > bot.log 2>&1 &
 echo "Bot restarted. Check bot.log for output."
