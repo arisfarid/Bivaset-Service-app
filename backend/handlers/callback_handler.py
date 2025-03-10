@@ -2,13 +2,15 @@ from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ContextTypes
 import requests
 from utils import BASE_URL
+import logging
+
+logger = logging.getLogger(__name__)
 
 async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
     
-    # Log the callback data for debugging
-    context.bot.logger.info(f"Callback data: {query.data}")
+    logger.info(f"Callback data received: {query.data}")
     
     # Process the callback data
     if query.data == 'new_project':
