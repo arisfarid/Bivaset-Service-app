@@ -6,7 +6,7 @@ from .start_handler import start  # Import the start function from the appropria
 from khayyam import JalaliDatetime  # Import JalaliDatetime from khayyam module
 from datetime import timedelta  # Import timedelta from datetime module
 
-BASE_URL = 'https://your-api-base-url.com/'  # Define your base URL here
+BASE_URL = 'http://185.204.171.107:8000/api/'  # Define your base URL here
 
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = update.message.text
