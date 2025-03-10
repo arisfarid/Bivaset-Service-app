@@ -792,7 +792,7 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             if project.get('start_date'):
                 summary += f"📅 *شروع*: {project['start_date']}\n"
             if project.get('files'):
-                summary += "📸 *تصاویر*:\n" + "\n.join([f"- [عکس]({f})" for f in project['files']])
+                summary += "📸 *تصاویر*:\n" + "\n".join([f"- [عکس]({f})" for f in project['files']])
             inline_keyboard = [
                 [InlineKeyboardButton("✏️ ویرایش", callback_data=f"edit_{project_id}"),
                  InlineKeyboardButton("⏰ تمدید", callback_data=f"extend_{project_id}")],
@@ -820,4 +820,4 @@ def main():
 
 if __name__ == '__main__':
     main()
-```
+repr()
