@@ -6,6 +6,20 @@ from utils import BASE_URL
 async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
+    
+    # Log the callback data for debugging
+    context.bot.logger.info(f"Callback data: {query.data}")
+    
+    # Process the callback data
+    if query.data == 'new_project':
+        handle_new_project(update, context)
+    elif query.data == 'view_projects':
+        handle_view_projects(update, context)
+    elif query.data.startswith('project_details_'):
+        handle_project_details(update, context)
+    else:
+        await query.edit_message_text(text="Unknown callback data.")
+    
     project_id = query.data
     try:
         response = requests.get(f"{BASE_URL}projects/{project_id}/")
