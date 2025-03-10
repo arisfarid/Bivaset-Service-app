@@ -708,9 +708,9 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         context.user_data['state'] = 'view_projects_initial'
         telegram_id = str(update.effective_user.id)
         try:
-            response = requests.get(f"{BASE_URL}projects/?user_telegram_id={telegram_id}&ordering=-id&limit=5")
+            response = requests.get(f"{BASE_URL}projects/?user_telegram_id={telegram_id}&ordering=-created_at")
             if response.status_code == 200:
-                projects = response.json()[:5]  # فقط 5 تا آخر
+                projects = response.json()[:5]  # فقط 5 تای اول از لیست مرتب شده
                 if not projects:
                     await update.message.reply_text("📭 هنوز درخواستی ثبت نکردی!")
                     return
