@@ -1,6 +1,6 @@
 from telegram import Update
 from telegram.ext import ContextTypes
-from some_module import create_dynamic_keyboard  # Replace 'some_module' with the actual module name
+from utils import create_dynamic_keyboard  # Import the function from utils
 
 async def handle_location(update: Update, context: ContextTypes.DEFAULT_TYPE):
     location = update.message.location

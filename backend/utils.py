@@ -4,6 +4,7 @@ import re
 import sys
 from datetime import datetime, timedelta
 from khayyam import JalaliDatetime
+from telegram import KeyboardButton, ReplyKeyboardMarkup
 
 BASE_URL = 'http://185.204.171.107:8000/api/'
 BOT_FILE = os.path.abspath(__file__)
@@ -136,3 +137,18 @@ def generate_title(context):
     if quantity:
         title += f" ({quantity})"
     return title.strip()
+
+def create_dynamic_keyboard(context):
+    buttons = []
+    if 'files' not in context.user_data:
+        buttons.append([KeyboardButton("📸 تصاویر یا فایل")])
+    if 'need_date' not in context.user_data:
+        buttons.append([KeyboardButton("📅 تاریخ نیاز")])
+    if 'deadline' not in context.user_data:
+        buttons.append([KeyboardButton("⏳ مهلت انجام")])
+    if 'budget' not in context.user_data:
+        buttons.append([KeyboardButton("💰 بودجه")])
+    if 'quantity' not in context.user_data:
+        buttons.append([KeyboardButton("📏 مقدار و واحد")])
+    buttons.append([KeyboardButton("⬅️ بازگشت"), KeyboardButton("✅ ثبت درخواست")])
+    return ReplyKeyboardMarkup(buttons, resize_keyboard=True)
