@@ -8,6 +8,7 @@ from handlers.location_handler import handle_location
 from handlers.photo_handler import handle_photo
 from handlers.message_handler import handle_message
 from handlers.callback_handler import handle_callback
+from handlers.state_handlers import handle_new_project, handle_view_projects, handle_project_details  # Add this line
 
 TOKEN = os.getenv('TELEGRAM_BOT_TOKEN')
 
