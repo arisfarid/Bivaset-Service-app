@@ -4,10 +4,14 @@ from utils import get_user_phone, get_categories, clean_budget, generate_title, 
 import requests
 from .start_handler import start
 from .state_handlers import handle_new_project, handle_view_projects, handle_project_details
+import logging
+
+logger = logging.getLogger(__name__)
 
 BASE_URL = 'http://185.204.171.107:8000/api/'
 
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    logger.info("Message received")
     text = update.message.text
     name = update.effective_user.full_name or "کاربر"
     telegram_id = str(update.effective_user.id)
