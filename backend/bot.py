@@ -710,14 +710,16 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         try:
             response = requests.get(f"{BASE_URL}projects/?user_telegram_id={telegram_id}&ordering=-id&limit=5")
             if response.status_code == 200:
-                projects = response.json()
+                projects = response.json()[:5]  # فقط 5 تا آخر
                 if not projects:
                     await update.message.reply_text("📭 هنوز درخواستی ثبت نکردی!")
                     return
                 message = "📋 لیست 5 درخواست اخیر شما به شرح زیر است، می‌توانید با ضربه زدن روی هرکدام جزئیات بیشتر مشاهده و درخواست را مدیریت کنید:\n\n"
+                inline_keyboard = []
                 for i, project in enumerate(projects, 1):
-                    message += f"{i}. [{project['title']} (کد: {project['id']})](tg://btn/{project['id']})\n"
-                await update.message.reply_text(message, parse_mode='Markdown', disable_web_page_preview=True)
+                    message += f"{i}. {project['title']} (کد: {project['id']})\n"
+                    inline_keyboard.append([InlineKeyboardButton(f"{project['title']} (کد: {project['id']})", callback_data=f"{project['id']}")])
+                await update.message.reply_text(message, reply_markup=InlineKeyboardMarkup(inline_keyboard))
                 keyboard = [
                     [KeyboardButton("درخواست‌های باز"), KeyboardButton("درخواست‌های بسته")],
                     [KeyboardButton("⬅️ بازگشت")]
@@ -738,19 +740,29 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         try:
             response = requests.get(f"{BASE_URL}projects/?user_telegram_id={telegram_id}&status={status}&ordering=-id&limit=10&offset={offset}")
             if response.status_code == 200:
-                projects = response.json()
+                projects = response.json()[:10]  # فقط 10 تا
                 if not projects:
                     await update.message.reply_text(f"📭 هیچ درخواست {text} پیدا نشد!")
                     return
                 message = f"📋 لیست {text} (حداکثر ۱۰ تا):\nبرای مشاهده جزئیات یا مدیریت، روی درخواست ضربه بزنید:\n\n"
+                inline_keyboard = []
                 for i, project in enumerate(projects, 1):
-                    message += f"{i}. [{project['title']} (کد: {project['id']})](tg://btn/{project['id']})\n"
-                if len(projects) == 10:
+                    message += f"{i}. {project['title']} (کد: {project['id']})\n"
+                    inline_keyboard.append([InlineKeyboardButton(f"{project['title']} (کد: {project['id']})", callback_data=f"{project['id']}")])
+                if len(response.json()) > 10:  # چک کردن اگر بیشتر از 10 تا هست
                     context.user_data['project_offset'] = offset + 10
-                    message += "\nبرای دیدن ادامه، دوباره '{text}' رو بزن."
+                    message += f"\nبرای دیدن ادامه، دوباره '{text}' رو بزن."
                 else:
-                    context.user_data['project_offset'] = 0  # ریست برای دفعه بعد
-                await update.message.reply_text(message, parse_mode='Markdown', disable_web_page_preview=True)
+                    context.user_data['project_offset'] = 0  # ریست
+                await update.message.reply_text(message, reply_markup=InlineKeyboardMarkup(inline_keyboard))
+                keyboard = [
+                    [KeyboardButton("درخواست‌های باز"), KeyboardButton("درخواست‌های بسته")],
+                    [KeyboardButton("⬅️ بازگشت")]
+                ]
+                await update.message.reply_text(
+                    "📊 ادامه بده یا برگرد:",
+                    reply_markup=ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
+                )
             else:
                 await update.message.reply_text(f"❌ خطا در دریافت درخواست‌ها: {response.status_code}")
         except requests.exceptions.ConnectionError:
@@ -763,37 +775,36 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
-    if query.data.startswith("manage_") or query.data.isdigit():
-        project_id = query.data.split("_")[-1] if query.data.startswith("manage_") else query.data
-        try:
-            response = requests.get(f"{BASE_URL}projects/{project_id}/")
-            if response.status_code == 200:
-                project = response.json()
-                cat_name = context.user_data['categories'][project['category']]['name']
-                summary = f"📋 *درخواست {project['id']}*\n" \
-                          f"📌 *دسته‌بندی*: {cat_name}\n" \
-                          f"📝 *توضیحات*: {project['description']}\n" \
-                          f"📍 *موقعیت*: {'غیرحضوری' if project['service_location'] == 'remote' else 'نمایش روی نقشه'}\n"
-                if project.get('budget'):
-                    summary += f"💰 *بودجه*: {project['budget']} تومان\n"
-                if project.get('deadline_date'):
-                    summary += f"⏳ *مهلت*: {project['deadline_date']}\n"
-                if project.get('start_date'):
-                    summary += f"📅 *شروع*: {project['start_date']}\n"
-                if project.get('files'):
-                    summary += "📸 *تصاویر*:\n" + "\n".join([f"- [عکس]({f})" for f in project['files']])
-                inline_keyboard = [
-                    [InlineKeyboardButton("✏️ ویرایش", callback_data=f"edit_{project_id}"),
-                     InlineKeyboardButton("⏰ تمدید", callback_data=f"extend_{project_id}")],
-                    [InlineKeyboardButton("🗑 حذف", callback_data=f"delete_{project_id}"),
-                     InlineKeyboardButton("✅ بستن", callback_data=f"close_{project_id}")],
-                    [InlineKeyboardButton("💬 پیشنهادها", callback_data=f"proposals_{project_id}")]
-                ]
-                await query.edit_message_text(summary, parse_mode='Markdown', reply_markup=InlineKeyboardMarkup(inline_keyboard))
-            else:
-                await query.edit_message_text(f"❌ خطا در دریافت اطلاعات: {response.status_code}")
-        except requests.exceptions.ConnectionError:
-            await query.edit_message_text("❌ خطا: سرور بک‌اند در دسترس نیست.")
+    project_id = query.data
+    try:
+        response = requests.get(f"{BASE_URL}projects/{project_id}/")
+        if response.status_code == 200:
+            project = response.json()
+            cat_name = context.user_data['categories'][project['category']]['name']
+            summary = f"📋 *درخواست {project['id']}*\n" \
+                      f"📌 *دسته‌بندی*: {cat_name}\n" \
+                      f"📝 *توضیحات*: {project['description']}\n" \
+                      f"📍 *موقعیت*: {'غیرحضوری' if project['service_location'] == 'remote' else 'نمایش روی نقشه'}\n"
+            if project.get('budget'):
+                summary += f"💰 *بودجه*: {project['budget']} تومان\n"
+            if project.get('deadline_date'):
+                summary += f"⏳ *مهلت*: {project['deadline_date']}\n"
+            if project.get('start_date'):
+                summary += f"📅 *شروع*: {project['start_date']}\n"
+            if project.get('files'):
+                summary += "📸 *تصاویر*:\n" + "\n.join([f"- [عکس]({f})" for f in project['files']])
+            inline_keyboard = [
+                [InlineKeyboardButton("✏️ ویرایش", callback_data=f"edit_{project_id}"),
+                 InlineKeyboardButton("⏰ تمدید", callback_data=f"extend_{project_id}")],
+                [InlineKeyboardButton("🗑 حذف", callback_data=f"delete_{project_id}"),
+                 InlineKeyboardButton("✅ بستن", callback_data=f"close_{project_id}")],
+                [InlineKeyboardButton("💬 پیشنهادها", callback_data=f"proposals_{project_id}")]
+            ]
+            await query.edit_message_text(summary, parse_mode='Markdown', reply_markup=InlineKeyboardMarkup(inline_keyboard))
+        else:
+            await query.edit_message_text(f"❌ خطا در دریافت اطلاعات: {response.status_code}")
+    except requests.exceptions.ConnectionError:
+        await query.edit_message_text("❌ خطا: سرور بک‌اند در دسترس نیست.")
 
 def main():
     app = Application.builder().token(TOKEN).build()
@@ -809,3 +820,4 @@ def main():
 
 if __name__ == '__main__':
     main()
+```
