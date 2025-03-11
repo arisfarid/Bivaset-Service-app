@@ -1,8 +1,9 @@
 from telegram import Update, KeyboardButton, ReplyKeyboardMarkup, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ContextTypes
-from utils import get_categories, clean_budget, generate_title, upload_files, convert_deadline_to_date, validate_date, persian_to_english, create_dynamic_keyboard
+from utils import get_categories, clean_budget, generate_title, upload_files, convert_deadline_to_date, validate_date, validate_deadline, persian_to_english, create_dynamic_keyboard
 import requests
 from .start_handler import start
+from khayyam import JalaliDatetime
 
 BASE_URL = 'http://185.204.171.107:8000/api/'
 
@@ -169,7 +170,7 @@ async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_T
                     [KeyboardButton("⬅️ بازگشت"), KeyboardButton("➡️ ادامه")]
                 ]
                 await update.message.reply_text(
-                    f"📍 محل خدماتت رو چطور می‌خوای بفرستی؟",
+                    f"📍 برای دریافت قیمت از نزدیک‌ترین مجری، با زدن 📎 محل انجام خدمات را روی نقشه انتخاب و ارسال کنید یا در صورتی که خدمات در محل فعلی‌تان باید انجام شود، دکمه 'ارسال موقعیت فعلی' را بزنید.",
                     reply_markup=ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
                 )
             else:
@@ -203,6 +204,16 @@ async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_T
                 "اگه بخوای می‌تونی برای راهنمایی بهتر مجری‌ها این اطلاعات رو هم وارد کنی:",
                 reply_markup=create_dynamic_keyboard(context)
             )
+        elif text in ["📍 انتخاب از نقشه", "📲 ارسال موقعیت فعلی"]:
+            # فقط کیبورد رو نگه دار و منتظر لوکیشن باش
+            keyboard = [
+                [KeyboardButton("📍 انتخاب از نقشه"), KeyboardButton("📲 ارسال موقعیت فعلی", request_location=True)],
+                [KeyboardButton("⬅️ بازگشت"), KeyboardButton("➡️ ادامه")]
+            ]
+            await update.message.reply_text(
+                f"📍 لطفاً لوکیشن رو بفرستید:",
+                reply_markup=ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
+            )
         else:
             await update.message.reply_text("❌ گزینه نامعتبر! لطفاً لوکیشن بفرست یا ادامه بده.")
 
@@ -226,7 +237,18 @@ async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_T
             await update.message.reply_text("📸 لطفاً تصاویر یا فایل‌های خود را ارسال کنید (حداکثر 5 فایل).")
         elif text == "📅 تاریخ نیاز":
             context.user_data['state'] = 'new_project_details_date'
-            await update.message.reply_text("📅 تاریخ نیاز به خدمات را وارد کنید (مثلاً 1403/10/15).")
+            today = JalaliDatetime.now().strftime('%Y/%m/%d')
+            tomorrow = (JalaliDatetime.now() + JalaliDatetime.timedelta(days=1)).strftime('%Y/%m/%d')
+            day_after = (JalaliDatetime.now() + JalaliDatetime.timedelta(days=2)).strftime('%Y/%m/%d')
+            keyboard = [
+                [KeyboardButton(f"📅 امروز ({today})"), KeyboardButton(f"📅 فردا ({tomorrow})")],
+                [KeyboardButton(f"📅 پس‌فردا ({day_after})"), KeyboardButton("⬅️ بازگشت")],
+                [KeyboardButton("✏️ تاریخ دلخواه")]
+            ]
+            await update.message.reply_text(
+                "📅 تاریخ نیاز به خدمات رو انتخاب کن یا دستی وارد کن (مثلاً 1403/10/15):",
+                reply_markup=ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
+            )
         elif text == "⏳ مهلت انجام":
             context.user_data['state'] = 'new_project_details_deadline'
             await update.message.reply_text("⏳ مهلت انجام خدمات را به روز وارد کنید (مثلاً 7).")
@@ -265,15 +287,29 @@ async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_T
                 reply_markup=create_dynamic_keyboard(context)
             )
             return
-        if validate_date(text):
-            context.user_data['need_date'] = text
-            context.user_data['state'] = 'new_project_details'
-            await update.message.reply_text(
-                f"📅 تاریخ نیاز ثبت شد: {text}",
-                reply_markup=create_dynamic_keyboard(context)
-            )
+        elif text == "✏️ تاریخ دلخواه":
+            await update.message.reply_text("📅 تاریخ دلخواه رو وارد کن (مثلاً 1403/10/15):")
         else:
-            await update.message.reply_text("❌ تاریخ نامعتبر! لطفاً به فرمت 1403/10/15 وارد کنید.")
+            today = JalaliDatetime.now().strftime('%Y/%m/%d')
+            tomorrow = (JalaliDatetime.now() + JalaliDatetime.timedelta(days=1)).strftime('%Y/%m/%d')
+            day_after = (JalaliDatetime.now() + JalaliDatetime.timedelta(days=2)).strftime('%Y/%m/%d')
+            if text in [f"📅 امروز ({today})", f"📅 فردا ({tomorrow})", f"📅 پس‌فردا ({day_after})"]:
+                date_str = text.split('(')[1].rstrip(')')
+                context.user_data['need_date'] = date_str
+                context.user_data['state'] = 'new_project_details'
+                await update.message.reply_text(
+                    f"📅 تاریخ نیاز ثبت شد: {date_str}",
+                    reply_markup=create_dynamic_keyboard(context)
+                )
+            elif validate_date(text):
+                context.user_data['need_date'] = text
+                context.user_data['state'] = 'new_project_details'
+                await update.message.reply_text(
+                    f"📅 تاریخ نیاز ثبت شد: {text}",
+                    reply_markup=create_dynamic_keyboard(context)
+                )
+            else:
+                await update.message.reply_text("❌ تاریخ نامعتبر! لطفاً به فرمت 1403/10/15 وارد کنید و مطمئن شید از امروز به بعده.")
 
     elif state == 'new_project_details_deadline':
         if text == "⬅️ بازگشت":
@@ -405,7 +441,7 @@ async def submit_project(update: Update, context: ContextTypes.DEFAULT_TYPE):
         'deadline_date': convert_deadline_to_date(context.user_data.get('deadline', None)),
         'start_date': context.user_data.get('need_date', None),
         'files': await upload_files(context.user_data.get('files', []), context),
-        'user': {'telegram_id': str(update.effective_user.id)}
+        'telegram_id': str(update.effective_user.id)  # مستقیم به جای دیکشنری user
     }
     try:
         response = requests.post(f"{BASE_URL}projects/", json=data)
