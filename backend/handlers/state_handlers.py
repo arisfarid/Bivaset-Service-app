@@ -4,6 +4,7 @@ from utils import get_categories, clean_budget, generate_title, upload_files, co
 import requests
 from .start_handler import start
 from khayyam import JalaliDatetime
+from datetime import datetime, timedelta
 
 BASE_URL = 'http://185.204.171.107:8000/api/'
 
@@ -237,9 +238,9 @@ async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_T
             await update.message.reply_text("📸 لطفاً تصاویر یا فایل‌های خود را ارسال کنید (حداکثر 5 فایل).")
         elif text == "📅 تاریخ نیاز":
             context.user_data['state'] = 'new_project_details_date'
-            today = JalaliDatetime.now().strftime('%Y/%m/%d')
-            tomorrow = (JalaliDatetime.now() + JalaliDatetime.timedelta(days=1)).strftime('%Y/%m/%d')
-            day_after = (JalaliDatetime.now() + JalaliDatetime.timedelta(days=2)).strftime('%Y/%m/%d')
+            today = JalaliDatetime(datetime.now()).strftime('%Y/%m/%d')
+            tomorrow = JalaliDatetime(datetime.now() + timedelta(days=1)).strftime('%Y/%m/%d')
+            day_after = JalaliDatetime(datetime.now() + timedelta(days=2)).strftime('%Y/%m/%d')
             keyboard = [
                 [KeyboardButton(f"📅 امروز ({today})"), KeyboardButton(f"📅 فردا ({tomorrow})")],
                 [KeyboardButton(f"📅 پس‌فردا ({day_after})"), KeyboardButton("⬅️ بازگشت")],
@@ -290,9 +291,9 @@ async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_T
         elif text == "✏️ تاریخ دلخواه":
             await update.message.reply_text("📅 تاریخ دلخواه رو وارد کن (مثلاً 1403/10/15):")
         else:
-            today = JalaliDatetime.now().strftime('%Y/%m/%d')
-            tomorrow = (JalaliDatetime.now() + JalaliDatetime.timedelta(days=1)).strftime('%Y/%m/%d')
-            day_after = (JalaliDatetime.now() + JalaliDatetime.timedelta(days=2)).strftime('%Y/%m/%d')
+            today = JalaliDatetime(datetime.now()).strftime('%Y/%m/%d')
+            tomorrow = JalaliDatetime(datetime.now() + timedelta(days=1)).strftime('%Y/%m/%d')
+            day_after = JalaliDatetime(datetime.now() + timedelta(days=2)).strftime('%Y/%m/%d')
             if text in [f"📅 امروز ({today})", f"📅 فردا ({tomorrow})", f"📅 پس‌فردا ({day_after})"]:
                 date_str = text.split('(')[1].rstrip(')')
                 context.user_data['need_date'] = date_str
@@ -302,12 +303,16 @@ async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_T
                     reply_markup=create_dynamic_keyboard(context)
                 )
             elif validate_date(text):
-                context.user_data['need_date'] = text
-                context.user_data['state'] = 'new_project_details'
-                await update.message.reply_text(
-                    f"📅 تاریخ نیاز ثبت شد: {text}",
-                    reply_markup=create_dynamic_keyboard(context)
-                )
+                input_date = JalaliDatetime.strptime(text, '%Y/%m/%d')
+                if input_date < JalaliDatetime(datetime.now()):
+                    await update.message.reply_text("❌ تاریخ نامعتبر! تاریخ باید از امروز به بعد باشه.")
+                else:
+                    context.user_data['need_date'] = text
+                    context.user_data['state'] = 'new_project_details'
+                    await update.message.reply_text(
+                        f"📅 تاریخ نیاز ثبت شد: {text}",
+                        reply_markup=create_dynamic_keyboard(context)
+                    )
             else:
                 await update.message.reply_text("❌ تاریخ نامعتبر! لطفاً به فرمت 1403/10/15 وارد کنید و مطمئن شید از امروز به بعده.")
 
@@ -441,7 +446,7 @@ async def submit_project(update: Update, context: ContextTypes.DEFAULT_TYPE):
         'deadline_date': convert_deadline_to_date(context.user_data.get('deadline', None)),
         'start_date': context.user_data.get('need_date', None),
         'files': await upload_files(context.user_data.get('files', []), context),
-        'telegram_id': str(update.effective_user.id)  # مستقیم به جای دیکشنری user
+        'user_telegram_id': str(update.effective_user.id)  # کلید درست برای API
     }
     try:
         response = requests.post(f"{BASE_URL}projects/", json=data)
