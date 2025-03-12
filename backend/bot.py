@@ -2,7 +2,7 @@ import os
 import sys
 import logging
 from telegram import KeyboardButton, ReplyKeyboardMarkup
-from telegram.ext import Application, CommandHandler, MessageHandler, filters, CallbackQueryHandler
+from telegram.ext import Application, CommandHandler, MessageHandler, filters, CallbackQueryHandler, ConversationHandler
 from utils import save_timestamp, check_for_updates
 from handlers.start_handler import start
 from handlers.contact_handler import handle_contact
@@ -13,6 +13,8 @@ from handlers.callback_handler import handle_callback
 from handlers.new_project_handlers import handle_new_project
 from handlers.view_projects_handlers import handle_view_projects
 from handlers.project_details_handlers import handle_project_details  # اضافه شده
+from handlers.register_phone_handlers import check_phone, handle_contact  # اضافه شده
+from handlers.role_handler import role_handler  # اضافه شده
 
 # تنظیم لاگ‌ها
 logging.basicConfig(
@@ -52,6 +54,20 @@ def main():
     app.add_handler(MessageHandler(filters.PHOTO, handle_photo))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
     app.add_handler(CallbackQueryHandler(handle_callback))
+    
+    # ConversationHandler setup
+    conv_handler = ConversationHandler(
+        entry_points=[CommandHandler('start', start)],
+        states={
+            0: [MessageHandler(filters.CONTACT, handle_contact), MessageHandler(filters.TEXT, check_phone)],
+            1: [MessageHandler(filters.TEXT, role_handler)],
+            2: [MessageHandler(filters.TEXT, handle_new_project)],  # Assuming this exists
+            3: [MessageHandler(filters.TEXT, handle_view_projects)]  # Assuming this exists
+        },
+        fallbacks=[CommandHandler('cancel', start)]
+    )
+    app.add_handler(conv_handler)
+    
     app.job_queue.run_repeating(check_for_updates, interval=10)
     save_timestamp()
     app.post_init = notify_update  # بعد از استارت پیام بفرست
