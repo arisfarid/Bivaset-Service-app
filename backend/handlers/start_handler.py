@@ -13,10 +13,9 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if phone and phone != f"tg_{telegram_id}":
         context.user_data['phone'] = phone
     keyboard = [
-        [KeyboardButton("📋 درخواست خدمات (کارفرما)")],
-        [KeyboardButton("🔧 پیشنهاد قیمت (مجری)")]
+        [" 👔درخواست خدمات (کارفرما)", " 🦺پیشنهاد قیمت (مجری)"]
     ]
-    reply_markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
+    reply_markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True, one_time_keyboard=True)
     await update.message.reply_text(
         f"👋 سلام {name}! به ربات خدمات بی‌واسط خوش اومدی.\n"
         "من رایگان کمکت می‌کنم برای خدمات مورد نیازت، مجری کاربلد پیدا کنی یا کار مرتبط با تخصصت پیدا کنی. چی می‌خوای امروز؟ 🌟",
