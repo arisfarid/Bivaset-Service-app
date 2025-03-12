@@ -9,23 +9,39 @@ from handlers.location_handler import handle_location
 from handlers.photo_handler import handle_photo
 from handlers.message_handler import handle_message
 from handlers.callback_handler import handle_callback
-from handlers.state_handlers import handle_new_project, handle_view_projects, handle_project_details
+from handlers.new_project_handlers import handle_new_project
+from handlers.view_projects_handlers import handle_view_projects
 
-# غیرفعال کردن لاگ‌های httpx
-logging.getLogger('httpx').setLevel(logging.WARNING)
-
-# تنظیم لاگ فقط برای پیام‌های مهم
-logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.WARNING)
+# تنظیم لاگ‌ها
+logging.basicConfig(
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    level=logging.INFO,
+    handlers=[
+        logging.FileHandler("bot.log"),  # ذخیره لاگ توی فایل
+        logging.StreamHandler()  # نمایش توی کنسول
+    ]
+)
 logger = logging.getLogger(__name__)
+logging.getLogger('httpx').setLevel(logging.WARNING)
+logging.getLogger('apscheduler').setLevel(logging.WARNING)
 
 TOKEN = os.getenv('TELEGRAM_BOT_TOKEN')
+
+async def notify_update(context):
+    if 'active_chats' in context.bot_data:
+        for chat_id in context.bot_data['active_chats']:
+            await context.bot.send_message(
+                chat_id=chat_id,
+                text="🔄 ربات بروزرسانی شد و امکانات جدید دریافت کرد! 🌟",
+                disable_notification=True  # بی‌صدا
+            )
 
 def main():
     if not TOKEN:
         logger.error("Error: TELEGRAM_BOT_TOKEN environment variable not set.")
         sys.exit(1)
     
-    logger.info(f"Using Telegram Bot Token: {TOKEN[:10]}...")  # فقط 10 کاراکتر اول توکن رو نشون بده
+    logger.info(f"Using Telegram Bot Token: {TOKEN[:10]}...")
     
     app = Application.builder().token(TOKEN).build()
     app.add_handler(CommandHandler("start", start))
@@ -34,8 +50,9 @@ def main():
     app.add_handler(MessageHandler(filters.PHOTO, handle_photo))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
     app.add_handler(CallbackQueryHandler(handle_callback))
-    app.job_queue.run_repeating(check_for_updates, interval=60)  # فاصله چک آپدیت رو به 60 ثانیه افزایش بده
+    app.job_queue.run_repeating(check_for_updates, interval=10)
     save_timestamp()
+    app.post_init = notify_update  # بعد از استارت پیام بفرست
     logger.info("Bot is starting polling...")
     app.run_polling()
 

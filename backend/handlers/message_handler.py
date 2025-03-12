@@ -1,54 +1,48 @@
-from telegram import Update, KeyboardButton, ReplyKeyboardMarkup, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram import Update
 from telegram.ext import ContextTypes
-from utils import get_user_phone, get_categories, clean_budget, generate_title, upload_files, convert_deadline_to_date, validate_date, persian_to_english, create_dynamic_keyboard
-import requests
-from .start_handler import start
-from .state_handlers import handle_new_project, handle_view_projects, handle_project_details
-import logging
-
-logger = logging.getLogger(__name__)
-
-BASE_URL = 'http://185.204.171.107:8000/api/'
+from handlers.new_project_handlers import handle_new_project, handle_new_project_states
+from handlers.view_projects_handlers import handle_view_projects, handle_view_projects_states
+from handlers.project_details_handlers import handle_project_details
 
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    logger.info("Message received")
     text = update.message.text
-    name = update.effective_user.full_name or "کاربر"
     telegram_id = str(update.effective_user.id)
-    if 'phone' not in context.user_data:
-        context.user_data['phone'] = await get_user_phone(telegram_id)
-    if 'categories' not in context.user_data:
-        context.user_data['categories'] = await get_categories()
-
+    
     if text == "📋 درخواست خدمات (کارفرما)":
-        context.user_data['role'] = 'client'
-        context.user_data['state'] = None
         keyboard = [
-            [KeyboardButton("📋 درخواست خدمات جدید"), KeyboardButton("💬 مشاهده پیشنهادات")],
-            [KeyboardButton("📊 مشاهده درخواست‌ها"), KeyboardButton("⬅️ بازگشت")]
+            [KeyboardButton("📋 درخواست خدمات جدید"), KeyboardButton("📊 مشاهده درخواست‌ها")],
+            [KeyboardButton("⬅️ بازگشت")]
         ]
         await update.message.reply_text(
-            f"🎉 عالیه، {name}! می‌خوای خدمات جدید درخواست کنی یا پیشنهادات رو ببینی؟",
+            "🎉 عالیه، {}! می‌خوای خدمات جدید درخواست کنی یا پیشنهادات رو ببینی؟".format(update.effective_user.full_name),
             reply_markup=ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
         )
-
+        return
     elif text == "🔧 پیشنهاد قیمت (مجری)":
-        context.user_data['role'] = 'contractor'
-        context.user_data['state'] = None
         keyboard = [
-            [KeyboardButton("📋 مشاهده درخواست‌های باز"), KeyboardButton("💡 ارسال پیشنهاد")],
-            [KeyboardButton("📊 وضعیت پیشنهادات من"), KeyboardButton("⬅️ بازگشت")]
+            [KeyboardButton("📋 مشاهده درخواست‌ها"), KeyboardButton("💡 پیشنهاد کار")],
+            [KeyboardButton("⬅️ بازگشت")]
         ]
         await update.message.reply_text(
-            f"🌟 خوبه، {name}! می‌خوای درخواست‌های موجود رو ببینی یا پیشنهاد کار بدی؟",
+            "🌟 خوبه، {}! می‌خوای درخواست‌های موجود رو ببینی یا پیشنهاد کار بدی؟".format(update.effective_user.full_name),
             reply_markup=ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
         )
-
+        return
     elif text == "📋 درخواست خدمات جدید":
         await handle_new_project(update, context)
-
+        return
     elif text == "📊 مشاهده درخواست‌ها":
         await handle_view_projects(update, context)
-
-    else:
-        await handle_project_details(update, context, text)
+        return
+    
+    # بررسی حالت‌های پروژه جدید
+    if await handle_new_project_states(update, context, text):
+        return
+    # بررسی حالت‌های مشاهده درخواست‌ها
+    if await handle_view_projects_states(update, context, text):
+        return
+    # بررسی حالت‌های جزئیات پروژه
+    if await handle_project_details(update, context, text):
+        return
+    
+    await update.message.reply_text("❌ گزینه نامعتبر! لطفاً از منو انتخاب کن.")
