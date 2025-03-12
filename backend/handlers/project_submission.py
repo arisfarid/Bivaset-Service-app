@@ -1,6 +1,7 @@
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ContextTypes
 from utils import generate_title, upload_files, convert_deadline_to_date
+from django.contrib.gis.geos import Point  # اضافه کردن Point
 import requests
 import logging
 from .start_handler import start
@@ -9,12 +10,17 @@ logger = logging.getLogger(__name__)
 BASE_URL = 'http://185.204.171.107:8000/api/'
 
 async def submit_project(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    location = context.user_data.get('location')
+    if location:
+        # تبدیل دیکشنری location به Point
+        location = Point(location['longitude'], location['latitude'], srid=4326)
+    
     data = {
         'title': generate_title(context),
         'description': context.user_data.get('description', ''),
         'category': context.user_data.get('category_id', ''),
         'service_location': context.user_data.get('service_location', ''),
-        'location': context.user_data.get('location', None),
+        'location': location,  # استفاده از Point
         'budget': context.user_data.get('budget', None),
         'deadline_date': convert_deadline_to_date(context.user_data.get('deadline', None)),
         'start_date': context.user_data.get('need_date', None),
