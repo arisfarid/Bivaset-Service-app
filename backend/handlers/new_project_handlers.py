@@ -10,7 +10,7 @@ async def handle_new_project(update: Update, context: ContextTypes.DEFAULT_TYPE)
     text = update.message.text
     if text == "📋 درخواست خدمات جدید":
         keyboard = [
-            [KeyboardButton("🏠 محل کارفرما"), KeyboardButton("🏢 محل مجری")],
+            [KeyboardButton("🏠 محل من"), KeyboardButton("🏢 محل مجری"), KeyboardButton("💻 غیرحضوری")],
             [KeyboardButton("⬅️ بازگشت")]
         ]
         await update.message.reply_text(
@@ -38,9 +38,9 @@ async def handle_new_project_states(update: Update, context: ContextTypes.DEFAUL
     categories = context.user_data.get('categories', {})
 
     if state == 'service_location':
-        if text in ["🏠 محل کارفرما", "🏢 محل مجری"]:
-            context.user_data['service_location'] = 'client_site' if text == "🏠 محل کارفرما" else 'contractor_site'
-            if text == "🏠 محل کارفرما":
+        if text in ["🏠 محل من", "🏢 محل مجری"]:
+            context.user_data['service_location'] = 'client_site' if text == "🏠 محل من" else 'contractor_site'
+            if text == "🏠 محل من":
                 keyboard = [
                     [KeyboardButton("📍 ارسال لوکیشن فعلی", request_location=True)],
                     [KeyboardButton("🗺 انتخاب از روی نقشه")],
@@ -127,7 +127,7 @@ async def handle_new_project_states(update: Update, context: ContextTypes.DEFAUL
         context.user_data['description'] = text
         context.user_data['state'] = 'new_project_location'
         keyboard = [
-            [KeyboardButton("🏠 محل کارفرما"), KeyboardButton("🔧 محل مجری")],
+            [KeyboardButton("🏠 محل من"), KeyboardButton("🔧 محل مجری")],
             [KeyboardButton("💻 غیرحضوری"), KeyboardButton("⬅️ بازگشت")],
             [KeyboardButton("➡️ ادامه")]
         ]
@@ -156,9 +156,9 @@ async def handle_new_project_states(update: Update, context: ContextTypes.DEFAUL
                 reply_markup=create_dynamic_keyboard(context)
             )
             return True
-        elif text in ["🏠 محل کارفرما", "🔧 محل مجری", "💻 غیرحضوری"]:
-            context.user_data['service_location'] = {'🏠 محل کارفرما': 'client_site', '🔧 محل مجری': 'contractor_site', '💻 غیرحضوری': 'remote'}[text]
-            if text == "🏠 محل کارفرما":
+        elif text in ["🏠 محل من", "🔧 محل مجری", "💻 غیرحضوری"]:
+            context.user_data['service_location'] = {'🏠 محل من': 'client_site', '🔧 محل مجری': 'contractor_site', '💻 غیرحضوری': 'remote'}[text]
+            if text == "🏠 محل من":
                 context.user_data['state'] = 'new_project_location_input'
                 keyboard = [
                     [KeyboardButton("📍 انتخاب از نقشه", request_location=True), KeyboardButton("📲 ارسال موقعیت فعلی", request_location=True)],
@@ -183,7 +183,7 @@ async def handle_new_project_states(update: Update, context: ContextTypes.DEFAUL
         if text == "⬅️ بازگشت":
             context.user_data['state'] = 'new_project_location'
             keyboard = [
-                [KeyboardButton("🏠 محل کارفرما"), KeyboardButton("🔧 محل مجری")],
+                [KeyboardButton("🏠 محل من"), KeyboardButton("🔧 محل مجری")],
                 [KeyboardButton("💻 غیرحضوری"), KeyboardButton("⬅️ بازگشت")],
                 [KeyboardButton("➡️ ادامه")]
             ]
