@@ -1,6 +1,7 @@
 import os
 import sys
 import logging
+from telegram import KeyboardButton, ReplyKeyboardMarkup
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, CallbackQueryHandler
 from utils import save_timestamp, check_for_updates
 from handlers.start_handler import start
@@ -11,6 +12,7 @@ from handlers.message_handler import handle_message
 from handlers.callback_handler import handle_callback
 from handlers.new_project_handlers import handle_new_project
 from handlers.view_projects_handlers import handle_view_projects
+from handlers.project_details_handlers import handle_project_details  # اضافه شده
 
 # تنظیم لاگ‌ها
 logging.basicConfig(
