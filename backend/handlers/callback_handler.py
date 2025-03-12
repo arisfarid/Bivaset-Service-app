@@ -8,21 +8,33 @@ logger = logging.getLogger(__name__)
 
 async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
-    await query.answer()
+    data = query.data
+    logger.info(f"Callback data received: {data}")
     
-    logger.info(f"Callback data received: {query.data}")
-    
-    # Process the callback data
-    if query.data == 'new_project':
+    if data.isdigit():  # انتخاب دسته‌بندی
+        context.user_data['category_id'] = int(data)
+        project = {
+            'category': context.user_data['category_id']
+        }
+        cat_name = context.user_data.get('categories', {}).get(project['category'], {}).get('name', 'نامشخص')
+        keyboard = [
+            [InlineKeyboardButton("✅ ثبت", callback_data="submit_project")],
+            [InlineKeyboardButton("⬅️ بازگشت", callback_data="back_to_categories")]
+        ]
+        await query.edit_message_text(
+            f"دسته‌بندی انتخاب‌شده: {cat_name}\nحالا می‌تونی ثبت کنی یا برگردی:",
+            reply_markup=InlineKeyboardMarkup(keyboard)
+        )
+    elif data == 'new_project':
         handle_new_project(update, context)
-    elif query.data == 'view_projects':
+    elif data == 'view_projects':
         handle_view_projects(update, context)
-    elif query.data.startswith('project_details_'):
+    elif data.startswith('project_details_'):
         handle_project_details(update, context)
     else:
         await query.edit_message_text(text="Unknown callback data.")
     
-    project_id = query.data
+    project_id = data
     try:
         response = requests.get(f"{BASE_URL}projects/{project_id}/")
         if response.status_code == 200:
