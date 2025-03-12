@@ -8,7 +8,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = update.message.text
     telegram_id = str(update.effective_user.id)
     
-    if text == "👔درخواست خدمات (کارفرما)":
+    if text == "درخواست خدمات | کارفرما 👔":
         keyboard = [
             [KeyboardButton("📋 درخواست خدمات جدید"), KeyboardButton("📊 مشاهده درخواست‌ها")],
             [KeyboardButton("⬅️ بازگشت")]
@@ -18,7 +18,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
             reply_markup=ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
         )
         return
-    elif text == "🦺 پیشنهاد قیمت (مجری)":
+    elif text == "پیشنهاد قیمت | مجری 🦺":
         keyboard = [
             [KeyboardButton("📋 مشاهده درخواست‌ها"), KeyboardButton("💡 پیشنهاد کار")],
             [KeyboardButton("⬅️ بازگشت")]
