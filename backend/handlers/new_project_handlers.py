@@ -1,9 +1,24 @@
 from telegram import Update, KeyboardButton, ReplyKeyboardMarkup
 from telegram.ext import ContextTypes
+import logging
 from utils import get_categories
 from .start_handler import start
 
+logger = logging.getLogger(__name__)
+
 async def handle_new_project(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    text = update.message.text
+    if text == "📋 درخواست خدمات جدید":
+        keyboard = [
+            [KeyboardButton("🏠 محل کارفرما"), KeyboardButton("🏢 محل مجری")],
+            [KeyboardButton("⬅️ بازگشت")]
+        ]
+        await update.message.reply_text(
+            "📍 پروژه کجا باید انجام بشه؟",
+            reply_markup=ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
+        )
+        context.user_data['state'] = 'service_location'
+        return True
     context.user_data.clear()
     context.user_data['categories'] = await get_categories()
     context.user_data['state'] = 'new_project_category'
@@ -21,6 +36,32 @@ async def handle_new_project(update: Update, context: ContextTypes.DEFAULT_TYPE)
 async def handle_new_project_states(update: Update, context: ContextTypes.DEFAULT_TYPE, text: str):
     state = context.user_data.get('state')
     categories = context.user_data.get('categories', {})
+
+    if state == 'service_location':
+        if text in ["🏠 محل کارفرما", "🏢 محل مجری"]:
+            context.user_data['service_location'] = 'client_site' if text == "🏠 محل کارفرما" else 'contractor_site'
+            if text == "🏠 محل کارفرما":
+                keyboard = [
+                    [KeyboardButton("📍 ارسال لوکیشن فعلی", request_location=True)],
+                    [KeyboardButton("🗺 انتخاب از روی نقشه")],
+                    [KeyboardButton("⬅️ بازگشت")]
+                ]
+                await update.message.reply_text(
+                    "📍 لطفاً لوکیشن کارفرما رو مشخص کن:",
+                    reply_markup=ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
+                )
+            else:
+                context.user_data['state'] = 'category'
+                await update.message.reply_text("📌 لطفاً دسته‌بندی خدمات رو انتخاب کن:")
+            return True
+        elif text == "⬅️ بازگشت":
+            await start(update, context)
+            return True
+    elif state == 'service_location' and text == "🗺 انتخاب از روی نقشه":
+        await update.message.reply_text(
+            "🗺 لطفاً از دکمه پیوست (📎) تلگرام استفاده کن، گزینه 'Location' رو بزن و محل رو از روی نقشه انتخاب کن."
+        )
+        return True
 
     if state == 'new_project_category':
         if text == "⬅️ بازگشت":
