@@ -7,7 +7,7 @@ async def handle_role(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int
         context.user_data['role'] = 'client'
         await update.message.reply_text("عالیه! 😊 لطفاً پروژه‌ت رو تعریف کن.")
         return 2  # Move to project submission state
-    elif choice == "🦺پیشنهاد قیمت (مجری)":
+    elif choice == "🦺 پیشنهاد قیمت (مجری)":
         context.user_data['role'] = 'contractor'
         await update.message.reply_text("خوبه! 😊 حالا می‌تونی پروژه‌ها رو ببینی و پیشنهاد بدی.")
         return 3  # Move to proposal submission state
