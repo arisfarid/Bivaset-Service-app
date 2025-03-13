@@ -94,3 +94,4 @@ save_timestamp()
 
 logger.info("Bot is starting polling...")
 app.run_polling()
+.
