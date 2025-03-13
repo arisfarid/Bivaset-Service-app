@@ -4,7 +4,7 @@ import logging
 from telegram import KeyboardButton, ReplyKeyboardMarkup
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, CallbackQueryHandler, ConversationHandler
 from utils import save_timestamp, check_for_updates
-from handlers.start_handler import start, handle_contact, check_phone
+from handlers.start_handler import start, handle_contact, check_phone, handle_role  # Update import
 from handlers.location_handler import handle_location
 from handlers.photo_handler import handle_photo
 from handlers.message_handler import handle_message
@@ -58,7 +58,7 @@ def main():
         entry_points=[CommandHandler('start', start)],
         states={
             0: [MessageHandler(filters.CONTACT, handle_contact)],
-            1: [MessageHandler(filters.TEXT & ~filters.COMMAND, role_handler)],
+            1: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_role)],  # Update state 1
             2: [],
             3: []
         },
