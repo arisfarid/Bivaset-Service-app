@@ -1,7 +1,7 @@
 import os
 import sys
 import logging
-from telegram import KeyboardButton, ReplyKeyboardMarkup, Bot, Update, Message, Chat
+from telegram import KeyboardButton, ReplyKeyboardMarkup, Bot, Update, Message, Chat, User
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, CallbackQueryHandler, ConversationHandler, ContextTypes
 
 from utils import save_timestamp, check_for_updates
@@ -41,14 +41,15 @@ async def send_update_and_restart(token: str, active_chats: list, context: Conte
                 message=Message(
                     message_id=0,
                     chat=Chat(id=chat_id, type='private'),
-                    date=None
+                    date=None,
+                    from_user=User(id=chat_id, is_bot=False, first_name="BotUpdate")
                 )
             )
             await start(fake_update, context)
-            save_timestamp()  # Save timestamp only after successful update
             logger.info(f"Restarted bot for chat {chat_id}")
         except Exception as e:
             logger.error(f"Failed to process update for {chat_id}: {e}")
+    save_timestamp()  # Save timestamp after attempting updates
 
 async def check_and_notify(context: ContextTypes.DEFAULT_TYPE):
     logger.info("Checking for updates...")
@@ -100,3 +101,4 @@ app.run_polling()
 # Updated at Thu Mar 13 18:50:18 UTC 2025
 # Updated at Thu Mar 13 18:59:44 UTC 2025
 # Updated at Thu Mar 13 19:15:28 UTC 2025
+# Updated at Thu Mar 13 22:22:03 UTC 2025
