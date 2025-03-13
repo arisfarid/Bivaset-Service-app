@@ -30,11 +30,10 @@ logging.getLogger('apscheduler').setLevel(logging.WARNING)
 TOKEN = os.getenv('TELEGRAM_BOT_TOKEN')
 
 async def send_update_and_restart(token: str, active_chats: list, context: ContextTypes.DEFAULT_TYPE):
-    bot = Bot(token)
     logger.info(f"Starting update and restart for {len(active_chats)} chats")
     for chat_id in active_chats:
         try:
-            await bot.send_message(chat_id=chat_id, text="🎉 ربات آپدیت شد! لطفاً ادامه بدهید.", disable_notification=True)
+            await context.bot.send_message(chat_id=chat_id, text="🎉 ربات آپدیت شد! لطفاً ادامه بدهید.", disable_notification=True)
             logger.info(f"Sent update notification to {chat_id}")
             # Simulate /start for this chat
             fake_update = Update(
@@ -50,14 +49,14 @@ async def send_update_and_restart(token: str, active_chats: list, context: Conte
         except Exception as e:
             logger.error(f"Failed to process update for {chat_id}: {e}")
 
-async def check_and_notify(application: Application):
+async def check_and_notify(context: ContextTypes.DEFAULT_TYPE):
     logger.info("Checking for updates...")
-    logger.info(f"Bot data: {application.bot_data}")
-    if check_for_updates(application.bot_data):
+    logger.info(f"Bot data: {context.bot_data}")
+    if check_for_updates(context.bot_data):
         logger.info("Update detected, sending notifications...")
-        active_chats = application.bot_data.get('active_chats', [])
+        active_chats = context.bot_data.get('active_chats', [])
         logger.info(f"Active chats: {active_chats}")
-        await send_update_and_restart(TOKEN, active_chats, application.context)
+        await send_update_and_restart(TOKEN, active_chats, context)
     save_timestamp()
 
 async def test_job(application: Application):
@@ -98,3 +97,4 @@ app.job_queue.run_repeating(check_and_notify, interval=10, first=0, data=app)
 logger.info("Bot is starting polling...")
 app.run_polling()
 # Updated at Thu Mar 13 18:40:04 UTC 2025
+# Updated at Thu Mar 13 18:50:18 UTC 2025
