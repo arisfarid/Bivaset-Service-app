@@ -6,6 +6,7 @@ import logging
 from .new_project_handlers import handle_new_project
 from .view_projects_handlers import handle_view_projects
 from .project_details_handlers import handle_project_details
+from .start_handler import start  # برای استفاده از تابع start
 
 logger = logging.getLogger(__name__)
 
@@ -13,12 +14,14 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     data = query.data
     logger.info(f"Callback data received: {data}")
+    await query.answer()  # پاسخ به query
     
-    if data.isdigit():  # انتخاب دسته‌بندی
+    if data == 'restart':
+        logger.info(f"Restart requested by {query.from_user.id}")
+        await start(update, context)  # تابع start رو صدا می‌کنیم
+    elif data.isdigit():  # انتخاب دسته‌بندی
         context.user_data['category_id'] = int(data)
-        project = {
-            'category': context.user_data['category_id']
-        }
+        project = {'category': context.user_data['category_id']}
         cat_name = context.user_data.get('categories', {}).get(project['category'], {}).get('name', 'نامشخص')
         keyboard = [
             [InlineKeyboardButton("✅ ثبت", callback_data="submit_project")],
@@ -35,35 +38,34 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     elif data.startswith('project_details_'):
         await handle_project_details(update, context)
     else:
-        await query.edit_message_text(text="Unknown callback data.")
-    
-    project_id = data
-    try:
-        response = requests.get(f"{BASE_URL}projects/{project_id}/")
-        if response.status_code == 200:
-            project = response.json()
-            cat_name = context.user_data['categories'][project['category']]['name']
-            summary = f"📋 *درخواست {project['id']}*\n" \
-                      f"📌 *دسته‌بندی*: {cat_name}\n" \
-                      f"📝 *توضیحات*: {project['description']}\n" \
-                      f"📍 *موقعیت*: {'غیرحضوری' if project['service_location'] == 'remote' else 'نمایش روی نقشه'}\n"
-            if project.get('budget'):
-                summary += f"💰 *بودجه*: {project['budget']} تومان\n"
-            if project.get('deadline_date'):
-                summary += f"⏳ *مهلت*: {project['deadline_date']}\n"
-            if project.get('start_date'):
-                summary += f"📅 *شروع*: {project['start_date']}\n"
-            if project.get('files'):
-                summary += "📸 *تصاویر*:\n" + "\n".join([f"- [عکس]({f})" for f in project['files']])
-            inline_keyboard = [
-                [InlineKeyboardButton("✏️ ویرایش", callback_data=f"edit_{project_id}"),
-                 InlineKeyboardButton("⏰ تمدید", callback_data=f"extend_{project_id}")],
-                [InlineKeyboardButton("🗑 حذف", callback_data=f"delete_{project_id}"),
-                 InlineKeyboardButton("✅ بستن", callback_data=f"close_{project_id}")],
-                [InlineKeyboardButton("💬 پیشنهادها", callback_data=f"proposals_{project_id}")]
-            ]
-            await query.edit_message_text(summary, parse_mode='Markdown', reply_markup=InlineKeyboardMarkup(inline_keyboard))
-        else:
-            await query.edit_message_text(f"❌ خطا در دریافت اطلاعات: {response.status_code}")
-    except requests.exceptions.ConnectionError:
-        await query.edit_message_text("❌ خطا: سرور بک‌اند در دسترس نیست.")
+        # مدیریت جزئیات پروژه (بخش دوم کدت)
+        project_id = data
+        try:
+            response = requests.get(f"{BASE_URL}projects/{project_id}/")
+            if response.status_code == 200:
+                project = response.json()
+                cat_name = context.user_data['categories'][project['category']]['name']
+                summary = f"📋 *درخواست {project['id']}*\n" \
+                          f"📌 *دسته‌بندی*: {cat_name}\n" \
+                          f"📝 *توضیحات*: {project['description']}\n" \
+                          f"📍 *موقعیت*: {'غیرحضوری' if project['service_location'] == 'remote' else 'نمایش روی نقشه'}\n"
+                if project.get('budget'):
+                    summary += f"💰 *بودجه*: {project['budget']} تومان\n"
+                if project.get('deadline_date'):
+                    summary += f"⏳ *مهلت*: {project['deadline_date']}\n"
+                if project.get('start_date'):
+                    summary += f"📅 *شروع*: {project['start_date']}\n"
+                if project.get('files'):
+                    summary += "📸 *تصاویر*:\n" + "\n".join([f"- [عکس]({f})" for f in project['files']])
+                inline_keyboard = [
+                    [InlineKeyboardButton("✏️ ویرایش", callback_data=f"edit_{project_id}"),
+                     InlineKeyboardButton("⏰ تمدید", callback_data=f"extend_{project_id}")],
+                    [InlineKeyboardButton("🗑 حذف", callback_data=f"delete_{project_id}"),
+                     InlineKeyboardButton("✅ بستن", callback_data=f"close_{project_id}")],
+                    [InlineKeyboardButton("💬 پیشنهادها", callback_data=f"proposals_{project_id}")]
+                ]
+                await query.edit_message_text(summary, parse_mode='Markdown', reply_markup=InlineKeyboardMarkup(inline_keyboard))
+            else:
+                await query.edit_message_text(f"❌ خطا در دریافت اطلاعات: {response.status_code}")
+        except requests.exceptions.ConnectionError:
+            await query.edit_message_text("❌ خطا: سرور بک‌اند در دسترس نیست.")

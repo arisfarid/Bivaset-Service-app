@@ -15,7 +15,7 @@ async def check_phone(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int
     else:
         keyboard = [[KeyboardButton("ثبت شماره تلفن", request_contact=True)]]
         reply_markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True, one_time_keyboard=True)
-        await update.message.reply_text(
+        await update.effective_message.reply_text(
             " 😊 برای استفاده از امکانات ربات، لطفاً شماره تلفنت رو با دکمه زیر ثبت کن! 📱",
             reply_markup=reply_markup
         )
@@ -49,37 +49,46 @@ async def handle_role(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int
     if choice == "درخواست خدمات | کارفرما 👔":
         context.user_data['role'] = 'client'
         await update.message.reply_text("عالیه! 😊 لطفاً پروژه‌ت رو تعریف کن.")
-        return 2  # Move to project submission state
+        return 2
     elif choice == "پیشنهاد قیمت | مجری 🦺":
         context.user_data['role'] = 'contractor'
         await update.message.reply_text("خوبه! 😊 حالا می‌تونی پروژه‌ها رو ببینی و پیشنهاد بدی.")
-        return 3  # Move to proposal submission state
+        return 3
     else:
         await update.message.reply_text("❌ گزینه نامعتبر! لطفاً از منو انتخاب کن.")
-        return 1  # Stay in role selection state
+        return 1
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     logger.info("Start command received")
     name = update.effective_user.full_name or "کاربر"
     telegram_id = str(update.effective_user.id)
+    chat_id = update.effective_chat.id
+
+    # اضافه کردن چت به active_chats
+    if 'active_chats' not in context.bot_data:
+        context.bot_data['active_chats'] = []
+    if chat_id not in context.bot_data['active_chats']:
+        context.bot_data['active_chats'].append(chat_id)
+        logger.info(f"Updated active_chats: {context.bot_data['active_chats']}")
+
+    # چک کردن اینکه از پیام اومده یا callback
     phone = await get_user_phone(telegram_id)
     if phone and phone != f"tg_{telegram_id}":
         context.user_data['phone'] = phone
+
     keyboard = [
         ["درخواست خدمات | کارفرما 👔"],
         ["پیشنهاد قیمت | مجری 🦺"]
     ]
     reply_markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True, one_time_keyboard=True)
-    await update.message.reply_text(
+    message = (
         f"👋 سلام {name}! به ربات خدمات بی‌واسط خوش اومدی.\n"
-        "من رایگان کمکت می‌کنم برای خدمات مورد نیازت، مجری کاربلد پیدا کنی یا کار مرتبط با تخصصت پیدا کنی. چی می‌خوای امروز؟ 🌟",
-        reply_markup=reply_markup
+        "من رایگان کمکت می‌کنم برای خدمات مورد نیازت، مجری کاربلد پیدا کنی یا کار مرتبط با تخصصت پیدا کنی. چی می‌خوای امروز؟ 🌟"
     )
-    if 'active_chats' not in context.bot_data:
-        context.bot_data['active_chats'] = []
-    if update.effective_chat.id not in context.bot_data['active_chats']:
-        context.bot_data['active_chats'].append(update.effective_chat.id)
-        logger.info(f"Updated active_chats: {context.bot_data['active_chats']}")
+    if update.message:  # اگه از /start اومده
+        await update.message.reply_text(message, reply_markup=reply_markup)
+    elif update.callback_query:  # اگه از دکمه اومده
+        await context.bot.send_message(chat_id=chat_id, text=message, reply_markup=reply_markup)
 
 start_handler = CommandHandler('start', start)
 role_handler = MessageHandler(filters.TEXT & ~filters.COMMAND, handle_role)

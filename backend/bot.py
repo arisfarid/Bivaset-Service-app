@@ -1,17 +1,26 @@
 import os
 import sys
 import logging
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update, Message, Chat, User
-from telegram.ext import Application, CommandHandler, CallbackQueryHandler, ContextTypes
-
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, KeyboardButton, ReplyKeyboardMarkup, Bot, Update, Message, Chat, User
+from telegram.ext import Application, CommandHandler, MessageHandler, filters, CallbackQueryHandler, ConversationHandler, ContextTypes
 from utils import save_timestamp, check_for_updates
-from handlers.start_handler import start
+from handlers.start_handler import start, handle_contact, check_phone, handle_role
+from handlers.location_handler import handle_location
+from handlers.photo_handler import handle_photo
+from handlers.message_handler import handle_message
+from handlers.callback_handler import handle_callback
+from handlers.new_project_handlers import handle_new_project
+from handlers.view_projects_handlers import handle_view_projects
+from handlers.project_details_handlers import handle_project_details
 
 # تنظیم لاگ‌ها
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     level=logging.INFO,
-    handlers=[logging.FileHandler("bot.log"), logging.StreamHandler()]
+    handlers=[
+        logging.FileHandler("bot.log"),
+        logging.StreamHandler()
+    ]
 )
 logger = logging.getLogger(__name__)
 logging.getLogger('httpx').setLevel(logging.WARNING)
@@ -19,10 +28,12 @@ logging.getLogger('apscheduler').setLevel(logging.WARNING)
 
 TOKEN = os.getenv('TELEGRAM_BOT_TOKEN')
 
-async def send_update_notification(token: str, active_chats: list, context: ContextTypes.DEFAULT_TYPE):
-    logger.info(f"Sending update notification to {len(active_chats)} chats")
+async def send_update_and_restart(token: str, active_chats: list, context: ContextTypes.DEFAULT_TYPE):
+    logger.info(f"Starting update and restart for {len(active_chats)} chats")
+    updated = False
     for chat_id in active_chats:
         try:
+            # ارسال پیام آپدیت با دکمه
             keyboard = [[InlineKeyboardButton("راه‌اندازی مجدد", callback_data='restart')]]
             reply_markup = InlineKeyboardMarkup(keyboard)
             await context.bot.send_message(
@@ -32,17 +43,12 @@ async def send_update_notification(token: str, active_chats: list, context: Cont
                 disable_notification=True
             )
             logger.info(f"Sent update notification to {chat_id}")
+            updated = True
         except Exception as e:
             logger.error(f"Failed to send update to {chat_id}: {e}")
-    context.bot_data['last_update_processed'] = True  # نشون می‌دیم که آپدیت پردازش شده
-    save_timestamp()  # زمان رو ذخیره می‌کنیم
-
-async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    query = update.callback_query
-    await query.answer()
-    if query.data == 'restart':
-        logger.info(f"Restart requested by {query.from_user.id}")
-        await start(update, context)
+    if active_chats and updated:
+        context.bot_data['last_update_processed'] = True
+        save_timestamp()
 
 async def check_and_notify(context: ContextTypes.DEFAULT_TYPE):
     logger.info("Checking for updates...")
@@ -52,10 +58,10 @@ async def check_and_notify(context: ContextTypes.DEFAULT_TYPE):
         logger.info("Update detected, sending notifications...")
         active_chats = context.bot_data.get('active_chats', [])
         logger.info(f"Active chats: {active_chats}")
-        if active_chats:  # فقط اگه چت فعال باشه پیام بفرست
-            await send_update_notification(TOKEN, active_chats, context)
-        else:
-            logger.info("No active chats yet, skipping notification")
+        await send_update_and_restart(TOKEN, active_chats, context)
+
+async def test_job(application: Application):
+    logger.info("Test job running every 5 seconds")
 
 if not TOKEN:
     logger.error("Error: TELEGRAM_BOT_TOKEN environment variable not set.")
@@ -66,10 +72,28 @@ logger.info(f"Using Telegram Bot Token: {TOKEN[:10]}...")
 app = Application.builder().token(TOKEN).build()
 
 app.add_handler(CommandHandler("start", start))
+app.add_handler(MessageHandler(filters.CONTACT, handle_contact))
+app.add_handler(MessageHandler(filters.LOCATION, handle_location))
+app.add_handler(MessageHandler(filters.PHOTO, handle_photo))
+app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
 app.add_handler(CallbackQueryHandler(handle_callback))
 
-# Add periodic job for update check
-app.job_queue.run_repeating(check_and_notify, interval=10, first=0)
+# ConversationHandler setup
+conv_handler = ConversationHandler(
+    entry_points=[CommandHandler('start', start)],
+    states={
+        0: [MessageHandler(filters.CONTACT, handle_contact)],
+        1: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_role)],
+        2: [],
+        3: []
+    },
+    fallbacks=[CommandHandler('cancel', start)]
+)
+app.add_handler(conv_handler)
+
+# Add periodic jobs
+app.job_queue.run_repeating(test_job, interval=5, first=0, data=app)
+app.job_queue.run_repeating(check_and_notify, interval=10, first=0, data=app)
 
 logger.info("Bot is starting polling...")
 app.run_polling()
