@@ -23,7 +23,6 @@ async def send_update_notification(token: str, active_chats: list, context: Cont
     logger.info(f"Sending update notification to {len(active_chats)} chats")
     for chat_id in active_chats:
         try:
-            # دکمه شیشه‌ای برای ری‌استارت
             keyboard = [[InlineKeyboardButton("راه‌اندازی مجدد", callback_data='restart')]]
             reply_markup = InlineKeyboardMarkup(keyboard)
             await context.bot.send_message(
@@ -35,24 +34,28 @@ async def send_update_notification(token: str, active_chats: list, context: Cont
             logger.info(f"Sent update notification to {chat_id}")
         except Exception as e:
             logger.error(f"Failed to send update to {chat_id}: {e}")
-    save_timestamp()  # زمان رو ذخیره می‌کنیم تا تکرار نشه
+    context.bot_data['last_update_processed'] = True  # نشون می‌دیم که آپدیت پردازش شده
+    save_timestamp()  # زمان رو ذخیره می‌کنیم
 
 async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
     if query.data == 'restart':
         logger.info(f"Restart requested by {query.from_user.id}")
-        # شبیه‌سازی اجرای /start
         await start(update, context)
 
 async def check_and_notify(context: ContextTypes.DEFAULT_TYPE):
     logger.info("Checking for updates...")
     logger.info(f"Bot data: {context.bot_data}")
-    if check_for_updates(context.bot_data):
+    last_update_processed = context.bot_data.get('last_update_processed', False)
+    if check_for_updates(context.bot_data) and not last_update_processed:
         logger.info("Update detected, sending notifications...")
         active_chats = context.bot_data.get('active_chats', [])
         logger.info(f"Active chats: {active_chats}")
-        await send_update_notification(TOKEN, active_chats, context)
+        if active_chats:  # فقط اگه چت فعال باشه پیام بفرست
+            await send_update_notification(TOKEN, active_chats, context)
+        else:
+            logger.info("No active chats yet, skipping notification")
 
 if not TOKEN:
     logger.error("Error: TELEGRAM_BOT_TOKEN environment variable not set.")
