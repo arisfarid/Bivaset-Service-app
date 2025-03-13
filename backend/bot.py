@@ -35,6 +35,7 @@ async def send_update_and_restart(token: str, active_chats: list, application: A
     context.bot_data = application.bot_data
     context.job_queue = application.job_queue
 
+    logger.info(f"Starting update and restart for {len(active_chats)} chats")
     for chat_id in active_chats:
         try:
             await bot.send_message(chat_id=chat_id, text="🎉 ربات آپدیت شد! لطفاً ادامه بدهید.", disable_notification=True)
@@ -54,11 +55,16 @@ async def send_update_and_restart(token: str, active_chats: list, application: A
             logger.error(f"Failed to process update for {chat_id}: {e}")
 
 async def check_and_notify(application: Application):
+    logger.info("Checking for updates...")
     if check_for_updates(application.bot_data):
         logger.info("Update detected, sending notifications...")
         active_chats = application.bot_data.get('active_chats', [])
+        logger.info(f"Active chats: {active_chats}")
         await send_update_and_restart(TOKEN, active_chats, application)
         save_timestamp()
+
+async def test_job(application: Application):
+    logger.info("Test job running every 5 seconds")
 
 if not TOKEN:
     logger.error("Error: TELEGRAM_BOT_TOKEN environment variable not set.")
@@ -88,7 +94,8 @@ conv_handler = ConversationHandler(
 )
 app.add_handler(conv_handler)
 
-# Add periodic update check
+# Add periodic jobs
+app.job_queue.run_repeating(test_job, interval=5, first=0, data=app)
 app.job_queue.run_repeating(check_and_notify, interval=10, first=0, data=app)
 save_timestamp()
 

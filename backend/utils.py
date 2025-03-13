@@ -62,7 +62,10 @@ def load_timestamp():
 def check_for_updates(bot_data):
     last_mod_time = get_last_mod_time()
     saved_time = load_timestamp()
-    return last_mod_time > saved_time
+    logger.info(f"Last mod time: {last_mod_time}, Saved time: {saved_time}")
+    result = last_mod_time > saved_time
+    logger.info(f"Update check result: {result}")
+    return result
 
 # بقیه توابع بدون تغییر
 def persian_to_english(text):
