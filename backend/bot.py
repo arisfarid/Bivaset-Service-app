@@ -45,10 +45,10 @@ async def send_update_and_restart(token: str, active_chats: list, context: Conte
                 )
             )
             await start(fake_update, context)
+            save_timestamp()  # Save timestamp only after successful update
             logger.info(f"Restarted bot for chat {chat_id}")
         except Exception as e:
             logger.error(f"Failed to process update for {chat_id}: {e}")
-    save_timestamp()  # Save timestamp after successful update
 
 async def check_and_notify(context: ContextTypes.DEFAULT_TYPE):
     logger.info("Checking for updates...")
@@ -99,3 +99,4 @@ app.run_polling()
 # Updated at Thu Mar 13 18:40:04 UTC 2025
 # Updated at Thu Mar 13 18:50:18 UTC 2025
 # Updated at Thu Mar 13 18:59:44 UTC 2025
+# Updated at Thu Mar 13 19:15:28 UTC 2025
