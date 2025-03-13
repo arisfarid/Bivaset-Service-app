@@ -54,7 +54,7 @@ async def send_update_and_restart(token: str, active_chats: list, application: A
             logger.error(f"Failed to process update for {chat_id}: {e}")
 
 async def check_and_notify(application: Application):
-    if check_for_updates():
+    if check_for_updates(application.bot_data):
         logger.info("Update detected, sending notifications...")
         active_chats = application.bot_data.get('active_chats', [])
         await send_update_and_restart(TOKEN, active_chats, application)

@@ -59,20 +59,12 @@ def load_timestamp():
             return float(f.read())
     return 0
 
-async def check_for_updates(context):
+def check_for_updates(bot_data):
     last_mod_time = get_last_mod_time()
     saved_time = load_timestamp()
-    if last_mod_time > saved_time:
-        print("Code updated, restarting bot...")
-        save_timestamp()
-        for chat_id in context.bot_data.get('active_chats', []):
-            await context.bot.send_message(
-                chat_id=chat_id,
-                text="🎉 ربات آپدیت شد! خدمات جدید رو امتحان کن.",
-                disable_notification=True
-            )
-        os.execv(sys.executable, [sys.executable] + sys.argv)
+    return last_mod_time > saved_time
 
+# بقیه توابع بدون تغییر
 def persian_to_english(text):
     persian_digits = '۰۱۲۳۴۵۶۷۸۹'
     english_digits = '0123456789'
