@@ -3,6 +3,9 @@ from telegram.ext import ContextTypes
 import requests
 from utils import BASE_URL
 import logging
+from .new_project_handlers import handle_new_project
+from .view_projects_handlers import handle_view_projects
+from .project_details_handlers import handle_project_details
 
 logger = logging.getLogger(__name__)
 
@@ -26,11 +29,11 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             reply_markup=InlineKeyboardMarkup(keyboard)
         )
     elif data == 'new_project':
-        handle_new_project(update, context)
+        await handle_new_project(update, context)
     elif data == 'view_projects':
-        handle_view_projects(update, context)
+        await handle_view_projects(update, context)
     elif data.startswith('project_details_'):
-        handle_project_details(update, context)
+        await handle_project_details(update, context)
     else:
         await query.edit_message_text(text="Unknown callback data.")
     

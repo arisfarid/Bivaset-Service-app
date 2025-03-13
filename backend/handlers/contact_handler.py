@@ -2,7 +2,7 @@ from telegram import Update
 from telegram.ext import ContextTypes
 import requests
 from utils import BASE_URL
-from .start_handler import start  # Import the start function
+from .start_handler import start
 
 async def handle_contact(update: Update, context: ContextTypes.DEFAULT_TYPE):
     contact = update.message.contact

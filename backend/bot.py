@@ -12,9 +12,9 @@ from handlers.message_handler import handle_message
 from handlers.callback_handler import handle_callback
 from handlers.new_project_handlers import handle_new_project
 from handlers.view_projects_handlers import handle_view_projects
-from handlers.project_details_handlers import handle_project_details  # اضافه شده
-from handlers.register_phone_handlers import check_phone, handle_contact  # اضافه شده
-from handlers.role_handler import role_handler  # اضافه شده
+from handlers.project_details_handlers import handle_project_details
+from handlers.register_phone_handlers import check_phone  # removed duplicate import
+from handlers.role_handler import role_handler
 
 # تنظیم لاگ‌ها
 logging.basicConfig(
