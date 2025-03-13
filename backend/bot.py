@@ -63,6 +63,7 @@ async def check_and_notify(application: Application):
         await send_update_and_restart(TOKEN, active_chats, application)
         save_timestamp()
 
+
 async def test_job(application: Application):
     logger.info("Test job running every 5 seconds")
 
