@@ -4,7 +4,7 @@ PROJECT_DIR="/home/ubuntu/Bivaset-Service-app/backend"
 
 echo "Updating from GitHub..."
 cd "$PROJECT_DIR" || { echo "Failed to enter project directory"; exit 1; }
-python3 -c "from utils import save_timestamp; save_timestamp()"  # ذخیره timestamp قبل از آپدیت
+python3 -c "from utils import save_timestamp; save_timestamp()"  # ذخیره timestamp قبل از هر تغییر
 git fetch origin
 git reset --hard origin/main
 echo "# Updated at $(date)" >> bot.py  # تغییر زمان فایل bot.py

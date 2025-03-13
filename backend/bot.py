@@ -98,7 +98,6 @@ app.add_handler(conv_handler)
 # Add periodic jobs
 app.job_queue.run_repeating(test_job, interval=5, first=0, data=app)
 app.job_queue.run_repeating(check_and_notify, interval=10, first=0, data=app)
-save_timestamp()
 
 logger.info("Bot is starting polling...")
 app.run_polling()
