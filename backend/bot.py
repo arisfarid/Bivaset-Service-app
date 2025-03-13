@@ -48,6 +48,7 @@ async def send_update_and_restart(token: str, active_chats: list, context: Conte
             logger.info(f"Restarted bot for chat {chat_id}")
         except Exception as e:
             logger.error(f"Failed to process update for {chat_id}: {e}")
+    save_timestamp()  # Save timestamp after successful update
 
 async def check_and_notify(context: ContextTypes.DEFAULT_TYPE):
     logger.info("Checking for updates...")
@@ -57,7 +58,6 @@ async def check_and_notify(context: ContextTypes.DEFAULT_TYPE):
         active_chats = context.bot_data.get('active_chats', [])
         logger.info(f"Active chats: {active_chats}")
         await send_update_and_restart(TOKEN, active_chats, context)
-    save_timestamp()
 
 async def test_job(application: Application):
     logger.info("Test job running every 5 seconds")
@@ -98,3 +98,4 @@ logger.info("Bot is starting polling...")
 app.run_polling()
 # Updated at Thu Mar 13 18:40:04 UTC 2025
 # Updated at Thu Mar 13 18:50:18 UTC 2025
+# Updated at Thu Mar 13 18:59:44 UTC 2025
