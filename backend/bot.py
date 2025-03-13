@@ -1,7 +1,7 @@
 import os
 import sys
 import logging
-from telegram import KeyboardButton, ReplyKeyboardMarkup, Bot
+from telegram import KeyboardButton, ReplyKeyboardMarkup, Bot, Update, Message, Chat
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, CallbackQueryHandler, ConversationHandler
 from utils import save_timestamp, check_for_updates
 from handlers.start_handler import start, handle_contact, check_phone, handle_role
@@ -28,19 +28,37 @@ logging.getLogger('apscheduler').setLevel(logging.WARNING)
 
 TOKEN = os.getenv('TELEGRAM_BOT_TOKEN')
 
-async def send_update_notification(token: str, active_chats: list):
+async def send_update_and_restart(token: str, active_chats: list, application: Application):
     bot = Bot(token)
+    context = application.create_context()
+    context.bot = bot
+    context.bot_data = application.bot_data
+    context.job_queue = application.job_queue
+
     for chat_id in active_chats:
         try:
             await bot.send_message(chat_id=chat_id, text="🎉 ربات آپدیت شد! لطفاً ادامه بدهید.", disable_notification=True)
             logger.info(f"Sent update notification to {chat_id}")
+            # Simulate /start for this chat
+            fake_update = Update(
+                update_id=0,
+                message=Message(
+                    message_id=0,
+                    chat=Chat(id=chat_id, type='private'),
+                    date=None
+                )
+            )
+            await start(fake_update, context)
+            logger.info(f"Restarted bot for chat {chat_id}")
         except Exception as e:
-            logger.error(f"Failed to send update notification to {chat_id}: {e}")
+            logger.error(f"Failed to process update for {chat_id}: {e}")
 
-async def post_init(application: Application):
-    if 'active_chats' in application.bot_data:
-        await send_update_notification(TOKEN, application.bot_data['active_chats'])
-        application.bot_data['active_chats'] = []
+async def check_and_notify(application: Application):
+    if check_for_updates():
+        logger.info("Update detected, sending notifications...")
+        active_chats = application.bot_data.get('active_chats', [])
+        await send_update_and_restart(TOKEN, active_chats, application)
+        save_timestamp()
 
 if not TOKEN:
     logger.error("Error: TELEGRAM_BOT_TOKEN environment variable not set.")
@@ -70,9 +88,9 @@ conv_handler = ConversationHandler(
 )
 app.add_handler(conv_handler)
 
-app.job_queue.run_repeating(check_for_updates, interval=10)
+# Add periodic update check
+app.job_queue.run_repeating(check_and_notify, interval=10, first=0, data=app)
 save_timestamp()
-app.post_init = post_init
 
 logger.info("Bot is starting polling...")
 app.run_polling()
