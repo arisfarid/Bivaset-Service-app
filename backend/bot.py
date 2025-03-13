@@ -1,10 +1,11 @@
 import os
 import sys
 import logging
-from telegram import KeyboardButton, ReplyKeyboardMarkup
+from telegram import KeyboardButton, ReplyKeyboardMarkup, Bot  # Add Bot import
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, CallbackQueryHandler, ConversationHandler
+import asyncio  # Add asyncio import
 from utils import save_timestamp, check_for_updates
-from handlers.start_handler import start, handle_contact, check_phone, handle_role  # Update import
+from handlers.start_handler import start, handle_contact, check_phone, handle_role
 from handlers.location_handler import handle_location
 from handlers.photo_handler import handle_photo
 from handlers.message_handler import handle_message
@@ -37,7 +38,15 @@ async def notify_update(context):
                 disable_notification=True  # بی‌صدا
             )
 
-def main():
+async def send_update_notification(token: str, active_chats: list):
+    bot = Bot(token)
+    for chat_id in active_chats:
+        try:
+            await bot.send_message(chat_id=chat_id, text="🎉 ربات آپدیت شد! لطفاً ادامه بدهید.", disable_notification=True)
+        except Exception as e:
+            logging.info(f"Failed to send update notification to {chat_id}: {e}")
+
+async def main():
     if not TOKEN:
         logger.error("Error: TELEGRAM_BOT_TOKEN environment variable not set.")
         sys.exit(1)
@@ -45,6 +54,11 @@ def main():
     logger.info(f"Using Telegram Bot Token: {TOKEN[:10]}...")
     
     app = Application.builder().token(TOKEN).build()
+    
+    if 'active_chats' in app.bot_data:
+        await send_update_notification(TOKEN, app.bot_data['active_chats'])
+        app.bot_data['active_chats'] = []
+
     app.add_handler(CommandHandler("start", start))
     app.add_handler(MessageHandler(filters.CONTACT, handle_contact))
     app.add_handler(MessageHandler(filters.LOCATION, handle_location))
@@ -69,7 +83,7 @@ def main():
     save_timestamp()
     app.post_init = notify_update  # بعد از استارت پیام بفرست
     logger.info("Bot is starting polling...")
-    app.run_polling()
+    await app.run_polling()
 
 if __name__ == '__main__':
-    main()
+    asyncio.run(main())
