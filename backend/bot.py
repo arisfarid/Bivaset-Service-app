@@ -61,9 +61,7 @@ async def check_and_notify(application: Application):
         active_chats = application.bot_data.get('active_chats', [])
         logger.info(f"Active chats: {active_chats}")
         await send_update_and_restart(TOKEN, active_chats, application)
-        save_timestamp()
-
-
+    save_timestamp()  # همیشه بعد از چک کردن ذخیره بشه
 
 async def test_job(application: Application):
     logger.info("Test job running every 5 seconds")
