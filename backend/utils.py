@@ -2,9 +2,12 @@ import os
 import requests
 import re
 import sys
+import logging  # اضافه شده
 from datetime import datetime, timedelta
 from khayyam import JalaliDatetime
 from telegram import KeyboardButton, ReplyKeyboardMarkup
+
+logger = logging.getLogger(__name__)  # اضافه شده
 
 BASE_URL = 'http://185.204.171.107:8000/api/'
 BOT_FILE = os.path.abspath(__file__)
