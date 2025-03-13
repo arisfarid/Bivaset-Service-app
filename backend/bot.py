@@ -31,6 +31,7 @@ TOKEN = os.getenv('TELEGRAM_BOT_TOKEN')
 
 async def send_update_and_restart(token: str, active_chats: list, context: ContextTypes.DEFAULT_TYPE):
     logger.info(f"Starting update and restart for {len(active_chats)} chats")
+    updated = False  # Flag to track if any update was successful
     for chat_id in active_chats:
         try:
             await context.bot.send_message(chat_id=chat_id, text="🎉 ربات آپدیت شد! لطفاً ادامه بدهید.", disable_notification=True)
@@ -47,9 +48,11 @@ async def send_update_and_restart(token: str, active_chats: list, context: Conte
             )
             await start(fake_update, context)
             logger.info(f"Restarted bot for chat {chat_id}")
+            updated = True  # Mark as updated if we reach here
         except Exception as e:
             logger.error(f"Failed to process update for {chat_id}: {e}")
-    save_timestamp()  # Save timestamp after attempting updates
+    if active_chats and updated:  # Save timestamp only if there were chats and update succeeded
+        save_timestamp()
 
 async def check_and_notify(context: ContextTypes.DEFAULT_TYPE):
     logger.info("Checking for updates...")
@@ -102,3 +105,4 @@ app.run_polling()
 # Updated at Thu Mar 13 18:59:44 UTC 2025
 # Updated at Thu Mar 13 19:15:28 UTC 2025
 # Updated at Thu Mar 13 22:22:03 UTC 2025
+# Updated at Thu Mar 13 22:34:54 UTC 2025
