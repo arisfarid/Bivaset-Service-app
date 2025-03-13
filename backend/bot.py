@@ -2,7 +2,8 @@ import os
 import sys
 import logging
 from telegram import KeyboardButton, ReplyKeyboardMarkup, Bot, Update, Message, Chat
-from telegram.ext import Application, CommandHandler, MessageHandler, filters, CallbackQueryHandler, ConversationHandler
+from telegram.ext import Application, CommandHandler, MessageHandler, filters, CallbackQueryHandler, ConversationHandler, ContextTypes
+
 from utils import save_timestamp, check_for_updates
 from handlers.start_handler import start, handle_contact, check_phone, handle_role
 from handlers.location_handler import handle_location
@@ -28,13 +29,8 @@ logging.getLogger('apscheduler').setLevel(logging.WARNING)
 
 TOKEN = os.getenv('TELEGRAM_BOT_TOKEN')
 
-async def send_update_and_restart(token: str, active_chats: list, application: Application):
+async def send_update_and_restart(token: str, active_chats: list, context: ContextTypes.DEFAULT_TYPE):
     bot = Bot(token)
-    context = application.create_context()
-    context.bot = bot
-    context.bot_data = application.bot_data
-    context.job_queue = application.job_queue
-
     logger.info(f"Starting update and restart for {len(active_chats)} chats")
     for chat_id in active_chats:
         try:
@@ -61,7 +57,7 @@ async def check_and_notify(application: Application):
         logger.info("Update detected, sending notifications...")
         active_chats = application.bot_data.get('active_chats', [])
         logger.info(f"Active chats: {active_chats}")
-        await send_update_and_restart(TOKEN, active_chats, application)
+        await send_update_and_restart(TOKEN, active_chats, application.context)
     save_timestamp()
 
 async def test_job(application: Application):
@@ -101,3 +97,4 @@ app.job_queue.run_repeating(check_and_notify, interval=10, first=0, data=app)
 
 logger.info("Bot is starting polling...")
 app.run_polling()
+# Updated at Thu Mar 13 18:40:04 UTC 2025
