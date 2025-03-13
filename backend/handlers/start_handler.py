@@ -1,5 +1,5 @@
 from telegram import Update, KeyboardButton, ReplyKeyboardMarkup
-from telegram.ext import ContextTypes
+from telegram.ext import ContextTypes, CommandHandler  # Add CommandHandler import
 from utils import get_user_phone, BASE_URL
 import requests
 import logging
