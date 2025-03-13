@@ -1,5 +1,5 @@
 from telegram import Update, KeyboardButton, ReplyKeyboardMarkup
-from telegram.ext import ContextTypes, CommandHandler, filters, MessageHandler  # Add filters and MessageHandler
+from telegram.ext import ContextTypes, CommandHandler, filters, MessageHandler
 from utils import get_user_phone, BASE_URL
 import requests
 import logging
@@ -79,6 +79,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         context.bot_data['active_chats'] = []
     if update.effective_chat.id not in context.bot_data['active_chats']:
         context.bot_data['active_chats'].append(update.effective_chat.id)
+        logger.info(f"Updated active_chats: {context.bot_data['active_chats']}")
 
 start_handler = CommandHandler('start', start)
-role_handler = MessageHandler(filters.TEXT & ~filters.COMMAND, handle_role)  # Add role_handler
+role_handler = MessageHandler(filters.TEXT & ~filters.COMMAND, handle_role)

@@ -7,6 +7,7 @@ cd "$PROJECT_DIR" || { echo "Failed to enter project directory"; exit 1; }
 python3 -c "from utils import save_timestamp; save_timestamp()"  # ذخیره timestamp قبل از آپدیت
 git fetch origin
 git reset --hard origin/main
+echo "# Updated at $(date)" >> bot.py  # تغییر زمان فایل bot.py
 echo "Git repository updated."
 
 # فعال‌سازی محیط مجازی
