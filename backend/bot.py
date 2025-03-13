@@ -1,9 +1,9 @@
 import os
 import sys
 import logging
-from telegram import KeyboardButton, ReplyKeyboardMarkup, Bot  # Add Bot import
+from telegram import KeyboardButton, ReplyKeyboardMarkup, Bot
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, CallbackQueryHandler, ConversationHandler
-import asyncio  # Add asyncio import
+import asyncio
 from utils import save_timestamp, check_for_updates
 from handlers.start_handler import start, handle_contact, check_phone, handle_role
 from handlers.location_handler import handle_location
@@ -19,8 +19,8 @@ logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     level=logging.INFO,
     handlers=[
-        logging.FileHandler("bot.log"),  # ذخیره لاگ توی فایل
-        logging.StreamHandler()  # نمایش توی کنسول
+        logging.FileHandler("bot.log"),
+        logging.StreamHandler()
     ]
 )
 logger = logging.getLogger(__name__)
@@ -29,22 +29,14 @@ logging.getLogger('apscheduler').setLevel(logging.WARNING)
 
 TOKEN = os.getenv('TELEGRAM_BOT_TOKEN')
 
-async def notify_update(context):
-    if 'active_chats' in context.bot_data:
-        for chat_id in context.bot_data['active_chats']:
-            await context.bot.send_message(
-                chat_id=chat_id,
-                text="🔄 ربات بروزرسانی شد و امکانات جدید دریافت کرد! 🌟",
-                disable_notification=True  # بی‌صدا
-            )
-
 async def send_update_notification(token: str, active_chats: list):
     bot = Bot(token)
     for chat_id in active_chats:
         try:
             await bot.send_message(chat_id=chat_id, text="🎉 ربات آپدیت شد! لطفاً ادامه بدهید.", disable_notification=True)
+            logger.info(f"Sent update notification to {chat_id}")
         except Exception as e:
-            logging.info(f"Failed to send update notification to {chat_id}: {e}")
+            logger.error(f"Failed to send update notification to {chat_id}: {e}")
 
 async def main():
     if not TOKEN:
@@ -55,8 +47,11 @@ async def main():
     
     app = Application.builder().token(TOKEN).build()
     
+    # Send update notification and simulate restart
     if 'active_chats' in app.bot_data:
         await send_update_notification(TOKEN, app.bot_data['active_chats'])
+        for chat_id in app.bot_data['active_chats']:
+            await app.bot.send_message(chat_id=chat_id, text="🔄 ربات آماده‌ست! لطفاً ادامه بدهید.", disable_notification=True)
         app.bot_data['active_chats'] = []
 
     app.add_handler(CommandHandler("start", start))
@@ -71,7 +66,7 @@ async def main():
         entry_points=[CommandHandler('start', start)],
         states={
             0: [MessageHandler(filters.CONTACT, handle_contact)],
-            1: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_role)],  # Update state 1
+            1: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_role)],
             2: [],
             3: []
         },
@@ -81,16 +76,15 @@ async def main():
     
     app.job_queue.run_repeating(check_for_updates, interval=10)
     save_timestamp()
-    app.post_init = notify_update  # بعد از استارت پیام بفرست
     logger.info("Bot is starting polling...")
     await app.run_polling()
 
+async def run_bot():
+    await main()
+
 if __name__ == '__main__':
-    try:
-        asyncio.run(main())
-    except RuntimeError as e:
-        if "This event loop is already running" in str(e):
-            loop = asyncio.get_running_loop()
-            loop.create_task(main())
-        else:
-            raise
+    loop = asyncio.get_event_loop()
+    if loop.is_running():
+        loop.create_task(run_bot())
+    else:
+        asyncio.run(run_bot())
