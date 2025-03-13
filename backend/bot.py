@@ -4,8 +4,7 @@ import logging
 from telegram import KeyboardButton, ReplyKeyboardMarkup
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, CallbackQueryHandler, ConversationHandler
 from utils import save_timestamp, check_for_updates
-from handlers.start_handler import start
-from handlers.contact_handler import handle_contact
+from handlers.start_handler import start, handle_contact, check_phone
 from handlers.location_handler import handle_location
 from handlers.photo_handler import handle_photo
 from handlers.message_handler import handle_message
@@ -13,7 +12,6 @@ from handlers.callback_handler import handle_callback
 from handlers.new_project_handlers import handle_new_project
 from handlers.view_projects_handlers import handle_view_projects
 from handlers.project_details_handlers import handle_project_details
-from handlers.register_phone_handlers import check_phone  # removed duplicate import
 from handlers.role_handler import role_handler
 
 # تنظیم لاگ‌ها
@@ -59,10 +57,10 @@ def main():
     conv_handler = ConversationHandler(
         entry_points=[CommandHandler('start', start)],
         states={
-            0: [MessageHandler(filters.CONTACT, handle_contact), MessageHandler(filters.TEXT, check_phone)],
-            1: [MessageHandler(filters.TEXT, role_handler)],
-            2: [MessageHandler(filters.TEXT, handle_new_project)],  # Assuming this exists
-            3: [MessageHandler(filters.TEXT, handle_view_projects)]  # Assuming this exists
+            0: [MessageHandler(filters.CONTACT, handle_contact)],
+            1: [MessageHandler(filters.TEXT & ~filters.COMMAND, role_handler)],
+            2: [],
+            3: []
         },
         fallbacks=[CommandHandler('cancel', start)]
     )
