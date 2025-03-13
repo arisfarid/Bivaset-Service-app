@@ -64,6 +64,7 @@ async def check_and_notify(application: Application):
         save_timestamp()
 
 
+
 async def test_job(application: Application):
     logger.info("Test job running every 5 seconds")
 
