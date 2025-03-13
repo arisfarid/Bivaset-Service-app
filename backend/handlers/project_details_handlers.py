@@ -13,8 +13,8 @@ async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_T
             context.user_data['state'] = 'new_project_location'
             keyboard = [
                 [KeyboardButton("🏠 محل کارفرما"), KeyboardButton("🔧 محل مجری")],
-                [KeyboardButton("💻 غیرحضوری"), KeyboardButton("⬅️ بازگشت")],
-                [KeyboardButton("➡️ ادامه")]
+                [KeyboardButton("💻 غیرحضوری")],
+                [KeyboardButton("⬅️ بازگشت")]
             ]
             await update.message.reply_text(
                 f"🌟 محل انجام خدماتت رو انتخاب کن:",
@@ -36,9 +36,11 @@ async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_T
             tomorrow = JalaliDatetime(datetime.now() + timedelta(days=1)).strftime('%Y/%m/%d')
             day_after = JalaliDatetime(datetime.now() + timedelta(days=2)).strftime('%Y/%m/%d')
             keyboard = [
-                [KeyboardButton(f"📅 امروز ({today})"), KeyboardButton(f"📅 فردا ({tomorrow})")],
-                [KeyboardButton(f"📅 پس‌فردا ({day_after})"), KeyboardButton("⬅️ بازگشت")],
-                [KeyboardButton("✏️ تاریخ دلخواه")]
+                [KeyboardButton(f"📅 امروز ({today})")],
+                [KeyboardButton(f"📅 فردا ({tomorrow})")],
+                [KeyboardButton(f"📅 پس‌فردا ({day_after})")],
+                [KeyboardButton("✏️ تاریخ دلخواه")],
+                [KeyboardButton("⬅️ بازگشت")]
             ]
             await update.message.reply_text(
                 "📅 تاریخ نیاز رو انتخاب کن یا دستی وارد کن (مثلاً 1403/10/15):",
