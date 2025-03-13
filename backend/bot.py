@@ -12,7 +12,6 @@ from handlers.callback_handler import handle_callback
 from handlers.new_project_handlers import handle_new_project
 from handlers.view_projects_handlers import handle_view_projects
 from handlers.project_details_handlers import handle_project_details
-from handlers.role_handler import role_handler
 
 # تنظیم لاگ‌ها
 logging.basicConfig(
