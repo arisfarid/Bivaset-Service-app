@@ -75,3 +75,31 @@ class ProjectViewSet(viewsets.ModelViewSet):
 class ProposalViewSet(viewsets.ModelViewSet):
     queryset = Proposal.objects.all()
     serializer_class = ProposalSerializer
+
+async def submit_project(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    location = context.user_data.get('location')
+    location_data = None
+    if location:
+        location_data = [location['longitude'], location['latitude']]  # فقط مختصات به صورت لیست
+    
+    data = {
+        'title': generate_title(context),
+        'description': context.user_data.get('description', ''),
+        'category': context.user_data.get('category_id', ''),
+        'service_location': context.user_data.get('service_location', ''),
+        'location': location_data,  # لیست مختصات
+        'budget': context.user_data.get('budget', None),
+        'deadline_date': convert_deadline_to_date(context.user_data.get('deadline', None)),
+        'start_date': context.user_data.get('need_date', None),
+        'files': await upload_attachments(context.user_data.get('files', []), context),
+        'user_telegram_id': str(update.effective_user.id)
+    }
+    logger.info(f"Sending project data to API: {data}")
+    try:
+        response = requests.post(f"{BASE_URL}projects/", json=data)
+        # بقیه کد بدون تغییر
+    except Exception as e:
+        logger.error(f"Error submitting project: {e}")
+        await update.message.reply_text("❌ خطا در ثبت درخواست.")
+    context.user_data.clear()
+    await start(update, context)
