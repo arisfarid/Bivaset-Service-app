@@ -1,26 +1,19 @@
 import os
 import sys
 import logging
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup, KeyboardButton, ReplyKeyboardMarkup, Bot, Update, Message, Chat, User
-from telegram.ext import Application, CommandHandler, MessageHandler, filters, CallbackQueryHandler, ConversationHandler, ContextTypes
+from telegram.ext import Application, CommandHandler, MessageHandler, filters, CallbackQueryHandler, ContextTypes
 from utils import save_timestamp, check_for_updates
 from handlers.start_handler import start, handle_contact, check_phone, handle_role
 from handlers.location_handler import handle_location
-from handlers.photo_handler import handle_photo
+from handlers.attachment_handler import handle_attachment
 from handlers.message_handler import handle_message
 from handlers.callback_handler import handle_callback
-from handlers.new_project_handlers import handle_new_project
-from handlers.view_projects_handlers import handle_view_projects
-from handlers.project_details_handlers import handle_project_details
+from handlers.view_handler import handle_view_projects
 
-# تنظیم لاگ‌ها
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     level=logging.INFO,
-    handlers=[
-        logging.FileHandler("bot.log"),
-        logging.StreamHandler()
-    ]
+    handlers=[logging.FileHandler("bot.log"), logging.StreamHandler()]
 )
 logger = logging.getLogger(__name__)
 logging.getLogger('httpx').setLevel(logging.WARNING)
@@ -33,7 +26,6 @@ async def send_update_and_restart(token: str, active_chats: list, context: Conte
     updated = False
     for chat_id in active_chats:
         try:
-            # ارسال پیام آپدیت با دکمه
             keyboard = [[InlineKeyboardButton("راه‌اندازی مجدد", callback_data='restart')]]
             reply_markup = InlineKeyboardMarkup(keyboard)
             await context.bot.send_message(
@@ -74,24 +66,10 @@ app = Application.builder().token(TOKEN).build()
 app.add_handler(CommandHandler("start", start))
 app.add_handler(MessageHandler(filters.CONTACT, handle_contact))
 app.add_handler(MessageHandler(filters.LOCATION, handle_location))
-app.add_handler(MessageHandler(filters.PHOTO, handle_photo))
+app.add_handler(MessageHandler(filters.PHOTO, handle_attachment))
 app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
 app.add_handler(CallbackQueryHandler(handle_callback))
 
-# ConversationHandler setup
-conv_handler = ConversationHandler(
-    entry_points=[CommandHandler('start', start)],
-    states={
-        0: [MessageHandler(filters.CONTACT, handle_contact)],
-        1: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_role)],
-        2: [],
-        3: []
-    },
-    fallbacks=[CommandHandler('cancel', start)]
-)
-app.add_handler(conv_handler)
-
-# Add periodic jobs
 app.job_queue.run_repeating(test_job, interval=5, first=0, data=app)
 app.job_queue.run_repeating(check_and_notify, interval=10, first=0, data=app)
 
