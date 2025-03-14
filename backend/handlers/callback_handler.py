@@ -1,12 +1,10 @@
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram import Update
 from telegram.ext import ContextTypes
-import requests
-from utils import BASE_URL
 import logging
-from .new_project_handlers import handle_new_project
-from .view_projects_handlers import handle_view_projects
-from .project_details_handlers import handle_project_details
-from .start_handler import start  # برای استفاده از تابع start
+from .start_handler import start
+from .category_handler import handle_category_callback
+from .edit_handler import handle_edit_callback
+from .view_handler import handle_view_callback
 
 logger = logging.getLogger(__name__)
 
@@ -14,58 +12,16 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     data = query.data
     logger.info(f"Callback data received: {data}")
-    await query.answer()  # پاسخ به query
-    
+    await query.answer()
+
     if data == 'restart':
         logger.info(f"Restart requested by {query.from_user.id}")
-        await start(update, context)  # تابع start رو صدا می‌کنیم
-    elif data.isdigit():  # انتخاب دسته‌بندی
-        context.user_data['category_id'] = int(data)
-        project = {'category': context.user_data['category_id']}
-        cat_name = context.user_data.get('categories', {}).get(project['category'], {}).get('name', 'نامشخص')
-        keyboard = [
-            [InlineKeyboardButton("✅ ثبت", callback_data="submit_project")],
-            [InlineKeyboardButton("⬅️ بازگشت", callback_data="back_to_categories")]
-        ]
-        await query.edit_message_text(
-            f"دسته‌بندی انتخاب‌شده: {cat_name}\nحالا می‌تونی ثبت کنی یا برگردی:",
-            reply_markup=InlineKeyboardMarkup(keyboard)
-        )
-    elif data == 'new_project':
-        await handle_new_project(update, context)
-    elif data == 'view_projects':
-        await handle_view_projects(update, context)
-    elif data.startswith('project_details_'):
-        await handle_project_details(update, context)
+        await start(update, context)
+    elif data.isdigit():  # دسته‌بندی
+        await handle_category_callback(update, context)
+    elif data in ['new_project', 'view_projects']:
+        logger.info(f"Redirecting {data} to message_handler")
+    elif data.startswith(('edit_', 'delete_', 'close_', 'extend_', 'offers_')):
+        await handle_edit_callback(update, context)
     else:
-        # مدیریت جزئیات پروژه (بخش دوم کدت)
-        project_id = data
-        try:
-            response = requests.get(f"{BASE_URL}projects/{project_id}/")
-            if response.status_code == 200:
-                project = response.json()
-                cat_name = context.user_data['categories'][project['category']]['name']
-                summary = f"📋 *درخواست {project['id']}*\n" \
-                          f"📌 *دسته‌بندی*: {cat_name}\n" \
-                          f"📝 *توضیحات*: {project['description']}\n" \
-                          f"📍 *موقعیت*: {'غیرحضوری' if project['service_location'] == 'remote' else 'نمایش روی نقشه'}\n"
-                if project.get('budget'):
-                    summary += f"💰 *بودجه*: {project['budget']} تومان\n"
-                if project.get('deadline_date'):
-                    summary += f"⏳ *مهلت*: {project['deadline_date']}\n"
-                if project.get('start_date'):
-                    summary += f"📅 *شروع*: {project['start_date']}\n"
-                if project.get('files'):
-                    summary += "📸 *تصاویر*:\n" + "\n".join([f"- [عکس]({f})" for f in project['files']])
-                inline_keyboard = [
-                    [InlineKeyboardButton("✏️ ویرایش", callback_data=f"edit_{project_id}"),
-                     InlineKeyboardButton("⏰ تمدید", callback_data=f"extend_{project_id}")],
-                    [InlineKeyboardButton("🗑 حذف", callback_data=f"delete_{project_id}"),
-                     InlineKeyboardButton("✅ بستن", callback_data=f"close_{project_id}")],
-                    [InlineKeyboardButton("💬 پیشنهادها", callback_data=f"proposals_{project_id}")]
-                ]
-                await query.edit_message_text(summary, parse_mode='Markdown', reply_markup=InlineKeyboardMarkup(inline_keyboard))
-            else:
-                await query.edit_message_text(f"❌ خطا در دریافت اطلاعات: {response.status_code}")
-        except requests.exceptions.ConnectionError:
-            await query.edit_message_text("❌ خطا: سرور بک‌اند در دسترس نیست.")
+        await handle_view_callback(update, context)
