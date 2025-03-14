@@ -1,4 +1,4 @@
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, KeyboardButton, ReplyKeyboardMarkup
 from telegram.ext import ContextTypes
 import logging
 from .start_handler import start
@@ -15,17 +15,24 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     logger.info(f"Callback data received: {data}")
 
     if data == 'restart':
-        logger.info(f"Restart requested by {update.effective_user.id}")
         context.user_data.clear()
         await start(update, context)
     elif data == 'back':
-        current_step = context.user_data.get('current_step', 'start')
-        if current_step == 'select_category':
-            await start(update, context)  # بازگشت به منوی نقش
-        elif current_step == 'select_subcategory':
-            await show_categories(update, context)  # بازگشت به دسته‌بندی‌ها
-        elif current_step in ['description', 'service_location', 'location', 'details']:
-            await show_employer_menu(update, context)  # بازگشت به منوی کارفرما
+        state = context.user_data.get('state', 'start')
+        if state == 'new_project_category':
+            context.user_data['state'] = None
+            await start(update, context)
+        elif state == 'new_project_subcategory':
+            context.user_data['state'] = 'new_project_category'
+            categories = context.user_data.get('categories', {})
+            root_cats = [cat_id for cat_id, cat in categories.items() if cat['parent'] is None]
+            keyboard = [[KeyboardButton(categories[cat_id]['name'])] for cat_id in root_cats] + [[KeyboardButton("⬅️ بازگشت")]]
+            await query.message.edit_text(
+                f"🌟 دسته‌بندی خدماتت رو انتخاب کن:",
+                reply_markup=ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
+            )
+        elif state in ['new_project_desc', 'new_project_location', 'new_project_location_input', 'new_project_details']:
+            await show_employer_menu(update, context)
         else:
             await start(update, context)
     elif data.isdigit():  # دسته‌بندی
