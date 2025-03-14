@@ -12,15 +12,19 @@ BASE_URL = 'http://185.204.171.107:8000/api/'
 
 async def submit_project(update: Update, context: ContextTypes.DEFAULT_TYPE):
     location = context.user_data.get('location')
+    location_data = None
     if location:
-        location = Point(location['longitude'], location['latitude'], srid=4326)
+        location_data = {
+            'type': 'Point',
+            'coordinates': [location['longitude'], location['latitude']]
+        }
     
     data = {
         'title': generate_title(context),
         'description': context.user_data.get('description', ''),
         'category': context.user_data.get('category_id', ''),
         'service_location': context.user_data.get('service_location', ''),
-        'location': location,
+        'location': location_data,
         'budget': context.user_data.get('budget', None),
         'deadline_date': convert_deadline_to_date(context.user_data.get('deadline', None)),
         'start_date': context.user_data.get('need_date', None),
