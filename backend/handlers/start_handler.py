@@ -10,16 +10,18 @@ async def check_phone(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int
     telegram_id = str(update.effective_user.id)
     response = requests.get(f"{BASE_URL}users/?telegram_id={telegram_id}")
     if response.status_code == 200 and response.json():
-        context.user_data['phone'] = response.json()[0]['phone']
-        return 1
-    else:
-        keyboard = [[KeyboardButton("ثبت شماره تلفن", request_contact=True)]]
-        reply_markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True, one_time_keyboard=True)
-        await update.effective_message.reply_text(
-            " 😊 برای استفاده از امکانات ربات، لطفاً شماره تلفنت رو با دکمه زیر ثبت کن! 📱",
-            reply_markup=reply_markup
-        )
-        return 0
+        phone = response.json()[0]['phone']
+        if phone and phone != f"tg_{telegram_id}":  # فقط اگه شماره واقعی باشه
+            context.user_data['phone'] = phone
+            return 1
+    # اگه شماره نداره یا خطا هست
+    keyboard = [[KeyboardButton("ثبت شماره تلفن", request_contact=True)]]
+    reply_markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True, one_time_keyboard=True)
+    await update.effective_message.reply_text(
+        " 😊 برای استفاده از امکانات ربات، لطفاً شماره تلفنت رو با دکمه زیر ثبت کن! 📱",
+        reply_markup=reply_markup
+    )
+    return 0
 
 async def handle_contact(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     contact = update.message.contact
@@ -73,9 +75,12 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     # چک کردن ثبت‌نام کاربر
     phone = await get_user_phone(telegram_id)
-    if not phone or phone == f"tg_{telegram_id}":  # اگه شماره نداره یا فقط tg_id داره
+    logger.info(f"Phone for telegram_id {telegram_id}: {phone}")
+    if not phone or phone == f"tg_{telegram_id}":
         context.user_data['state'] = 'register'
-        return await check_phone(update, context)  # برو به ثبت‌نام
+        logger.info("User not registered, redirecting to check_phone")
+        await check_phone(update, context)
+        return  # اینجا متوقف می‌شه تا ثبت‌نام کامل بشه
     else:
         context.user_data['phone'] = phone
 

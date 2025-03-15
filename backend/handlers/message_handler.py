@@ -17,6 +17,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     # چک کردن ثبت‌نام کاربر
     phone = await get_user_phone(telegram_id)
+    logger.info(f"Checking phone in handle_message for {telegram_id}: {phone}")
     if not phone or phone == f"tg_{telegram_id}":
         keyboard = [[KeyboardButton("ثبت شماره تلفن", request_contact=True)]]
         await update.message.reply_text(
