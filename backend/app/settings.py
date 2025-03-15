@@ -72,4 +72,28 @@ MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
-CORS_ALLOW_ALL_ORIGINS = True  # برای تست، همه دامنه‌ها رو اجازه بده
+CORS_ALLOW_ALL_ORIGINS = False  # Disable allowing all origins
+CORS_ALLOWED_ORIGINS = [
+    "http://185.204.171.107",
+    "http://service.bivaset.com",
+    "http://localhost:8000",
+]
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'file': {
+            'level': 'INFO',
+            'class': 'logging.FileHandler',
+            'filename': os.path.join(BASE_DIR, 'backend.log'),
+        },
+    },
+    'loggers': {
+        '': {
+            'handlers': ['file'],
+            'level': 'INFO',
+            'propagate': True,
+        },
+    },
+}
