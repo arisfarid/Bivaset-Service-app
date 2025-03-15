@@ -7,6 +7,7 @@ from .attachment_handler import handle_attachment
 from .project_details_handler import handle_project_details
 from .state_handler import handle_project_states
 from .view_handler import handle_view_projects
+from utils import get_categories, get_user_phone
 
 logger = logging.getLogger(__name__)
 
@@ -14,6 +15,17 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = update.message.text
     telegram_id = str(update.effective_user.id)
     
+    # چک کردن ثبت‌نام کاربر
+    phone = await get_user_phone(telegram_id)
+    if not phone or phone == f"tg_{telegram_id}":
+        keyboard = [[KeyboardButton("ثبت شماره تلفن", request_contact=True)]]
+        await update.message.reply_text(
+            "😊 برای استفاده از ربات، لطفاً اول شماره تلفنت رو ثبت کن!",
+            reply_markup=ReplyKeyboardMarkup(keyboard, resize_keyboard=True, one_time_keyboard=True)
+        )
+        return
+
+    # بقیه منطق پیام‌ها
     if text == "درخواست خدمات | کارفرما 👔":
         keyboard = [
             [KeyboardButton("📋 درخواست خدمات جدید"), KeyboardButton("📊 مشاهده درخواست‌ها")],
@@ -66,5 +78,3 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
     
     await update.message.reply_text("❌ گزینه نامعتبر! لطفاً از منو انتخاب کن.")
-
-from utils import get_categories  # برای درخواست خدمات جدید

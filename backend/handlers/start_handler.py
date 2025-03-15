@@ -38,7 +38,7 @@ async def handle_contact(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         else:
             message = f"❌ خطا در ثبت‌نام: {response.text[:50]}..."
         await update.message.reply_text(message)
-        await start(update, context)
+        await start(update, context)  # برگشت به منوی اصلی بعد از ثبت
         return 1
     except requests.exceptions.ConnectionError:
         await update.message.reply_text("❌ خطا: سرور بک‌اند در دسترس نیست.")
@@ -71,11 +71,15 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         context.bot_data['active_chats'].append(chat_id)
         logger.info(f"Updated active_chats: {context.bot_data['active_chats']}")
 
-    # چک کردن اینکه از پیام اومده یا callback
+    # چک کردن ثبت‌نام کاربر
     phone = await get_user_phone(telegram_id)
-    if phone and phone != f"tg_{telegram_id}":
+    if not phone or phone == f"tg_{telegram_id}":  # اگه شماره نداره یا فقط tg_id داره
+        context.user_data['state'] = 'register'
+        return await check_phone(update, context)  # برو به ثبت‌نام
+    else:
         context.user_data['phone'] = phone
 
+    # اگه ثبت‌نام شده، منوی اصلی رو نشون بده
     keyboard = [
         ["درخواست خدمات | کارفرما 👔"],
         ["پیشنهاد قیمت | مجری 🦺"]
@@ -85,9 +89,9 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f"👋 سلام {name}! به ربات خدمات بی‌واسط خوش اومدی.\n"
         "من رایگان کمکت می‌کنم برای خدمات مورد نیازت، مجری کاربلد پیدا کنی یا کار مرتبط با تخصصت پیدا کنی. چی می‌خوای امروز؟ 🌟"
     )
-    if update.message:  # اگه از /start اومده
+    if update.message:  # اومده از /start
         await update.message.reply_text(message, reply_markup=reply_markup)
-    elif update.callback_query:  # اگه از دکمه اومده
+    elif update.callback_query:  # اومده از دکمه
         await context.bot.send_message(chat_id=chat_id, text=message, reply_markup=reply_markup)
 
 start_handler = CommandHandler('start', start)
