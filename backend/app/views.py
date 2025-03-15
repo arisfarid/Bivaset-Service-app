@@ -79,6 +79,15 @@ class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
 
+    def get_queryset(self):
+        """
+        فیلتر کردن کاربران بر اساس telegram_id در درخواست GET
+        """
+        telegram_id = self.request.query_params.get('telegram_id', None)
+        if telegram_id:
+            return User.objects.filter(telegram_id=telegram_id)
+        return super().get_queryset()
+
 class ProjectViewSet(viewsets.ModelViewSet):
     queryset = Project.objects.all()
     serializer_class = ProjectSerializer
