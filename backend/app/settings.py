@@ -90,7 +90,12 @@ LOGGING = {
         },
     },
     'loggers': {
-        '': {
+        'django': {
+            'handlers': ['file'],
+            'level': 'INFO',
+            'propagate': True,
+        },
+        'app': {  # برای اپلیکیشن خودت
             'handlers': ['file'],
             'level': 'INFO',
             'propagate': True,
