@@ -12,7 +12,10 @@ async def handle_location(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.message and update.message.location:
         location = update.message.location
         context.user_data['location'] = {'longitude': location.longitude, 'latitude': location.latitude}
-        if state == 'new_project_location_input':
+        if state in ['new_project_location', 'new_project_location_input']:
+            if 'service_location' not in context.user_data or not context.user_data['service_location']:
+                await update.message.reply_text("❌ لطفاً محل انجام خدمات رو انتخاب کن!")
+                return True
             context.user_data['state'] = 'new_project_details'
             await update.message.reply_text(
                 f"📋 جزئیات درخواست\n"
@@ -31,7 +34,10 @@ async def handle_location(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await update.message.reply_text("🌟 توضیحات خدماتت رو بگو:")
             return True
         elif text == "➡️ ادامه":
-            if context.user_data.get('service_location') == 'client_site' and 'location' not in context.user_data:
+            if 'service_location' not in context.user_data or not context.user_data['service_location']:
+                await update.message.reply_text("❌ لطفاً محل انجام خدمات رو انتخاب کن!")
+                return True
+            if context.user_data['service_location'] == 'client_site' and 'location' not in context.user_data:
                 await update.message.reply_text("❌ لطفاً لوکیشن رو ثبت کن!")
                 return True
             context.user_data['state'] = 'new_project_details'
