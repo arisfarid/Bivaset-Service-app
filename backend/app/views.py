@@ -37,11 +37,12 @@ class ProjectSerializer(serializers.ModelSerializer):
         read_only_fields = ['user']
 
     def to_internal_value(self, data):
-        # تبدیل [longitude, latitude] به Point
+        logger.info(f"Raw data received: {data}")
         if 'location' in data and data['location']:
             try:
                 longitude, latitude = data['location']
                 data['location'] = Point(longitude, latitude, srid=4326)
+                logger.info(f"Converted location to Point: {data['location']}")
             except (ValueError, TypeError, IndexError) as e:
                 logger.error(f"Invalid location format: {data['location']}, error: {e}")
                 raise serializers.ValidationError("فرمت لوکیشن نامعتبر است. باید [longitude, latitude] باشد.")
@@ -53,6 +54,10 @@ class ProjectSerializer(serializers.ModelSerializer):
             telegram_id=user_telegram_id,
             defaults={'phone': f"tg_{user_telegram_id}", 'name': 'کاربر', 'role': 'client'}
         )
+        # مطمئن می‌شیم location اگه هست، به درستی تنظیم بشه
+        location = validated_data.get('location')
+        if location and not isinstance(location, Point):
+            raise serializers.ValidationError("فیلد location باید یک Point باشد.")
         project = Project.objects.create(user=user, **validated_data)
         return project
 
@@ -65,7 +70,7 @@ class ProposalSerializer(serializers.ModelSerializer):
 @api_view(['POST'])
 def upload_file(request):
     file = request.FILES.get('file')
-    if file:
+    if (file):
         project_file = ProjectFile(file=file)
         project_file.save()
         return Response({'file_url': project_file.file.url}, status=201)
