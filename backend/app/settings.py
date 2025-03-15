@@ -103,4 +103,3 @@ LOGGING = {
         },
     },
 }
-logger.info(f"API response: {response.status_code} - {response.text}")
