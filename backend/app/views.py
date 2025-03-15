@@ -37,7 +37,7 @@ class ProjectSerializer(serializers.ModelSerializer):
         read_only_fields = ['user']
 
     def to_internal_value(self, data):
-        logger.info(f"Raw data received: {data}")
+        logger.info(f"Raw project data received: {data}")
         if 'location' in data and data['location']:
             try:
                 longitude, latitude = data['location']
@@ -54,11 +54,8 @@ class ProjectSerializer(serializers.ModelSerializer):
             telegram_id=user_telegram_id,
             defaults={'phone': f"tg_{user_telegram_id}", 'name': 'کاربر', 'role': 'client'}
         )
-        # مطمئن می‌شیم location اگه هست، به درستی تنظیم بشه
-        location = validated_data.get('location')
-        if location and not isinstance(location, Point):
-            raise serializers.ValidationError("فیلد location باید یک Point باشد.")
-        project = Project.objects.create(user=user, **validated_data)
+        validated_data['user'] = user
+        project = Project.objects.create(**validated_data)
         return project
 
 class ProposalSerializer(serializers.ModelSerializer):
