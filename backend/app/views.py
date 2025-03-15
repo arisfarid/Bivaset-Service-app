@@ -49,13 +49,19 @@ class ProjectSerializer(serializers.ModelSerializer):
         return super().to_internal_value(data)
 
     def create(self, validated_data):
+        logger.info(f"Validated data before creating project: {validated_data}")
         user_telegram_id = validated_data.pop('user_telegram_id')
         user, created = User.objects.get_or_create(
             telegram_id=user_telegram_id,
             defaults={'phone': f"tg_{user_telegram_id}", 'name': 'کاربر', 'role': 'client'}
         )
         validated_data['user'] = user
+        # مطمئن شو که location یه Point باشه
+        if 'location' in validated_data and validated_data['location'] and not isinstance(validated_data['location'], Point):
+            longitude, latitude = validated_data['location']
+            validated_data['location'] = Point(longitude, latitude, srid=4326)
         project = Project.objects.create(**validated_data)
+        logger.info(f"Project created with ID: {project.id}")
         return project
 
 class ProposalSerializer(serializers.ModelSerializer):
