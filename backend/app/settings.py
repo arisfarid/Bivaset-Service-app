@@ -1,5 +1,6 @@
 from pathlib import Path
 import os
+import requests
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -102,3 +103,7 @@ LOGGING = {
         },
     },
 }
+
+API_URL = "http://185.204.171.107:8000/api/projects/"  # یا http://localhost:8000/api/projects/
+response = requests.post(API_URL, json=project_data)
+logger.info(f"API response: {response.status_code} - {response.text}")
