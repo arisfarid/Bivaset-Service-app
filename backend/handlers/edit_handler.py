@@ -21,6 +21,9 @@ async def handle_edit_callback(update: Update, context: ContextTypes.DEFAULT_TYP
         elif action == 'extend':
             await query.edit_message_text("⏰ تمدید پروژه هنوز پیاده‌سازی نشده!")
         elif action == 'offers':
-            await query.edit_message_text("💡 مشاهده پیشنهادها هنوز پیاده‌سازی نشده!")
+            if query.message.text:  # چک کن پیام متن داشته باشه
+                await query.edit_message_text("💡 مشاهده پیشنهادها هنوز پیاده‌سازی نشده!")
+            else:
+                await query.answer("💡 مشاهده پیشنهادها هنوز پیاده‌سازی نشده!", show_alert=True)
         return True
     return False
