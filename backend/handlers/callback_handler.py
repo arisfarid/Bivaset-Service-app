@@ -5,6 +5,7 @@ from .start_handler import start
 from .category_handler import handle_category_callback
 from .edit_handler import handle_edit_callback
 from .view_handler import handle_view_callback
+from .attachment_handler import show_photo_management
 
 logger = logging.getLogger(__name__)
 
