@@ -138,8 +138,9 @@ def generate_title(context):
 
 def create_dynamic_keyboard(context):
     buttons = []
-    if 'files' not in context.user_data:
-        buttons.append([KeyboardButton("📸 تصاویر یا فایل")])
+    # همیشه دکمه تصاویر رو نشون بده
+    buttons.append([KeyboardButton("📸 تصاویر یا فایل")])
+    
     if 'need_date' not in context.user_data:
         buttons.append([KeyboardButton("📅 تاریخ نیاز")])
     if 'deadline' not in context.user_data:
