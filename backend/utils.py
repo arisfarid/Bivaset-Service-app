@@ -6,6 +6,8 @@ import logging  # اضافه شده
 from datetime import datetime, timedelta
 from khayyam import JalaliDatetime
 from telegram import KeyboardButton, ReplyKeyboardMarkup
+from telegram import Update
+from telegram.ext import ContextTypes
 
 logger = logging.getLogger(__name__)  # اضافه شده
 
@@ -151,3 +153,13 @@ def create_dynamic_keyboard(context):
         buttons.append([KeyboardButton("📏 مقدار و واحد")])
     buttons.append([KeyboardButton("⬅️ بازگشت"), KeyboardButton("✅ ثبت درخواست")])
     return ReplyKeyboardMarkup(buttons, resize_keyboard=True)
+
+async def log_chat(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user = update.effective_user
+    timestamp = update.message.date.strftime('%d/%m/%Y %H:%M:%S')
+    if update.message.text:
+        logger.info(f"{user.first_name}, [{timestamp}] - Text: {update.message.text}")
+    elif update.message.photo:
+        logger.info(f"{user.first_name}, [{timestamp}] - Sent {len(update.message.photo)} photo(s)")
+    elif update.message.location:
+        logger.info(f"{user.first_name}, [{timestamp}] - Location: {update.message.location.latitude}, {update.message.location.longitude}")
