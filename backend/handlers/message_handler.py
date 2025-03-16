@@ -49,6 +49,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
     elif text == "📋 درخواست خدمات جدید":
         context.user_data.clear()
+        context.user_data['files'] = []  # این رو اضافه کن تا مطمئن بشیم فایل‌ها ریست می‌شن
         context.user_data['categories'] = await get_categories()
         context.user_data['state'] = 'new_project_category'
         categories = context.user_data['categories']
