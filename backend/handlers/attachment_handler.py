@@ -11,7 +11,8 @@ async def handle_attachment(update: Update, context: ContextTypes.DEFAULT_TYPE) 
     telegram_id = str(update.effective_user.id)
 
     if update.message and update.message.photo:
-        new_photos = [photo.file_id for photo in update.message.photo]
+        # فقط بزرگ‌ترین سایز عکس رو بگیریم (آخرین file_id توی لیست)
+        new_photos = [update.message.photo[-1].file_id]
         if 'files' not in context.user_data:
             context.user_data['files'] = []
 
@@ -28,7 +29,7 @@ async def handle_attachment(update: Update, context: ContextTypes.DEFAULT_TYPE) 
             else:
                 photos_to_add = added_photos[:remaining_slots]
                 current_files.extend(photos_to_add)
-                ignored_count = len(added_photos) - len(photos_to_add)
+                ignored_count = len(new_photos) - len(photos_to_add)
                 logger.info(f"Photos received from {telegram_id}: {photos_to_add}")
                 await update.message.reply_text(
                     f"📸 {len(photos_to_add)} عکس ثبت شد. الان {len(current_files)} از ۵ تاست."
@@ -52,7 +53,7 @@ async def handle_attachment(update: Update, context: ContextTypes.DEFAULT_TYPE) 
 
     # مدیریت دکمه‌ها
     text = update.message.text if update.message else None
-    if state == 'new_project_details_files':
+    if state in ['new_project_details_files', 'managing_photos']:
         if text == "🏁 اتمام ارسال تصاویر":
             context.user_data['state'] = 'new_project_details'
             await update.message.reply_text(
@@ -62,6 +63,13 @@ async def handle_attachment(update: Update, context: ContextTypes.DEFAULT_TYPE) 
             return True
         elif text == "📋 مدیریت عکس‌ها":
             await show_photo_management(update, context)
+            return True
+        elif text == "⬅️ بازگشت":
+            context.user_data['state'] = 'new_project_details'
+            await update.message.reply_text(
+                "📋 جزئیات درخواست:",
+                reply_markup=create_dynamic_keyboard(context)
+            )
             return True
 
     return False
