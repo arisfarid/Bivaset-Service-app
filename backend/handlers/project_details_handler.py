@@ -50,9 +50,15 @@ async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_T
             return True
         elif text == "📸 تصاویر یا فایل":
             context.user_data['state'] = 'new_project_details_files'
-            await update.message.reply_text(
-                "📸 لطفاً تصاویر رو یکی‌یکی بفرست (حداکثر ۵ تا). فقط عکس قبول می‌شه!"
-            )
+            files = context.user_data.get('files', [])
+            if files:
+                await update.message.reply_text(
+                    f"📸 تا الان {len(files)} عکس فرستادی. می‌تونی عکس جدید بفرستی یا مدیریت کنی."
+                )
+            else:
+                await update.message.reply_text(
+                    "📸 لطفاً تصاویر رو یکی‌یکی بفرست (حداکثر ۵ تا). فقط عکس قبول می‌شه!"
+                )
             return True
         elif text == "📅 تاریخ نیاز":
             context.user_data['state'] = 'new_project_details_date'
