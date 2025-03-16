@@ -7,7 +7,7 @@ from .attachment_handler import handle_attachment
 from .project_details_handler import handle_project_details
 from .state_handler import handle_project_states
 from .view_handler import handle_view_projects
-from utils import get_categories, get_user_phone
+from utils import get_categories, get_user_phone, log_chat  # Import log_chat
 
 logger = logging.getLogger(__name__)
 
@@ -25,6 +25,9 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
             reply_markup=ReplyKeyboardMarkup(keyboard, resize_keyboard=True, one_time_keyboard=True)
         )
         return
+
+    # Log the chat
+    await log_chat(update, context)
 
     # بقیه منطق پیام‌ها
     if text == "درخواست خدمات | کارفرما 👔":

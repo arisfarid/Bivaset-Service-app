@@ -6,6 +6,7 @@ from .category_handler import handle_category_callback
 from .edit_handler import handle_edit_callback
 from .view_handler import handle_view_callback
 from .attachment_handler import show_photo_management
+from utils import log_chat  # Added import
 
 logger = logging.getLogger(__name__)
 
@@ -14,6 +15,7 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await query.answer()
     data = query.data
     logger.info(f"Callback data received: {data}")
+    await log_chat(update, context)  # Added log_chat call
 
     if data.startswith('delete_photo_'):
         index = int(data.split('_')[2])

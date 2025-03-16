@@ -1,6 +1,6 @@
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ContextTypes
-from utils import generate_title, convert_deadline_to_date
+from utils import generate_title, convert_deadline_to_date, log_chat
 from django.contrib.gis.geos import Point
 import requests
 import logging
@@ -29,6 +29,7 @@ async def submit_project(update: Update, context: ContextTypes.DEFAULT_TYPE):
         'user_telegram_id': str(update.effective_user.id)
     }
     logger.info(f"Sending project data to API: {data}")
+    await log_chat(update, context)
     try:
         response = requests.post(f"{BASE_URL}projects/", json=data)
         if response.status_code == 201:

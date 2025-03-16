@@ -1,11 +1,12 @@
 from telegram import Update, KeyboardButton, ReplyKeyboardMarkup
 from telegram.ext import ContextTypes
-from utils import clean_budget, validate_date, validate_deadline, create_dynamic_keyboard
+from utils import clean_budget, validate_date, validate_deadline, create_dynamic_keyboard, log_chat
 from khayyam import JalaliDatetime
 from datetime import datetime, timedelta
 from .submission_handler import submit_project
 
 async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await log_chat(update, context)
     text = update.message.text
     state = context.user_data.get('state')
 

@@ -1,7 +1,7 @@
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, KeyboardButton, ReplyKeyboardMarkup
 from telegram.ext import ContextTypes
 import logging
-from utils import get_categories
+from utils import get_categories, log_chat  # Added log_chat import
 from .start_handler import start
 
 logger = logging.getLogger(__name__)
@@ -15,6 +15,7 @@ async def handle_category_selection(update: Update, context: ContextTypes.DEFAUL
         if text == "⬅️ بازگشت":
             context.user_data['state'] = None
             await start(update, context)
+            await log_chat(update, context)  # Added log_chat call
             return True
         selected_cat = next((cat_id for cat_id, cat in categories.items() if cat['name'] == text and cat['parent'] is None), None)
         if selected_cat:
@@ -34,9 +35,11 @@ async def handle_category_selection(update: Update, context: ContextTypes.DEFAUL
                     f"🌟 حالا توضیحات خدماتت رو بگو تا مجری بهتر بتونه قیمت بده.\n"
                     "نمونه خوب: 'نصب 2 شیر پیسوار توی آشپزخونه، جنس استیل، تا آخر هفته نیاز دارم.'"
                 )
+            await log_chat(update, context)  # Added log_chat call
             return True
         else:
             await update.message.reply_text("❌ دسته‌بندی نامعتبر! دوباره انتخاب کن.")
+            await log_chat(update, context)  # Added log_chat call
             return True
 
     elif state == 'new_project_subcategory':
@@ -48,6 +51,7 @@ async def handle_category_selection(update: Update, context: ContextTypes.DEFAUL
                 f"🌟 دسته‌بندی خدماتت رو انتخاب کن:",
                 reply_markup=ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
             )
+            await log_chat(update, context)  # Added log_chat call
             return True
         selected_subcat = next((cat_id for cat_id, cat in categories.items() if cat['name'] == text and cat['parent'] == context.user_data['category_group']), None)
         if selected_subcat:
@@ -57,9 +61,11 @@ async def handle_category_selection(update: Update, context: ContextTypes.DEFAUL
                 f"🌟 حالا توضیحات خدماتت رو بگو تا مجری بهتر بتونه قیمت بده.\n"
                 "نمونه خوب: 'نصب 2 شیر پیسوار توی آشپزخونه، جنس استیل، تا آخر هفته نیاز دارم.'"
             )
+            await log_chat(update, context)  # Added log_chat call
             return True
         else:
             await update.message.reply_text("❌ زیرمجموعه نامعتبر! دوباره انتخاب کن.")
+            await log_chat(update, context)  # Added log_chat call
             return True
     return False
 
@@ -77,3 +83,4 @@ async def handle_category_callback(update: Update, context: ContextTypes.DEFAULT
         f"دسته‌بندی انتخاب‌شده: {cat_name}\nحالا می‌تونی ثبت کنی یا برگردی:",
         reply_markup=InlineKeyboardMarkup(keyboard)
     )
+    await log_chat(update, context)  # Added log_chat call

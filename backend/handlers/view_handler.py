@@ -2,7 +2,7 @@ from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ContextTypes
 import requests
 import logging
-from utils import BASE_URL
+from utils import BASE_URL, log_chat  # Added log_chat import
 
 logger = logging.getLogger(__name__)
 
@@ -26,6 +26,7 @@ async def handle_view_projects(update: Update, context: ContextTypes.DEFAULT_TYP
             await update.message.reply_text(f"❌ خطا در دریافت درخواست‌ها: {response.status_code}")
     except requests.exceptions.ConnectionError:
         await update.message.reply_text("❌ خطا: سرور بک‌اند در دسترس نیست.")
+    await log_chat(update, context)  # Added log_chat call
 
 async def handle_view_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
@@ -59,3 +60,4 @@ async def handle_view_callback(update: Update, context: ContextTypes.DEFAULT_TYP
             await query.edit_message_text(f"❌ خطا در دریافت اطلاعات: {response.status_code}")
     except requests.exceptions.ConnectionError:
         await query.edit_message_text("❌ خطا: سرور بک‌اند در دسترس نیست.")
+    await log_chat(update, context)  # Added log_chat call

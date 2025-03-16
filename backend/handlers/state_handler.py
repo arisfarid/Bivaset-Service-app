@@ -1,6 +1,6 @@
 from telegram import Update, KeyboardButton, ReplyKeyboardMarkup, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ContextTypes
-from utils import BASE_URL
+from utils import BASE_URL, log_chat
 import requests
 import logging
 from .start_handler import start
@@ -11,6 +11,8 @@ async def handle_project_states(update: Update, context: ContextTypes.DEFAULT_TY
     text = update.message.text
     state = context.user_data.get('state')
     telegram_id = str(update.effective_user.id)
+
+    await log_chat(update, context)
 
     if state in ['view_projects_initial', 'view_projects_list']:
         if text == "⬅️ بازگشت":

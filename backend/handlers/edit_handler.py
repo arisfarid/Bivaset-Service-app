@@ -2,13 +2,15 @@ from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ContextTypes
 import requests
 import logging
-from utils import BASE_URL
+from utils import BASE_URL, log_chat  # Modified import
 
 logger = logging.getLogger(__name__)
 
 async def handle_edit_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     data = query.data
+
+    await log_chat(update, context)  # Added logging
 
     if data.startswith(('edit_', 'delete_', 'close_', 'extend_', 'offers_')):
         action, project_id = data.split('_', 1)

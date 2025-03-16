@@ -2,6 +2,7 @@ from telegram import Update, KeyboardButton, ReplyKeyboardMarkup
 from telegram.ext import ContextTypes
 import logging
 from .project_details_handler import create_dynamic_keyboard  # برای بعد از لوکیشن
+from utils import log_chat  # Import log_chat
 
 logger = logging.getLogger(__name__)
 
@@ -12,6 +13,7 @@ async def handle_location(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.message and update.message.location:
         location = update.message.location
         context.user_data['location'] = {'longitude': location.longitude, 'latitude': location.latitude}
+        await log_chat(update, context)  # Log chat
         if state in ['new_project_location', 'new_project_location_input']:
             if 'service_location' not in context.user_data or not context.user_data['service_location']:
                 await update.message.reply_text("❌ لطفاً محل انجام خدمات رو انتخاب کن!")

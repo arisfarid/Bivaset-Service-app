@@ -1,6 +1,6 @@
 from telegram import Update, KeyboardButton, ReplyKeyboardMarkup
 from telegram.ext import ContextTypes, CommandHandler, filters, MessageHandler
-from utils import get_user_phone, BASE_URL
+from utils import get_user_phone, BASE_URL, log_chat  # modified import
 import requests
 import logging
 
@@ -83,6 +83,9 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return  # اینجا متوقف می‌شه تا ثبت‌نام کامل بشه
     else:
         context.user_data['phone'] = phone
+
+    # Log the chat
+    await log_chat(update, context)  # new line added
 
     # اگه ثبت‌نام شده، منوی اصلی رو نشون بده
     keyboard = [
