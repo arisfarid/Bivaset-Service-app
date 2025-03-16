@@ -11,39 +11,43 @@ async def handle_attachment(update: Update, context: ContextTypes.DEFAULT_TYPE):
     telegram_id = str(update.effective_user.id)
 
     if update.message and update.message.photo:
-        photo_file = update.message.photo[-1].file_id
+        photos = update.message.photo  # لیست عکس‌ها
         if 'files' not in context.user_data:
             context.user_data['files'] = []
-        context.user_data['files'].append(photo_file)
+        files = context.user_data['files']
+
+        if len(photos) > 1:
+            await update.message.reply_text("❌ فقط یه عکس توی هر پیام قبول می‌شه! اولین عکس ثبت شد.")
+            photo_file = photos[-1].file_id  # بزرگ‌ترین سایز
+            files.append(photo_file)
+        else:
+            photo_file = photos[-1].file_id
+            files.append(photo_file)
+            await update.message.reply_text(f"📸 عکس {len(files)} از ۵ ثبت شد.")
+
         logger.info(f"Photo received from {telegram_id}: {photo_file}")
 
         if state == 'new_project_details_files':
-            files = context.user_data.get('files', [])
             if len(files) >= 5:
-                await update.message.reply_text("❌ حداکثر ۵ عکس می‌تونی بفرستی! 'اتمام ارسال تصاویر' رو بزن.")
-                return True
-            await update.message.reply_text(f"📸 عکس {len(files)} از ۵ دریافت شد.")
-            if len(files) > 1:
-                await update.message.reply_text("❌ فقط یه عکس در هر نوبت بفرست! عکس بعدی رو جدا بفرست.")
-                context.user_data['files'] = files[:1]  # بقیه رو پاک کن
-            keyboard = [
-                [KeyboardButton("🏁 اتمام ارسال تصاویر"), KeyboardButton("⬅️ بازگشت")]
-            ]
-            await update.message.reply_text(
-                "📸 اگه عکس دیگه‌ای نداری، 'اتمام ارسال تصاویر' رو بزن:",
-                reply_markup=ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
-            )
-            return True
+                await update.message.reply_text("✅ حداکثر ۵ عکس ثبت شد! لطفاً 'اتمام ارسال تصاویر' رو بزن.")
+            else:
+                keyboard = [
+                    [KeyboardButton("🏁 اتمام ارسال تصاویر"), KeyboardButton("⬅️ بازگشت")]
+                ]
+                await update.message.reply_text(
+                    "📸 عکس بعدی رو بفرست یا 'اتمام ارسال تصاویر' رو بزن:",
+                    reply_markup=ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
+                )
         else:
             await update.message.reply_text("📸 الان نمی‌تونی عکس بفرستی! اول یه درخواست شروع کن.")
-            return True
+        return True
 
     # مدیریت اتمام ارسال
     text = update.message.text if update.message else None
     if state == 'new_project_details_files' and text == "🏁 اتمام ارسال تصاویر":
         context.user_data['state'] = 'new_project_details'
         await update.message.reply_text(
-            f"📋 جزئیات درخواست:",
+            "📋 جزئیات درخواست:",
             reply_markup=create_dynamic_keyboard(context)
         )
         return True
@@ -51,4 +55,4 @@ async def handle_attachment(update: Update, context: ContextTypes.DEFAULT_TYPE):
     return False
 
 async def upload_attachments(files, context):
-    return await upload_files(files, context)  # تابع آپلود از utils
+    return await upload_files(files, context)
