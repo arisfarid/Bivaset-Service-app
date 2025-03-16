@@ -156,10 +156,14 @@ def create_dynamic_keyboard(context):
 
 async def log_chat(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
-    timestamp = update.message.date.strftime('%d/%m/%Y %H:%M:%S')
-    if update.message.text:
-        logger.info(f"{user.first_name}, [{timestamp}] - Text: {update.message.text}")
-    elif update.message.photo:
-        logger.info(f"{user.first_name}, [{timestamp}] - Sent {len(update.message.photo)} photo(s)")
-    elif update.message.location:
-        logger.info(f"{user.first_name}, [{timestamp}] - Location: {update.message.location.latitude}, {update.message.location.longitude}")
+    if update.message:  # برای پیام‌های معمولی
+        timestamp = update.message.date.strftime('%d/%m/%Y %H:%M:%S')
+        if update.message.text:
+            logger.info(f"{user.first_name}, [{timestamp}] - Text: {update.message.text}")
+        elif update.message.photo:
+            logger.info(f"{user.first_name}, [{timestamp}] - Sent {len(update.message.photo)} photo(s)")
+        elif update.message.location:
+            logger.info(f"{user.first_name}, [{timestamp}] - Location: {update.message.location.latitude}, {update.message.location.longitude}")
+    elif update.callback_query:  # برای callback‌ها
+        timestamp = datetime.now().strftime('%d/%m/%Y %H:%M:%S')
+        logger.info(f"{user.first_name}, [{timestamp}] - Callback: {update.callback_query.data}")
