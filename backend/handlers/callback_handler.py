@@ -41,6 +41,7 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         context.user_data['state'] = 'new_project_details_files'
     elif data == 'restart':
         context.user_data.clear()
+        await query.message.delete()  # پیام آپدیت رو حذف کن
         await start(update, context)
     elif data == 'back':
         state = context.user_data.get('state', 'start')
