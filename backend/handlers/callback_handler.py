@@ -21,26 +21,22 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if 0 <= index < len(files):
             deleted_file = files.pop(index)
             logger.info(f"Deleted photo {deleted_file} at index {index}")
-            await query.edit_message_text("🗑 عکس حذف شد! دوباره مدیریت کن یا ادامه بده.")
+            await query.message.reply_text("🗑 عکس حذف شد! دوباره مدیریت کن یا ادامه بده.")
             await show_photo_management(update, context)
-        return
     elif data.startswith('replace_photo_'):
         index = int(data.split('_')[2])
         context.user_data['replace_index'] = index
+        await query.message.reply_text("📸 لطفاً عکس جدید رو بفرست تا جایگزین بشه:")
         context.user_data['state'] = 'replacing_photo'
-        await query.edit_message_text("📸 لطفاً عکس جدید رو بفرست تا جایگزین بشه:")
-        return
     elif data == 'back_to_upload':
-        context.user_data['state'] = 'new_project_details_files'
-        keyboard = [
-            [KeyboardButton("🏁 اتمام ارسال تصاویر"), KeyboardButton("📋 مدیریت عکس‌ها")],
-            [KeyboardButton("⬅️ بازگشت")]
-        ]
-        await query.edit_message_text(
+        await query.message.reply_text(
             "📸 عکس دیگه‌ای داری؟",
-            reply_markup=ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
+            reply_markup=ReplyKeyboardMarkup([
+                [KeyboardButton("🏁 اتمام ارسال تصاویر"), KeyboardButton("📋 مدیریت عکس‌ها")],
+                [KeyboardButton("⬅️ بازگشت")]
+            ], resize_keyboard=True)
         )
-        return
+        context.user_data['state'] = 'new_project_details_files'
     elif data == 'restart':
         context.user_data.clear()
         await start(update, context)
