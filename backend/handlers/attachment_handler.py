@@ -9,6 +9,19 @@ logger = logging.getLogger(__name__)
 async def handle_attachment(update: Update, context: ContextTypes.DEFAULT_TYPE) -> bool:
     state = context.user_data.get('state')
     telegram_id = str(update.effective_user.id)
+    current_files = context.user_data.get('files', [])
+
+    if state == 'replacing_photo' and update.message.photo:
+        new_photo = update.message.photo[-1].file_id
+        index = context.user_data.get('replace_index')
+        if 0 <= index < len(current_files):
+            old_photo = current_files[index]
+            current_files[index] = new_photo
+            logger.info(f"Replaced photo {old_photo} with {new_photo} at index {index}")
+            await update.message.reply_text("🔄 عکس جایگزین شد!")
+            await show_photo_management(update, context)
+            context.user_data['state'] = 'managing_photos'
+        return True
 
     if update.message and update.message.photo:
         # فقط بزرگ‌ترین سایز عکس رو بگیریم (آخرین file_id توی لیست)
