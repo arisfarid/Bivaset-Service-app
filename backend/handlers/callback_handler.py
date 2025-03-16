@@ -14,7 +14,33 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     data = query.data
     logger.info(f"Callback data received: {data}")
 
-    if data == 'restart':
+    if data.startswith('delete_photo_'):
+        index = int(data.split('_')[2])
+        files = context.user_data.get('files', [])
+        if 0 <= index < len(files):
+            deleted_file = files.pop(index)
+            logger.info(f"Deleted photo {deleted_file} at index {index}")
+            await query.edit_message_text("🗑 عکس حذف شد! دوباره مدیریت کن یا ادامه بده.")
+            await show_photo_management(update, context)
+        return
+    elif data.startswith('replace_photo_'):
+        index = int(data.split('_')[2])
+        context.user_data['replace_index'] = index
+        context.user_data['state'] = 'replacing_photo'
+        await query.edit_message_text("📸 لطفاً عکس جدید رو بفرست تا جایگزین بشه:")
+        return
+    elif data == 'back_to_upload':
+        context.user_data['state'] = 'new_project_details_files'
+        keyboard = [
+            [KeyboardButton("🏁 اتمام ارسال تصاویر"), KeyboardButton("📋 مدیریت عکس‌ها")],
+            [KeyboardButton("⬅️ بازگشت")]
+        ]
+        await query.edit_message_text(
+            "📸 عکس دیگه‌ای داری؟",
+            reply_markup=ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
+        )
+        return
+    elif data == 'restart':
         context.user_data.clear()
         await start(update, context)
     elif data == 'back':
@@ -60,3 +86,17 @@ async def show_employer_menu(update: Update, context: ContextTypes.DEFAULT_TYPE)
         "🎉 عالیه! می‌خوای خدمات جدید درخواست کنی یا پیشنهادات رو ببینی؟",
         reply_markup=reply_markup
     )
+
+async def handle_attachment(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    state = context.user_data.get('state')
+    if state == 'replacing_photo' and update.message and update.message.photo:
+        new_photo = update.message.photo[-1].file_id
+        index = context.user_data.get('replace_index')
+        if 'files' in context.user_data and 0 <= index < len(context.user_data['files']):
+            old_photo = context.user_data['files'][index]
+            context.user_data['files'][index] = new_photo
+            logger.info(f"Replaced photo {old_photo} with {new_photo} at index {index}")
+            await update.message.reply_text("🔄 عکس جایگزین شد!")
+            await show_photo_management(update, context)
+        context.user_data['state'] = 'managing_photos'
+        return True
