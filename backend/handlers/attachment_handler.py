@@ -44,12 +44,11 @@ async def handle_attachment(update: Update, context: ContextTypes.DEFAULT_TYPE) 
             else:
                 photos_to_add = added_photos[:remaining_slots]
                 current_files.extend(photos_to_add)
-                ignored_count = len(new_photos) - len(photos_to_add)
                 logger.info(f"Photos received from {telegram_id}: {photos_to_add}")
+                # فقط یک پیام جمع‌بندی ارسال کن
                 await update.message.reply_text(
-                    f"📸 {len(photos_to_add)} عکس ثبت شد. الان {len(current_files)} از ۵ تاست."
-                    f"{f' ({ignored_count} عکس نادیده گرفته شد)' if ignored_count > 0 else ''}\n"
-                    "برای حذف یا جایگزینی، 'مدیریت عکس‌ها' رو بزن."
+                    f"📸 {len(photos_to_add)} عکس ثبت شد. الان {len(current_files)} از ۵ تاست.\n"
+                    "برای ادامه یا مدیریت، گزینه‌ای انتخاب کن:"
                 )
                 await log_chat(update, context)  # Log chat
             
