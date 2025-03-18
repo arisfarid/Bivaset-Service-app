@@ -96,9 +96,8 @@ conv_handler = ConversationHandler(
         DESCRIPTION: [create_message_handler(handle_project_details)],
         LOCATION_TYPE: [create_message_handler(handle_location, filters.LOCATION)],
         LOCATION_INPUT: [
-            MessageHandler(filters.TEXT & ~filters.COMMAND, handle_location),
             MessageHandler(filters.LOCATION, handle_location),
-            MessageHandler(filters.PHOTO, handle_location),  # چک کردن عکس
+            MessageHandler(filters.ALL & ~filters.LOCATION, handle_location),  # هر نوع ورودی غیرلوکیشن
         ],
         DETAILS: [create_message_handler(handle_project_details)],
         DETAILS_FILES: [create_message_handler(handle_attachment, filters.PHOTO)],
