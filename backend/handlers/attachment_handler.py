@@ -41,7 +41,7 @@ async def handle_attachment(update: Update, context: ContextTypes.DEFAULT_TYPE) 
 
     # پردازش آلبوم عکس
     if update.message and update.message.photo:
-        new_photos = [photo.file_id for photo in update.message.photo]  # گرفتن همه عکس‌ها از آلبوم
+        new_photos = list(set(photo.file_id for photo in update.message.photo))  # حذف تکراری‌ها
         if 'files' not in context.user_data:
             context.user_data['files'] = []
 
@@ -52,20 +52,29 @@ async def handle_attachment(update: Update, context: ContextTypes.DEFAULT_TYPE) 
         if current_state == DETAILS_FILES:
             if remaining_slots <= 0:
                 await update.message.reply_text(
-                    "❌ لیست عکس‌ها پره! برای حذف یا جایگزینی، 'مدیریت عکس‌ها' رو بزن."
+                    "❌ لیست عکس‌ها پره! برای حذف یا جایگزینی، 'مدیریت عکس‌ها' رو بزن.",
+                    reply_markup=FILE_MANAGEMENT_MENU_KEYBOARD  # اضافه کردن کیبورد
                 )
                 await log_chat(update, context)
             else:
                 photos_to_add = added_photos[:remaining_slots]
-                current_files.extend(photos_to_add)
-                logger.info(f"Photos received from {telegram_id}: {photos_to_add}")
-                await update.message.reply_text(
-                    f"📸 {len(photos_to_add)} عکس جدید ثبت شد. الان {len(current_files)} از ۵ تاست.\n"
-                    "برای ادامه یا مدیریت، گزینه‌ای انتخاب کن:",
-                    reply_markup=FILE_MANAGEMENT_MENU_KEYBOARD
-                )
-                await log_chat(update, context)
+                if photos_to_add:
+                    current_files.extend(photos_to_add)
+                    logger.info(f"Photos received from {telegram_id}: {photos_to_add}")
+                    await update.message.reply_text(
+                        f"📸 {len(photos_to_add)} عکس جدید ثبت شد. الان {len(current_files)} از ۵ تاست.\n"
+                        "برای ادامه یا مدیریت، گزینه‌ای انتخاب کن:",
+                        reply_markup=FILE_MANAGEMENT_MENU_KEYBOARD
+                    )
+                    await log_chat(update, context)
+                elif not added_photos:
+                    await update.message.reply_text(
+                        "❌ همه عکس‌ها تکراری بودن! برای مدیریت، گزینه‌ای انتخاب کن:",
+                        reply_markup=FILE_MANAGEMENT_MENU_KEYBOARD
+                    )
+                    await log_chat(update, context)
             
+            context.user_data['files'] = current_files
             return DETAILS_FILES
         else:
             await update.message.reply_text("📸 الان نمی‌تونی عکس بفرستی! اول یه درخواست شروع کن.")
