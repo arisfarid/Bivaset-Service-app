@@ -3,7 +3,7 @@ from telegram.ext import ContextTypes, ConversationHandler
 from utils import upload_files, log_chat
 import logging
 from handlers.project_details_handler import create_dynamic_keyboard
-from keyboards import FILE_MANAGEMENT_MENU_KEYBOARD  # اضافه شده
+from keyboards import FILE_MANAGEMENT_MENU_KEYBOARD
 
 logger = logging.getLogger(__name__)
 
@@ -14,7 +14,14 @@ async def handle_attachment(update: Update, context: ContextTypes.DEFAULT_TYPE) 
     telegram_id = str(update.effective_user.id)
     current_files = context.user_data.get('files', [])
 
-    if current_state == 'replacing_photo' and update.message.photo:
+    # چک کردن ویدیو
+    if update.message and update.message.video:
+        await update.message.reply_text("❌ فقط عکس قبول می‌شه! ویدئو رو نمی‌تونم ثبت کنم.")
+        await log_chat(update, context)
+        return current_state
+
+    # جایگزینی عکس
+    if current_state == 'replacing_photo' and update.message and update.message.photo:
         new_photo = update.message.photo[-1].file_id
         index = context.user_data.get('replace_index')
         if 0 <= index < len(current_files):
@@ -32,8 +39,9 @@ async def handle_attachment(update: Update, context: ContextTypes.DEFAULT_TYPE) 
             context.user_data['state'] = DETAILS_FILES
         return DETAILS_FILES
 
+    # پردازش آلبوم عکس
     if update.message and update.message.photo:
-        new_photos = [update.message.photo[-1].file_id]
+        new_photos = [photo.file_id for photo in update.message.photo]  # گرفتن همه عکس‌ها از آلبوم
         if 'files' not in context.user_data:
             context.user_data['files'] = []
 
@@ -52,15 +60,12 @@ async def handle_attachment(update: Update, context: ContextTypes.DEFAULT_TYPE) 
                 current_files.extend(photos_to_add)
                 logger.info(f"Photos received from {telegram_id}: {photos_to_add}")
                 await update.message.reply_text(
-                    f"📸 {len(photos_to_add)} عکس ثبت شد. الان {len(current_files)} از ۵ تاست.\n"
-                    "برای ادامه یا مدیریت، گزینه‌ای انتخاب کن:"
+                    f"📸 {len(photos_to_add)} عکس جدید ثبت شد. الان {len(current_files)} از ۵ تاست.\n"
+                    "برای ادامه یا مدیریت، گزینه‌ای انتخاب کن:",
+                    reply_markup=FILE_MANAGEMENT_MENU_KEYBOARD
                 )
                 await log_chat(update, context)
             
-            await update.message.reply_text(
-                "📸 عکس دیگه‌ای داری؟ اگه نه، 'اتمام ارسال تصاویر' رو بزن:",
-                reply_markup=FILE_MANAGEMENT_MENU_KEYBOARD  # استفاده از FILE_MANAGEMENT_MENU_KEYBOARD
-            )
             return DETAILS_FILES
         else:
             await update.message.reply_text("📸 الان نمی‌تونی عکس بفرستی! اول یه درخواست شروع کن.")
@@ -68,11 +73,7 @@ async def handle_attachment(update: Update, context: ContextTypes.DEFAULT_TYPE) 
             context.user_data.pop('files', None)
             return current_state
 
-    if update.message and update.message.video:
-        await update.message.reply_text("❌ فقط عکس قبول می‌شه! ویدئو رو نمی‌تونم ثبت کنم.")
-        await log_chat(update, context)
-        return current_state
-
+    # پردازش متن
     text = update.message.text if update.message else None
     if current_state in [DETAILS_FILES, 'managing_photos']:
         if text == "🏁 اتمام ارسال تصاویر":
@@ -104,7 +105,7 @@ async def show_photo_management(update: Update, context: ContextTypes.DEFAULT_TY
         await log_chat(update, context)
         await update.message.reply_text(
             "📸 برو عکس بفرست یا برگرد:",
-            reply_markup=FILE_MANAGEMENT_MENU_KEYBOARD  # استفاده از FILE_MANAGEMENT_MENU_KEYBOARD
+            reply_markup=FILE_MANAGEMENT_MENU_KEYBOARD
         )
         await log_chat(update, context)
         return
