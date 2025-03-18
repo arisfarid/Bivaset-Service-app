@@ -11,7 +11,6 @@ from handlers.view_handler import handle_view_projects
 
 logger = logging.getLogger(__name__)
 
-# استفاده از حالت‌های تعریف‌شده
 START, REGISTER, ROLE, EMPLOYER_MENU, CATEGORY, SUBCATEGORY, DESCRIPTION, LOCATION_TYPE, LOCATION_INPUT, DETAILS, DETAILS_FILES, DETAILS_DATE, DETAILS_DEADLINE, DETAILS_BUDGET, DETAILS_QUANTITY, SUBMIT, VIEW_PROJECTS, PROJECT_ACTIONS = range(18)
 
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
@@ -35,6 +34,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     current_state = context.user_data.get('state', ROLE)
     if current_state == ROLE:
         if text == "درخواست خدمات | کارفرما 👔":
+            context.user_data['state'] = EMPLOYER_MENU  # آپدیت state
             keyboard = [
                 [KeyboardButton("📋 درخواست خدمات جدید"), KeyboardButton("📊 مشاهده درخواست‌ها")],
                 [KeyboardButton("⬅️ بازگشت")]
@@ -53,7 +53,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
                 "🌟 خوبه، {}! می‌خوای درخواست‌های موجود رو ببینی یا پیشنهاد کار بدی؟".format(update.effective_user.full_name),
                 reply_markup=ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
             )
-            return ROLE  # TODO: بعداً برای مجری‌ها گسترش داده بشه
+            return ROLE  # بعداً برای مجری‌ها گسترش داده بشه
         else:
             await update.message.reply_text("❌ گزینه نامعتبر! لطفاً از منو انتخاب کن.")
             return ROLE
@@ -74,14 +74,16 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
             context.user_data['state'] = CATEGORY
             return CATEGORY
         elif text == "📊 مشاهده درخواست‌ها":
+            context.user_data['state'] = VIEW_PROJECTS
             await handle_view_projects(update, context)
             return VIEW_PROJECTS
         elif text == "⬅️ بازگشت":
+            context.user_data['state'] = ROLE
             keyboard = [["درخواست خدمات | کارفرما 👔"], ["پیشنهاد قیمت | مجری 🦺"]]
             await update.message.reply_text("🌟 چی می‌خوای امروز؟", reply_markup=ReplyKeyboardMarkup(keyboard, resize_keyboard=True))
             return ROLE
         else:
-            await update.message.reply_text("❌ گزینه نامعتبر!")
+            await update.message.reply_text("❌ گزینه نامعتبر! لطفاً از منو انتخاب کن.")
             return EMPLOYER_MENU
     
     # انتقال به handlerهای دیگر بر اساس حالت
