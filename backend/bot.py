@@ -1,7 +1,7 @@
 import os
 import sys
 import logging
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, CallbackQueryHandler, ContextTypes, ConversationHandler
 from utils import save_timestamp, check_for_updates
 from handlers.start_handler import start, handle_contact, handle_role, cancel
