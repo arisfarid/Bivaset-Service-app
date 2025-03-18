@@ -32,7 +32,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
 
     # لاگ کردن state فعلی
     current_state = context.user_data.get('state', ROLE)
-    logger.info(f"Current state for {telegram_id}: {current_state}")
+    logger.info(f"Current state for {telegram_id} before processing: {current_state}")
 
     if current_state == ROLE:
         if text == "درخواست خدمات | کارفرما 👔":
@@ -45,6 +45,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
                 "🎉 عالیه، {}! می‌خوای خدمات جدید درخواست کنی یا پیشنهادات رو ببینی؟".format(update.effective_user.full_name),
                 reply_markup=ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
             )
+            logger.info(f"State updated to EMPLOYER_MENU for {telegram_id}")
             return EMPLOYER_MENU
         elif text == "پیشنهاد قیمت | مجری 🦺":
             keyboard = [
@@ -55,7 +56,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
                 "🌟 خوبه، {}! می‌خوای درخواست‌های موجود رو ببینی یا پیشنهاد کار بدی؟".format(update.effective_user.full_name),
                 reply_markup=ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
             )
-            return ROLE  # بعداً برای مجری‌ها گسترش داده بشه
+            return ROLE
         else:
             await update.message.reply_text("❌ گزینه نامعتبر! لطفاً از منو انتخاب کن.")
             return ROLE
@@ -63,6 +64,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         logger.info(f"Processing EMPLOYER_MENU input: {text}")
         if text == "📋 درخواست خدمات جدید":
             context.user_data.clear()
+            context.user_data['state'] = CATEGORY
             context.user_data['files'] = []
             context.user_data['categories'] = await get_categories()
             if not context.user_data['categories']:
@@ -74,16 +76,18 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
                 "🌟 دسته‌بندی خدماتت رو انتخاب کن:",
                 reply_markup=ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
             )
-            context.user_data['state'] = CATEGORY
+            logger.info(f"State updated to CATEGORY for {telegram_id}")
             return CATEGORY
         elif text == "📊 مشاهده درخواست‌ها":
             context.user_data['state'] = VIEW_PROJECTS
             await handle_view_projects(update, context)
+            logger.info(f"State updated to VIEW_PROJECTS for {telegram_id}")
             return VIEW_PROJECTS
         elif text == "⬅️ بازگشت":
             context.user_data['state'] = ROLE
             keyboard = [["درخواست خدمات | کارفرما 👔"], ["پیشنهاد قیمت | مجری 🦺"]]
             await update.message.reply_text("🌟 چی می‌خوای امروز؟", reply_markup=ReplyKeyboardMarkup(keyboard, resize_keyboard=True))
+            logger.info(f"State updated to ROLE for {telegram_id}")
             return ROLE
         else:
             await update.message.reply_text("❌ گزینه نامعتبر! لطفاً از منو انتخاب کن.")

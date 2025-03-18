@@ -71,13 +71,19 @@ logger.info(f"Using Telegram Bot Token: {TOKEN[:10]}...")
 
 app = Application.builder().token(TOKEN).build()
 
+# تابع کمکی برای لاگ کردن state
+async def log_state(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    current_state = context.user_data.get('state', START)
+    logger.info(f"Processing message for user {update.effective_user.id}, current state: {current_state}")
+    return current_state
+
 # تنظیم ConversationHandler
 conv_handler = ConversationHandler(
     entry_points=[CommandHandler("start", start)],
     states={
         START: [MessageHandler(filters.TEXT & ~filters.COMMAND, start)],
         REGISTER: [MessageHandler(filters.CONTACT, handle_contact)],
-        ROLE: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_role)],
+        ROLE: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message)],
         EMPLOYER_MENU: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message)],
         CATEGORY: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_category_selection)],
         SUBCATEGORY: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_category_selection)],
