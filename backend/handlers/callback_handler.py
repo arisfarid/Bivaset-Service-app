@@ -7,7 +7,7 @@ from handlers.edit_handler import handle_edit_callback
 from handlers.view_handler import handle_view_callback
 from handlers.attachment_handler import show_photo_management
 from utils import log_chat
-from keyboards import EMPLOYER_INLINE_MENU_KEYBOARD, FILE_MANAGEMENT_MENU_KEYBOARD, RESTART_INLINE_MENU_KEYBOARD, BACK_INLINE_MENU_KEYBOARD  # اضافه شده
+from keyboards import EMPLOYER_INLINE_MENU_KEYBOARD, FILE_MANAGEMENT_MENU_KEYBOARD, RESTART_INLINE_MENU_KEYBOARD, BACK_INLINE_MENU_KEYBOARD
 
 logger = logging.getLogger(__name__)
 
@@ -27,33 +27,46 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
             if 0 <= index < len(files):
                 deleted_file = files.pop(index)
                 logger.info(f"Deleted photo {deleted_file} at index {index}")
-                await query.message.reply_text("🗑 عکس حذف شد! دوباره مدیریت کن یا ادامه بده.")
+                # ویرایش پیام فعلی به جای ارسال پیام جدید
                 if files:
+                    await query.edit_message_text(
+                        "🗑 عکس حذف شد! دوباره مدیریت کن یا ادامه بده.",
+                        reply_markup=InlineKeyboardMarkup([
+                            [InlineKeyboardButton(f"🗑 حذف عکس {i+1}", callback_data=f"delete_photo_{i}")]
+                            for i in range(len(files))
+                        ] + [[InlineKeyboardButton("➡️ ادامه", callback_data="continue")]])
+                    )
                     await show_photo_management(update, context)
                 else:
-                    await query.message.reply_text(
-                        "📭 هنوز عکسی نفرستادی!\n📸 برو عکس بفرست یا برگرد:",
-                        reply_markup=FILE_MANAGEMENT_MENU_KEYBOARD  # استفاده از FILE_MANAGEMENT_MENU_KEYBOARD
+                    await query.edit_message_text(
+                        "🗑 همه عکس‌ها حذف شدن! حالا چی؟",
+                        reply_markup=FILE_MANAGEMENT_MENU_KEYBOARD
                     )
+            else:
+                await query.edit_message_text("❌ عکس مورد نظر پیدا نشد!")
             return DETAILS_FILES
+
         elif data.startswith('replace_photo_'):
             index = int(data.split('_')[2])
             context.user_data['replace_index'] = index
             await query.message.reply_text("📸 لطفاً عکس جدید رو بفرست تا جایگزین بشه:")
             context.user_data['state'] = 'replacing_photo'
             return DETAILS_FILES
+
         elif data == 'back_to_upload':
             await query.message.reply_text(
                 "📸 عکس دیگه‌ای داری؟",
-                reply_markup=FILE_MANAGEMENT_MENU_KEYBOARD  # استفاده از FILE_MANAGEMENT_MENU_KEYBOARD
+                reply_markup=FILE_MANAGEMENT_MENU_KEYBOARD
             )
             context.user_data['state'] = DETAILS_FILES
             return DETAILS_FILES
+
         elif data == 'restart':
             context.user_data.clear()
             await query.message.delete()
             await start(update, context)
             return ROLE
+
         elif data == 'back':
             current_state = context.user_data.get('state', ROLE)
             if current_state == CATEGORY:
@@ -66,7 +79,7 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
                 root_cats = [cat_id for cat_id, cat in categories.items() if cat['parent'] is None]
                 keyboard = [[KeyboardButton(categories[cat_id]['name'])] for cat_id in root_cats] + [[KeyboardButton("⬅️ بازگشت")]]
                 await query.message.edit_text(
-                    f"🌟 دسته‌بندی خدماتت رو انتخاب کن:",
+                    "🌟 دسته‌بندی خدماتت رو انتخاب کن:",
                     reply_markup=ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
                 )
                 return CATEGORY
@@ -76,15 +89,19 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
             else:
                 await start(update, context)
                 return ROLE
+
         elif data.isdigit():
             await handle_category_callback(update, context)
             return SUBMIT
+
         elif data in ['new_project', 'view_projects']:
             logger.info(f"Redirecting {data} to message_handler")
             return EMPLOYER_MENU
+
         elif data.startswith(('edit_', 'delete_', 'close_', 'extend_', 'offers_')):
             await handle_edit_callback(update, context)
             return PROJECT_ACTIONS
+
         elif data == 'select_location':
             await query.message.edit_text(
                 "📍 لطفاً لوکیشن رو با استفاده از دکمه پیوست تلگرام (📎) بفرستید:\n"
@@ -92,15 +109,16 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
             )
             context.user_data['state'] = LOCATION_INPUT
             return LOCATION_INPUT
+
         else:
             await handle_view_callback(update, context)
             return PROJECT_ACTIONS
+
     except Exception as e:
-        # Fallback برای هر خطای غیرمنتظره
         logger.error(f"Unexpected error in callback handler: {e}")
-        await query.message.reply_text(
+        await update.effective_chat.send_message(
             "❌ یه مشکل پیش اومد! بریم از اول شروع کنیم؟",
-            reply_markup=RESTART_INLINE_MENU_KEYBOARD  # استفاده از RESTART_INLINE_MENU_KEYBOARD
+            reply_markup=RESTART_INLINE_MENU_KEYBOARD
         )
         context.user_data['state'] = ROLE
         return ROLE
@@ -108,7 +126,7 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
 async def show_employer_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.callback_query.message.edit_text(
         "🎉 عالیه! می‌خوای خدمات جدید درخواست کنی یا پیشنهادات رو ببینی؟",
-        reply_markup=EMPLOYER_INLINE_MENU_KEYBOARD  # استفاده از EMPLOYER_INLINE_MENU_KEYBOARD
+        reply_markup=EMPLOYER_INLINE_MENU_KEYBOARD
     )
     context.user_data['state'] = EMPLOYER_MENU
 
