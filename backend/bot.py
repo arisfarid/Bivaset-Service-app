@@ -14,7 +14,7 @@ from handlers.submission_handler import submit_project
 from handlers.state_handler import handle_project_states
 from handlers.view_handler import handle_view_projects
 from handlers.callback_handler import handle_callback
-from keyboards import RESTART_INLINE_MENU  # اضافه شده
+from keyboards import RESTART_INLINE_MENU_KEYBOARD  # اضافه شده
 
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -38,7 +38,7 @@ async def send_update_and_restart(token: str, active_chats: list, context: Conte
             await context.bot.send_message(
                 chat_id=chat_id,
                 text="🎉 ربات آپدیت شد! لطفاً برای ادامه روی دکمه بزنید.",
-                reply_markup=RESTART_INLINE_MENU,  # استفاده از کیبورد متمرکز
+                reply_markup=RESTART_INLINE_MENU_KEYBOARD,  # استفاده از کیبورد متمرکز
                 disable_notification=True
             )
             logger.info(f"Sent update notification to {chat_id}")

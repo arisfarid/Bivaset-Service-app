@@ -3,7 +3,7 @@ from telegram.ext import ContextTypes, ConversationHandler
 import requests
 import logging
 from utils import BASE_URL, log_chat
-from keyboards import VIEW_PROJECTS_MENU  # اضافه شده
+from keyboards import VIEW_PROJECTS_MENU_KEYBOARD  # اضافه شده
 
 logger = logging.getLogger(__name__)
 
@@ -20,7 +20,7 @@ async def handle_view_projects(update: Update, context: ContextTypes.DEFAULT_TYP
                 await update.message.reply_text("📭 هنوز درخواستی ثبت نکردی!")
                 await update.message.reply_text(
                     "📊 ادامه بده یا برگرد:",
-                    reply_markup=VIEW_PROJECTS_MENU  # استفاده از VIEW_PROJECTS_MENU
+                    reply_markup=VIEW_PROJECTS_MENU_KEYBOARD  # استفاده از VIEW_PROJECTS_MENU_KEYBOARD
                 )
                 return VIEW_PROJECTS
             message = "📋 برای مشاهده جزئیات و مدیریت هر کدام از درخواست‌ها روی دکمه مربوطه ضربه بزنید:\n"
@@ -31,7 +31,7 @@ async def handle_view_projects(update: Update, context: ContextTypes.DEFAULT_TYP
             await update.message.reply_text(message, reply_markup=InlineKeyboardMarkup(inline_keyboard))
             await update.message.reply_text(
                 "📊 ادامه بده یا برگرد:",
-                reply_markup=VIEW_PROJECTS_MENU  # استفاده از VIEW_PROJECTS_MENU
+                reply_markup=VIEW_PROJECTS_MENU_KEYBOARD  # استفاده از VIEW_PROJECTS_MENU_KEYBOARD
             )
         else:
             await update.message.reply_text(f"❌ خطا در دریافت درخواست‌ها: {response.status_code}")

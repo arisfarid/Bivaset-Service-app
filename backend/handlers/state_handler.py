@@ -4,7 +4,7 @@ from utils import BASE_URL, log_chat
 import requests
 import logging
 from handlers.start_handler import start
-from keyboards import VIEW_PROJECTS_MENU, MAIN_MENU  # اضافه شده
+from keyboards import VIEW_PROJECTS_MENU_KEYBOARD, MAIN_MENU_KEYBOARD  # اضافه شده
 
 logger = logging.getLogger(__name__)
 
@@ -34,7 +34,7 @@ async def handle_project_states(update: Update, context: ContextTypes.DEFAULT_TY
                         await update.message.reply_text(f"📭 هیچ درخواست {text} پیدا نشد!")
                         await update.message.reply_text(
                             "📊 ادامه بده یا برگرد:",
-                            reply_markup=VIEW_PROJECTS_MENU  # استفاده از VIEW_PROJECTS_MENU
+                            reply_markup=VIEW_PROJECTS_MENU_KEYBOARD  # استفاده از VIEW_PROJECTS_MENU_KEYBOARD
                         )
                         return PROJECT_ACTIONS
                     message = f"📋 برای مشاهده جزئیات و مدیریت هر کدام از {text} روی دکمه مربوطه ضربه بزنید:\n"
@@ -50,22 +50,22 @@ async def handle_project_states(update: Update, context: ContextTypes.DEFAULT_TY
                     await update.message.reply_text(message, reply_markup=InlineKeyboardMarkup(inline_keyboard))
                     await update.message.reply_text(
                         "📊 ادامه بده یا برگرد:",
-                        reply_markup=VIEW_PROJECTS_MENU  # استفاده از VIEW_PROJECTS_MENU
+                        reply_markup=VIEW_PROJECTS_MENU_KEYBOARD  # استفاده از VIEW_PROJECTS_MENU_KEYBOARD
                     )
                 else:
                     await update.message.reply_text(f"❌ خطا در دریافت درخواست‌ها: {response.status_code}")
                     await update.message.reply_text(
                         "📊 ادامه بده یا برگرد:",
-                        reply_markup=VIEW_PROJECTS_MENU  # استفاده از VIEW_PROJECTS_MENU
+                        reply_markup=VIEW_PROJECTS_MENU_KEYBOARD  # استفاده از VIEW_PROJECTS_MENU_KEYBOARD
                     )
             except requests.exceptions.ConnectionError:
                 await update.message.reply_text("❌ خطا: سرور بک‌اند در دسترس نیست.")
                 await update.message.reply_text(
                     "📊 ادامه بده یا برگرد:",
-                    reply_markup=VIEW_PROJECTS_MENU  # استفاده از VIEW_PROJECTS_MENU
+                    reply_markup=VIEW_PROJECTS_MENU_KEYBOARD  # استفاده از VIEW_PROJECTS_MENU_KEYBOARD
                 )
             return PROJECT_ACTIONS
         else:
-            await update.message.reply_text("❌ گزینه نامعتبر! لطفاً یکی از دکمه‌ها رو انتخاب کن.", reply_markup=VIEW_PROJECTS_MENU)
+            await update.message.reply_text("❌ گزینه نامعتبر! لطفاً یکی از دکمه‌ها رو انتخاب کن.", reply_markup=VIEW_PROJECTS_MENU_KEYBOARD)
             return PROJECT_ACTIONS
     return current_state

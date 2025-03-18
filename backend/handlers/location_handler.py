@@ -3,7 +3,7 @@ from telegram.ext import ContextTypes, ConversationHandler
 from handlers.project_details_handler import create_dynamic_keyboard
 from utils import log_chat
 import logging
-from keyboards import LOCATION_TYPE_MENU, LOCATION_INPUT_MENU  # اضافه شده
+from keyboards import LOCATION_TYPE_MENU_KEYBOARD, LOCATION_INPUT_MENU_KEYBOARD  # اضافه شده
 
 logger = logging.getLogger(__name__)
 
@@ -18,7 +18,7 @@ async def handle_location(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         await log_chat(update, context)
         if current_state in [LOCATION_TYPE, LOCATION_INPUT]:
             if 'service_location' not in context.user_data or not context.user_data['service_location']:
-                await update.message.reply_text("❌ لطفاً محل انجام خدمات رو انتخاب کن!", reply_markup=LOCATION_TYPE_MENU)
+                await update.message.reply_text("❌ لطفاً محل انجام خدمات رو انتخاب کن!", reply_markup=LOCATION_TYPE_MENU_KEYBOARD)
                 return LOCATION_TYPE
             context.user_data['state'] = DETAILS
             await update.message.reply_text(
@@ -39,10 +39,10 @@ async def handle_location(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
             return DESCRIPTION
         elif text == "➡️ ادامه":
             if 'service_location' not in context.user_data or not context.user_data['service_location']:
-                await update.message.reply_text("❌ لطفاً محل انجام خدمات رو انتخاب کن!", reply_markup=LOCATION_TYPE_MENU)
+                await update.message.reply_text("❌ لطفاً محل انجام خدمات رو انتخاب کن!", reply_markup=LOCATION_TYPE_MENU_KEYBOARD)
                 return LOCATION_TYPE
             if context.user_data['service_location'] == 'client_site' and 'location' not in context.user_data:
-                await update.message.reply_text("❌ لطفاً لوکیشن رو ثبت کن!", reply_markup=LOCATION_TYPE_MENU)
+                await update.message.reply_text("❌ لطفاً لوکیشن رو ثبت کن!", reply_markup=LOCATION_TYPE_MENU_KEYBOARD)
                 return LOCATION_TYPE
             context.user_data['state'] = DETAILS
             await update.message.reply_text(
@@ -58,7 +58,7 @@ async def handle_location(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
                 context.user_data['state'] = LOCATION_INPUT
                 await update.message.reply_text(
                     f"📍 برای دریافت قیمت از نزدیک‌ترین مجری، محل انجام خدمات رو از نقشه انتخاب کن:",
-                    reply_markup=LOCATION_INPUT_MENU  # استفاده از LOCATION_INPUT_MENU
+                    reply_markup=LOCATION_INPUT_MENU_KEYBOARD  # استفاده از LOCATION_INPUT_MENU_KEYBOARD
                 )
                 return LOCATION_INPUT
             else:
@@ -76,13 +76,13 @@ async def handle_location(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
             context.user_data['state'] = LOCATION_TYPE
             await update.message.reply_text(
                 f"🌟 محل انجام خدماتت رو انتخاب کن:",
-                reply_markup=LOCATION_TYPE_MENU  # استفاده از LOCATION_TYPE_MENU
+                reply_markup=LOCATION_TYPE_MENU_KEYBOARD  # استفاده از LOCATION_TYPE_MENU_KEYBOARD
             )
             await log_chat(update, context)
             return LOCATION_TYPE
         elif text == "➡️ ادامه":
             if 'location' not in context.user_data:
-                await update.message.reply_text("❌ لطفاً لوکیشن رو ثبت کن!", reply_markup=LOCATION_INPUT_MENU)
+                await update.message.reply_text("❌ لطفاً لوکیشن رو ثبت کن!", reply_markup=LOCATION_INPUT_MENU_KEYBOARD)
                 return LOCATION_INPUT
             context.user_data['state'] = DETAILS
             await update.message.reply_text(

@@ -3,7 +3,7 @@ from telegram.ext import ContextTypes, ConversationHandler
 from utils import upload_files, log_chat
 import logging
 from handlers.project_details_handler import create_dynamic_keyboard
-from keyboards import FILE_MANAGEMENT_MENU  # اضافه شده
+from keyboards import FILE_MANAGEMENT_MENU_KEYBOARD  # اضافه شده
 
 logger = logging.getLogger(__name__)
 
@@ -59,7 +59,7 @@ async def handle_attachment(update: Update, context: ContextTypes.DEFAULT_TYPE) 
             
             await update.message.reply_text(
                 "📸 عکس دیگه‌ای داری؟ اگه نه، 'اتمام ارسال تصاویر' رو بزن:",
-                reply_markup=FILE_MANAGEMENT_MENU  # استفاده از FILE_MANAGEMENT_MENU
+                reply_markup=FILE_MANAGEMENT_MENU_KEYBOARD  # استفاده از FILE_MANAGEMENT_MENU_KEYBOARD
             )
             return DETAILS_FILES
         else:
@@ -104,7 +104,7 @@ async def show_photo_management(update: Update, context: ContextTypes.DEFAULT_TY
         await log_chat(update, context)
         await update.message.reply_text(
             "📸 برو عکس بفرست یا برگرد:",
-            reply_markup=FILE_MANAGEMENT_MENU  # استفاده از FILE_MANAGEMENT_MENU
+            reply_markup=FILE_MANAGEMENT_MENU_KEYBOARD  # استفاده از FILE_MANAGEMENT_MENU_KEYBOARD
         )
         await log_chat(update, context)
         return

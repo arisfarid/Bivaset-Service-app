@@ -8,7 +8,7 @@ from handlers.attachment_handler import handle_attachment
 from handlers.project_details_handler import handle_project_details
 from handlers.state_handler import handle_project_states
 from handlers.view_handler import handle_view_projects
-from keyboards import REGISTER_MENU, EMPLOYER_MENU, CONTRACTOR_MENU, MAIN_MENU
+from keyboards import REGISTER_MENU_KEYBOARD, EMPLOYER_MENU_KEYBOARD, CONTRACTOR_MENU_KEYBOARD, MAIN_MENU_KEYBOARD
 
 logger = logging.getLogger(__name__)
 
@@ -24,7 +24,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     if not phone or phone == f"tg_{telegram_id}":
         await update.message.reply_text(
             "😊 برای استفاده از ربات، لطفاً اول شماره تلفنت رو ثبت کن!",
-            reply_markup=REGISTER_MENU
+            reply_markup=REGISTER_MENU_KEYBOARD
         )
         return REGISTER
 
@@ -37,30 +37,22 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     if current_state == ROLE:
         if text == "درخواست خدمات | کارفرما 👔":
             context.user_data['state'] = EMPLOYER_MENU
-            logger.info(f"EMPLOYER_MENU value: {EMPLOYER_MENU}")  # دیباگ
-            if not EMPLOYER_MENU:  # چک کردن مقدار
-                logger.error("EMPLOYER_MENU is None or invalid!")
-                await update.message.reply_text("❌ مشکلی توی منو پیش اومد! لطفاً دوباره /start بزن.")
-                return ROLE
+            logger.info(f"EMPLOYER_MENU_KEYBOARD value: {EMPLOYER_MENU_KEYBOARD}")
             await update.message.reply_text(
                 "🎉 عالیه، {}! می‌خوای خدمات جدید درخواست کنی یا پیشنهادات رو ببینی؟".format(update.effective_user.full_name),
-                reply_markup=EMPLOYER_MENU
+                reply_markup=EMPLOYER_MENU_KEYBOARD
             )
             logger.info(f"State updated to EMPLOYER_MENU for {telegram_id}")
             return EMPLOYER_MENU
         elif text == "پیشنهاد قیمت | مجری 🦺":
-            logger.info(f"CONTRACTOR_MENU value: {CONTRACTOR_MENU}")  # دیباگ
-            if not CONTRACTOR_MENU:
-                logger.error("CONTRACTOR_MENU is None or invalid!")
-                await update.message.reply_text("❌ مشکلی توی منو پیش اومد! لطفاً دوباره /start بزن.")
-                return ROLE
+            logger.info(f"CONTRACTOR_MENU_KEYBOARD value: {CONTRACTOR_MENU_KEYBOARD}")
             await update.message.reply_text(
                 "🌟 خوبه، {}! می‌خوای درخواست‌های موجود رو ببینی یا پیشنهاد کار بدی؟".format(update.effective_user.full_name),
-                reply_markup=CONTRACTOR_MENU
+                reply_markup=CONTRACTOR_MENU_KEYBOARD
             )
             return ROLE
         else:
-            await update.message.reply_text("❌ گزینه نامعتبر! لطفاً از منو انتخاب کن.", reply_markup=MAIN_MENU)
+            await update.message.reply_text("❌ گزینه نامعتبر! لطفاً از منو انتخاب کن.", reply_markup=MAIN_MENU_KEYBOARD)
             return ROLE
     elif current_state == EMPLOYER_MENU:
         logger.info(f"Processing EMPLOYER_MENU input: {text}")
@@ -70,12 +62,8 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
             context.user_data['files'] = []
             context.user_data['categories'] = await get_categories()
             if not context.user_data['categories']:
-                logger.info(f"EMPLOYER_MENU value on error: {EMPLOYER_MENU}")  # لاگ برای دیباگ
-                if not EMPLOYER_MENU:
-                    logger.error("EMPLOYER_MENU is None or invalid!")
-                    await update.message.reply_text("❌ مشکلی توی منو پیش اومد! لطفاً دوباره /start بزن.")
-                    return ROLE
-                await update.message.reply_text("❌ خطا: دسته‌بندی‌ها در دسترس نیست!", reply_markup=EMPLOYER_MENU)
+                logger.info(f"EMPLOYER_MENU_KEYBOARD value on error: {EMPLOYER_MENU_KEYBOARD}")
+                await update.message.reply_text("❌ خطا: دسته‌بندی‌ها در دسترس نیست!", reply_markup=EMPLOYER_MENU_KEYBOARD)
                 return EMPLOYER_MENU
             root_cats = [cat_id for cat_id, cat in context.user_data['categories'].items() if cat['parent'] is None]
             keyboard = [[KeyboardButton(context.user_data['categories'][cat_id]['name'])] for cat_id in root_cats] + [[KeyboardButton("⬅️ بازگشت")]]
@@ -92,16 +80,12 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
             return VIEW_PROJECTS
         elif text == "⬅️ بازگشت":
             context.user_data['state'] = ROLE
-            await update.message.reply_text("🌟 چی می‌خوای امروز؟", reply_markup=MAIN_MENU)
+            await update.message.reply_text("🌟 چی می‌خوای امروز؟", reply_markup=MAIN_MENU_KEYBOARD)
             logger.info(f"State updated to ROLE for {telegram_id}")
             return ROLE
         else:
-            logger.info(f"EMPLOYER_MENU value on invalid input: {EMPLOYER_MENU}")  # لاگ برای دیباگ
-            if not EMPLOYER_MENU:
-                logger.error("EMPLOYER_MENU is None or invalid!")
-                await update.message.reply_text("❌ مشکلی توی منو پیش اومد! لطفاً دوباره /start بزن.")
-                return ROLE
-            await update.message.reply_text("❌ گزینه نامعتبر! لطفاً از منو انتخاب کن.", reply_markup=EMPLOYER_MENU)
+            logger.info(f"EMPLOYER_MENU_KEYBOARD value on invalid input: {EMPLOYER_MENU_KEYBOARD}")
+            await update.message.reply_text("❌ گزینه نامعتبر! لطفاً از منو انتخاب کن.", reply_markup=EMPLOYER_MENU_KEYBOARD)
             return EMPLOYER_MENU
     
     # انتقال به handlerهای دیگر بر اساس حالت

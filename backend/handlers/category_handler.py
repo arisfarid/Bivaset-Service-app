@@ -3,7 +3,7 @@ from telegram.ext import ContextTypes, ConversationHandler
 from utils import get_categories, log_chat
 import logging
 from handlers.start_handler import start
-from keyboards import MAIN_MENU  # اضافه شده برای بازگشت به منوی اصلی
+from keyboards import MAIN_MENU_KEYBOARD  # اضافه شده برای بازگشت به منوی اصلی
 
 logger = logging.getLogger(__name__)
 
@@ -17,7 +17,7 @@ async def handle_category_selection(update: Update, context: ContextTypes.DEFAUL
     if current_state == CATEGORY:
         if text == "⬅️ بازگشت":
             context.user_data['state'] = ROLE
-            await start(update, context)  # اینجا به MAIN_MENU تکیه می‌کنه که توی start هست
+            await start(update, context)  # اینجا به MAIN_MENU_KEYBOARD تکیه می‌کنه که توی start هست
             await log_chat(update, context)
             return ROLE
         selected_cat = next((cat_id for cat_id, cat in categories.items() if cat['name'] == text and cat['parent'] is None), None)
