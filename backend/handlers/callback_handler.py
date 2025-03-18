@@ -24,7 +24,16 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             deleted_file = files.pop(index)
             logger.info(f"Deleted photo {deleted_file} at index {index}")
             await query.message.reply_text("🗑 عکس حذف شد! دوباره مدیریت کن یا ادامه بده.")
-            await show_photo_management(update, context)
+            if files:
+                await show_photo_management(update, context)
+            else:
+                await query.message.reply_text(
+                    "📭 هنوز عکسی نفرستادی!\n📸 برو عکس بفرست یا برگرد:",
+                    reply_markup=ReplyKeyboardMarkup([
+                        [KeyboardButton("📸 تصاویر یا فایل"), KeyboardButton("⬅️ بازگشت")]
+                    ], resize_keyboard=True)
+                )
+        return
     elif data.startswith('replace_photo_'):
         index = int(data.split('_')[2])
         context.user_data['replace_index'] = index
