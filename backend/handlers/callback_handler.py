@@ -1,3 +1,4 @@
+# callback_handler.py
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, KeyboardButton, ReplyKeyboardMarkup
 from telegram.ext import ContextTypes, ConversationHandler
 import logging
@@ -21,20 +22,42 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
     await log_chat(update, context)
 
     try:
-        if data.startswith('delete_photo_'):
+        if data.startswith('view_photo_'):
+            index = int(data.split('_')[2])
+            files = context.user_data.get('files', [])
+            if 0 <= index < len(files):
+                await context.bot.send_photo(
+                    chat_id=update.effective_chat.id,
+                    photo=files[index],
+                    caption=f"📸 عکس {index+1} از {len(files)}"
+                )
+            return DETAILS_FILES
+
+        elif data.startswith('edit_photo_'):
+            index = int(data.split('_')[2])
+            files = context.user_data.get('files', [])
+            if 0 <= index < len(files):
+                keyboard = [
+                    [InlineKeyboardButton("🗑 حذف", callback_data=f"delete_photo_{index}"),
+                     InlineKeyboardButton("🔄 جایگزینی", callback_data=f"replace_photo_{index}")],
+                    [InlineKeyboardButton("⬅️ بازگشت", callback_data="back_to_management")]
+                ]
+                await context.bot.send_photo(
+                    chat_id=update.effective_chat.id,
+                    photo=files[index],
+                    caption=f"📸 عکس {index+1} از {len(files)}",
+                    reply_markup=InlineKeyboardMarkup(keyboard)
+                )
+            return DETAILS_FILES
+
+        elif data.startswith('delete_photo_'):
             index = int(data.split('_')[2])
             files = context.user_data.get('files', [])
             if 0 <= index < len(files):
                 deleted_file = files.pop(index)
                 logger.info(f"Deleted photo {deleted_file} at index {index}")
-                await update.effective_message.reply_text("🗑 عکس حذف شد! دوباره مدیریت کن یا ادامه بده.")  # استفاده از effective_message
-                if files:
-                    await show_photo_management(update, context)
-                else:
-                    await update.effective_message.reply_text(
-                        "🗑 همه عکس‌ها حذف شدن! حالا چی؟",
-                        reply_markup=FILE_MANAGEMENT_MENU_KEYBOARD
-                    )
+                await update.effective_message.reply_text("🗑 عکس حذف شد! دوباره مدیریت کن یا ادامه بده.")
+                await show_photo_management(update, context)
             else:
                 await update.effective_message.reply_text("❌ عکس مورد نظر پیدا نشد!")
             return DETAILS_FILES
@@ -44,6 +67,10 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
             context.user_data['replace_index'] = index
             await update.effective_message.reply_text("📸 لطفاً عکس جدید رو بفرست تا جایگزین بشه:")
             context.user_data['state'] = 'replacing_photo'
+            return DETAILS_FILES
+
+        elif data == 'back_to_management':
+            await show_photo_management(update, context)
             return DETAILS_FILES
 
         elif data == 'back_to_upload':
@@ -122,18 +149,3 @@ async def show_employer_menu(update: Update, context: ContextTypes.DEFAULT_TYPE)
         reply_markup=EMPLOYER_INLINE_MENU_KEYBOARD
     )
     context.user_data['state'] = EMPLOYER_MENU
-
-async def handle_attachment(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    current_state = context.user_data.get('state')
-    if current_state == 'replacing_photo' and update.message and update.message.photo:
-        new_photo = update.message.photo[-1].file_id
-        index = context.user_data.get('replace_index')
-        if 'files' in context.user_data and 0 <= index < len(context.user_data['files']):
-            old_photo = context.user_data['files'][index]
-            context.user_data['files'][index] = new_photo
-            logger.info(f"Replaced photo {old_photo} with {new_photo} at index {index}")
-            await update.message.reply_text("🔄 عکس جایگزین شد!")
-            await show_photo_management(update, context)
-        context.user_data['state'] = DETAILS_FILES
-        return DETAILS_FILES
-    return current_state

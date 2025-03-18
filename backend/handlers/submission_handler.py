@@ -1,3 +1,4 @@
+# submission_handler.py
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ContextTypes, ConversationHandler
 from utils import generate_title, convert_deadline_to_date, log_chat, BASE_URL
@@ -11,10 +12,11 @@ logger = logging.getLogger(__name__)
 START, REGISTER, ROLE, EMPLOYER_MENU, CATEGORY, SUBCATEGORY, DESCRIPTION, LOCATION_TYPE, LOCATION_INPUT, DETAILS, DETAILS_FILES, DETAILS_DATE, DETAILS_DEADLINE, DETAILS_BUDGET, DETAILS_QUANTITY, SUBMIT, VIEW_PROJECTS, PROJECT_ACTIONS = range(18)
 
 async def submit_project(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    if update.message.text != "✅ ثبت درخواست":
+        return DETAILS
+
     location = context.user_data.get('location')
-    location_data = None
-    if location:
-        location_data = [location['longitude'], location['latitude']]
+    location_data = [location['longitude'], location['latitude']] if location else None
 
     data = {
         'title': generate_title(context),
@@ -22,12 +24,16 @@ async def submit_project(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         'category': context.user_data.get('category_id', ''),
         'service_location': context.user_data.get('service_location', ''),
         'location': location_data,
-        'budget': context.user_data.get('budget', None),
-        'deadline_date': convert_deadline_to_date(context.user_data.get('deadline', None)),
-        'start_date': context.user_data.get('need_date', None),
         'files': await upload_attachments(context.user_data.get('files', []), context),
         'user_telegram_id': str(update.effective_user.id)
     }
+    if context.user_data.get('budget'):
+        data['budget'] = context.user_data['budget']
+    if context.user_data.get('need_date'):
+        data['start_date'] = context.user_data['need_date']
+    if context.user_data.get('deadline'):
+        data['deadline_date'] = convert_deadline_to_date(context.user_data['deadline'])
+
     logger.info(f"Sending project data to API: {data}")
     await log_chat(update, context)
     try:
@@ -36,19 +42,25 @@ async def submit_project(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
             project = response.json()
             project_id = project.get('id', 'نامشخص')
             files = context.user_data.get('files', [])
-            message = (
-                f"🎉 درخواست شما با کد {project_id} ثبت شد!\n"
-                f"📌 دسته‌بندی: {context.user_data.get('categories', {}).get(context.user_data.get('category_id', ''), {}).get('name', 'نامشخص')}\n"
-                f"📝 توضیحات: {context.user_data.get('description', '')}\n"
-                f"📅 تاریخ نیاز: {context.user_data.get('need_date', 'مشخص نشده')}\n"
-                f"⏳ مهلت انجام: {context.user_data.get('deadline', 'مشخص نشده')} روز\n"
-                f"💰 بودجه: {context.user_data.get('budget', 'مشخص نشده')} تومان\n"
-                f"📏 مقدار و واحد: {context.user_data.get('quantity', 'مشخص نشده')}\n"
-            )
-            if context.user_data.get('location'):
-                message += f"📍 لوکیشن: https://maps.google.com/maps?q={context.user_data['location']['latitude']},{context.user_data['location']['longitude']}\n"
+            message_lines = [
+                f"🎉 درخواست شما با کد {project_id} ثبت شد!",
+                f"📌 دسته‌بندی: {context.user_data.get('categories', {}).get(context.user_data.get('category_id', ''), {}).get('name', 'نامشخص')}",
+                f"📝 توضیحات: {context.user_data.get('description', '')}"
+            ]
+            if context.user_data.get('need_date'):
+                message_lines.append(f"📅 تاریخ نیاز: {context.user_data['need_date']}")
+            if context.user_data.get('deadline'):
+                message_lines.append(f"⏳ مهلت انجام: {context.user_data['deadline']} روز")
+            if context.user_data.get('budget'):
+                message_lines.append(f"💰 بودجه: {context.user_data['budget']} تومان")
+            if context.user_data.get('quantity'):
+                message_lines.append(f"📏 مقدار و واحد: {context.user_data['quantity']}")
+            if location_data:
+                message_lines.append(f"📍 لوکیشن: https://maps.google.com/maps?q={location['latitude']},{location['longitude']}")
             if len(files) > 1:
-                message += "📸 لینک عکس‌ها:\n" + "\n".join([f"- {file}" for file in files[1:]])
+                message_lines.append("📸 لینک عکس‌ها:\n" + "\n".join([f"- {file}" for file in files[1:]]))
+            message = "\n".join(message_lines)
+
             inline_keyboard = [
                 [InlineKeyboardButton("✏️ ویرایش", callback_data=f"edit_{project_id}"),
                  InlineKeyboardButton("⛔ بستن", callback_data=f"close_{project_id}")],
