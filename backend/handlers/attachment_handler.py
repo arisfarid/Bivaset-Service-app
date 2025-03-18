@@ -1,17 +1,19 @@
 from telegram import Update, KeyboardButton, ReplyKeyboardMarkup, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import ContextTypes
+from telegram.ext import ContextTypes, ConversationHandler
+from utils import upload_files, log_chat
 import logging
-from utils import upload_files, log_chat  # Added log_chat
-from .project_details_handler import create_dynamic_keyboard
+from handlers.project_details_handler import create_dynamic_keyboard
 
 logger = logging.getLogger(__name__)
 
-async def handle_attachment(update: Update, context: ContextTypes.DEFAULT_TYPE) -> bool:
-    state = context.user_data.get('state')
+START, REGISTER, ROLE, EMPLOYER_MENU, CATEGORY, SUBCATEGORY, DESCRIPTION, LOCATION_TYPE, LOCATION_INPUT, DETAILS, DETAILS_FILES, DETAILS_DATE, DETAILS_DEADLINE, DETAILS_BUDGET, DETAILS_QUANTITY, SUBMIT, VIEW_PROJECTS, PROJECT_ACTIONS = range(18)
+
+async def handle_attachment(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    current_state = context.user_data.get('state', DETAILS_FILES)
     telegram_id = str(update.effective_user.id)
     current_files = context.user_data.get('files', [])
 
-    if state == 'replacing_photo' and update.message.photo:
+    if current_state == 'replacing_photo' and update.message.photo:
         new_photo = update.message.photo[-1].file_id
         index = context.user_data.get('replace_index')
         if 0 <= index < len(current_files):
@@ -19,43 +21,40 @@ async def handle_attachment(update: Update, context: ContextTypes.DEFAULT_TYPE) 
                 await update.message.reply_text("❌ این عکس قبلاً توی لیست هست!")
                 await log_chat(update, context)
                 await show_photo_management(update, context)
-                return True
+                return DETAILS_FILES
             old_photo = current_files[index]
             current_files[index] = new_photo
             logger.info(f"Replaced photo {old_photo} with {new_photo} at index {index}")
             await update.message.reply_text("🔄 عکس جایگزین شد!")
             await log_chat(update, context)
             await show_photo_management(update, context)
-            context.user_data['state'] = 'managing_photos'
-        return True
+            context.user_data['state'] = DETAILS_FILES
+        return DETAILS_FILES
 
     if update.message and update.message.photo:
-        # فقط بزرگ‌ترین سایز عکس رو بگیریم (آخرین file_id توی لیست)
         new_photos = [update.message.photo[-1].file_id]
         if 'files' not in context.user_data:
             context.user_data['files'] = []
 
         current_files = context.user_data['files']
-        # فقط عکس‌های جدید و غیرتکراری رو اضافه کن
         added_photos = [photo for photo in new_photos if photo not in current_files]
         remaining_slots = 5 - len(current_files)
         
-        if state == 'new_project_details_files':
+        if current_state == DETAILS_FILES:
             if remaining_slots <= 0:
                 await update.message.reply_text(
                     "❌ لیست عکس‌ها پره! برای حذف یا جایگزینی، 'مدیریت عکس‌ها' رو بزن."
                 )
-                await log_chat(update, context)  # Log chat
+                await log_chat(update, context)
             else:
                 photos_to_add = added_photos[:remaining_slots]
                 current_files.extend(photos_to_add)
                 logger.info(f"Photos received from {telegram_id}: {photos_to_add}")
-                # فقط یک پیام جمع‌بندی ارسال کن
                 await update.message.reply_text(
                     f"📸 {len(photos_to_add)} عکس ثبت شد. الان {len(current_files)} از ۵ تاست.\n"
                     "برای ادامه یا مدیریت، گزینه‌ای انتخاب کن:"
                 )
-                await log_chat(update, context)  # Log chat
+                await log_chat(update, context)
             
             keyboard = [
                 [KeyboardButton("🏁 اتمام ارسال تصاویر"), KeyboardButton("📋 مدیریت عکس‌ها")],
@@ -65,72 +64,58 @@ async def handle_attachment(update: Update, context: ContextTypes.DEFAULT_TYPE) 
                 "📸 عکس دیگه‌ای داری؟ اگه نه، 'اتمام ارسال تصاویر' رو بزن:",
                 reply_markup=ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
             )
-            await log_chat(update, context)  # Log chat
-            return True
+            return DETAILS_FILES
         else:
             await update.message.reply_text("📸 الان نمی‌تونی عکس بفرستی! اول یه درخواست شروع کن.")
-            await log_chat(update, context)  # Log chat
+            await log_chat(update, context)
             context.user_data.pop('files', None)
-            return True
+            return current_state
 
     if update.message and update.message.video:
         await update.message.reply_text("❌ فقط عکس قبول می‌شه! ویدئو رو نمی‌تونم ثبت کنم.")
         await log_chat(update, context)
-        return True
+        return current_state
 
-    # مدیریت دکمه‌ها
     text = update.message.text if update.message else None
-    if state in ['new_project_details_files', 'managing_photos']:
+    if current_state in [DETAILS_FILES, 'managing_photos']:
         if text == "🏁 اتمام ارسال تصاویر":
-            context.user_data['state'] = 'new_project_details'
+            context.user_data['state'] = DETAILS
             await update.message.reply_text(
                 "📋 جزئیات درخواست:",
                 reply_markup=create_dynamic_keyboard(context)
             )
-            await log_chat(update, context)  # Log chat
-            return True
+            await log_chat(update, context)
+            return DETAILS
         elif text == "📋 مدیریت عکس‌ها":
             await show_photo_management(update, context)
-            return True
+            return DETAILS_FILES
         elif text == "⬅️ بازگشت":
-            context.user_data['state'] = 'new_project_details'
+            context.user_data['state'] = DETAILS
             await update.message.reply_text(
                 "📋 جزئیات درخواست:",
                 reply_markup=create_dynamic_keyboard(context)
             )
-            await log_chat(update, context)  # Log chat
-            return True
+            await log_chat(update, context)
+            return DETAILS
 
-    return False
+    return current_state
 
 async def show_photo_management(update: Update, context: ContextTypes.DEFAULT_TYPE):
     files = context.user_data.get('files', [])
     if not files:
-        if update.message:
-            await update.message.reply_text("📭 هنوز عکسی نفرستادی!")
-            await log_chat(update, context)  # Log chat
-        else:
-            await update.callback_query.message.reply_text("📭 هنوز عکسی نفرستادی!")
-            await log_chat(update, context)  # Log chat
+        await update.message.reply_text("📭 هنوز عکسی نفرستادی!")
+        await log_chat(update, context)
         keyboard = [
             [KeyboardButton("🏁 اتمام ارسال تصاویر"), KeyboardButton("📋 مدیریت عکس‌ها")],
             [KeyboardButton("⬅️ بازگشت")]
         ]
-        if update.message:
-            await update.message.reply_text(
-                "📸 برو عکس بفرست یا برگرد:",
-                reply_markup=ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
-            )
-            await log_chat(update, context)  # Log chat
-        else:
-            await update.callback_query.message.reply_text(
-                "📸 برو عکس بفرست یا برگرد:",
-                reply_markup=ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
-            )
-            await log_chat(update, context)  # Log chat
+        await update.message.reply_text(
+            "📸 برو عکس بفرست یا برگرد:",
+            reply_markup=ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
+        )
+        await log_chat(update, context)
         return
 
-    # ارسال هر عکس با دکمه‌های مدیریت
     for i, file_id in enumerate(files):
         inline_keyboard = [
             [InlineKeyboardButton(f"🗑 حذف عکس {i+1}", callback_data=f"delete_photo_{i}"),
@@ -142,20 +127,12 @@ async def show_photo_management(update: Update, context: ContextTypes.DEFAULT_TY
             caption=f"📸 عکس {i+1} از {len(files)}",
             reply_markup=InlineKeyboardMarkup(inline_keyboard)
         )
-    # دکمه برگشت به آپلود
-    if update.message:
-        await update.message.reply_text(
-            "📸 کاری دیگه‌ای با عکس‌ها داری؟",
-            reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("⬅️ برگشت به ارسال", callback_data="back_to_upload")]])
-        )
-        await log_chat(update, context)  # Log chat
-    else:
-        await update.callback_query.message.reply_text(
-            "📸 کاری دیگه‌ای با عکس‌ها داری؟",
-            reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("⬅️ برگشت به ارسال", callback_data="back_to_upload")]])
-        )
-        await log_chat(update, context)  # Log chat
-    context.user_data['state'] = 'managing_photos'
+    await update.message.reply_text(
+        "📸 کاری دیگه‌ای با عکس‌ها داری؟",
+        reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("⬅️ برگشت به ارسال", callback_data="back_to_upload")]])
+    )
+    await log_chat(update, context)
+    context.user_data['state'] = DETAILS_FILES
 
 async def upload_attachments(files, context):
     return await upload_files(files, context)

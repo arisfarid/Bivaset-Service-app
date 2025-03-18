@@ -1,27 +1,32 @@
 from telegram import Update, KeyboardButton, ReplyKeyboardMarkup
-from telegram.ext import ContextTypes
+from telegram.ext import ContextTypes, ConversationHandler
 from utils import clean_budget, validate_date, validate_deadline, create_dynamic_keyboard, log_chat
 from khayyam import JalaliDatetime
 from datetime import datetime, timedelta
-from .submission_handler import submit_project
+from handlers.submission_handler import submit_project
+import logging
 
-async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_TYPE):
+logger = logging.getLogger(__name__)
+
+START, REGISTER, ROLE, EMPLOYER_MENU, CATEGORY, SUBCATEGORY, DESCRIPTION, LOCATION_TYPE, LOCATION_INPUT, DETAILS, DETAILS_FILES, DETAILS_DATE, DETAILS_DEADLINE, DETAILS_BUDGET, DETAILS_QUANTITY, SUBMIT, VIEW_PROJECTS, PROJECT_ACTIONS = range(18)
+
+async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     await log_chat(update, context)
     text = update.message.text
-    state = context.user_data.get('state')
+    current_state = context.user_data.get('state', DESCRIPTION)
 
-    if state == 'new_project_desc':
+    if current_state == DESCRIPTION:
         if text == "⬅️ بازگشت":
-            context.user_data['state'] = 'new_project_subcategory'
+            context.user_data['state'] = SUBCATEGORY
             sub_cats = context.user_data['categories'][context.user_data['category_group']]['children']
             keyboard = [[KeyboardButton(context.user_data['categories'][cat_id]['name'])] for cat_id in sub_cats] + [[KeyboardButton("⬅️ بازگشت")]]
             await update.message.reply_text(
                 f"📌 زیرمجموعه '{context.user_data['categories'][context.user_data['category_group']]['name']}' رو انتخاب کن:",
                 reply_markup=ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
             )
-            return True
+            return SUBCATEGORY
         context.user_data['description'] = text
-        context.user_data['state'] = 'new_project_location'
+        context.user_data['state'] = LOCATION_TYPE
         keyboard = [
             [KeyboardButton("🏠 محل من"), KeyboardButton("🔧 محل مجری")],
             [KeyboardButton("💻 غیرحضوری"), KeyboardButton("⬅️ بازگشت")],
@@ -31,11 +36,11 @@ async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_T
             f"🌟 محل انجام خدماتت رو انتخاب کن:",
             reply_markup=ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
         )
-        return True
+        return LOCATION_TYPE
 
-    elif state == 'new_project_details':
+    elif current_state == DETAILS:
         if text == "⬅️ بازگشت":
-            context.user_data['state'] = 'new_project_location'
+            context.user_data['state'] = LOCATION_TYPE
             keyboard = [
                 [KeyboardButton("🏠 محل من"), KeyboardButton("🔧 محل مجری")],
                 [KeyboardButton("💻 غیرحضوری"), KeyboardButton("⬅️ بازگشت")],
@@ -45,12 +50,12 @@ async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_T
                 f"🌟 محل انجام خدماتت رو انتخاب کن:",
                 reply_markup=ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
             )
-            return True
+            return LOCATION_TYPE
         elif text == "✅ ثبت درخواست":
             await submit_project(update, context)
-            return True
+            return SUBMIT
         elif text == "📸 تصاویر یا فایل":
-            context.user_data['state'] = 'new_project_details_files'
+            context.user_data['state'] = DETAILS_FILES
             files = context.user_data.get('files', [])
             if files:
                 await update.message.reply_text(
@@ -60,9 +65,9 @@ async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_T
                 await update.message.reply_text(
                     "📸 لطفاً تصاویر رو یکی‌یکی بفرست (حداکثر ۵ تا). فقط عکس قبول می‌شه!"
                 )
-            return True
+            return DETAILS_FILES
         elif text == "📅 تاریخ نیاز":
-            context.user_data['state'] = 'new_project_details_date'
+            context.user_data['state'] = DETAILS_DATE
             today = JalaliDatetime(datetime.now()).strftime('%Y/%m/%d')
             tomorrow = JalaliDatetime(datetime.now() + timedelta(days=1)).strftime('%Y/%m/%d')
             day_after = JalaliDatetime(datetime.now() + timedelta(days=2)).strftime('%Y/%m/%d')
@@ -77,34 +82,34 @@ async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_T
                 "📅 تاریخ نیاز رو انتخاب کن یا دستی وارد کن (مثلاً 1403/10/15):",
                 reply_markup=ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
             )
-            return True
+            return DETAILS_DATE
         elif text == "⏳ مهلت انجام":
-            context.user_data['state'] = 'new_project_details_deadline'
+            context.user_data['state'] = DETAILS_DEADLINE
             await update.message.reply_text("⏳ مهلت انجام رو به روز وارد کن (مثلاً 7):")
-            return True
+            return DETAILS_DEADLINE
         elif text == "💰 بودجه":
-            context.user_data['state'] = 'new_project_details_budget'
+            context.user_data['state'] = DETAILS_BUDGET
             await update.message.reply_text("💰 بودجه رو وارد کن (مثلاً 500000):")
-            return True
+            return DETAILS_BUDGET
         elif text == "📏 مقدار و واحد":
-            context.user_data['state'] = 'new_project_details_quantity'
+            context.user_data['state'] = DETAILS_QUANTITY
             await update.message.reply_text("📏 مقدار و واحد رو وارد کن (مثلاً 2 عدد):")
-            return True
+            return DETAILS_QUANTITY
         else:
             await update.message.reply_text("❌ گزینه نامعتبر! لطفاً یکی از دکمه‌ها رو انتخاب کن.")
-            return True
+            return DETAILS
 
-    elif state == 'new_project_details_date':
+    elif current_state == DETAILS_DATE:
         if text == "⬅️ بازگشت":
-            context.user_data['state'] = 'new_project_details'
+            context.user_data['state'] = DETAILS
             await update.message.reply_text(
                 f"📋 جزئیات درخواست:",
                 reply_markup=create_dynamic_keyboard(context)
             )
-            return True
+            return DETAILS
         elif text == "✏️ تاریخ دلخواه":
             await update.message.reply_text("📅 تاریخ دلخواه رو وارد کن (مثلاً 1403/10/15):")
-            return True
+            return DETAILS_DATE
         else:
             today = JalaliDatetime(datetime.now()).strftime('%Y/%m/%d')
             tomorrow = JalaliDatetime(datetime.now() + timedelta(days=1)).strftime('%Y/%m/%d')
@@ -112,7 +117,7 @@ async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_T
             if text in [f"📅 امروز ({today})", f"📅 فردا ({tomorrow})", f"📅 پس‌فردا ({day_after})"]:
                 date_str = text.split('(')[1].rstrip(')')
                 context.user_data['need_date'] = date_str
-                context.user_data['state'] = 'new_project_details'
+                context.user_data['state'] = DETAILS
                 await update.message.reply_text(
                     f"📅 تاریخ نیاز ثبت شد: {date_str}",
                     reply_markup=create_dynamic_keyboard(context)
@@ -123,69 +128,69 @@ async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_T
                     await update.message.reply_text("❌ تاریخ باید از امروز به بعد باشه!")
                 else:
                     context.user_data['need_date'] = text
-                    context.user_data['state'] = 'new_project_details'
+                    context.user_data['state'] = DETAILS
                     await update.message.reply_text(
                         f"📅 تاریخ نیاز ثبت شد: {text}",
                         reply_markup=create_dynamic_keyboard(context)
                     )
             else:
                 await update.message.reply_text("❌ تاریخ نامعتبر! لطفاً به فرمت 1403/10/15 وارد کن و از امروز به بعد باشه.")
-            return True
+            return DETAILS_DATE
 
-    elif state == 'new_project_details_deadline':
+    elif current_state == DETAILS_DEADLINE:
         if text == "⬅️ بازگشت":
-            context.user_data['state'] = 'new_project_details'
+            context.user_data['state'] = DETAILS
             await update.message.reply_text(
                 f"📋 جزئیات درخواست:",
                 reply_markup=create_dynamic_keyboard(context)
             )
-            return True
+            return DETAILS
         deadline = validate_deadline(text)
         if deadline:
             context.user_data['deadline'] = deadline
-            context.user_data['state'] = 'new_project_details'
+            context.user_data['state'] = DETAILS
             await update.message.reply_text(
                 f"⏳ مهلت انجام ثبت شد: {deadline} روز",
                 reply_markup=create_dynamic_keyboard(context)
             )
         else:
             await update.message.reply_text("❌ مهلت نامعتبر! لطفاً یه عدد وارد کن (مثلاً 7).")
-        return True
+        return DETAILS_DEADLINE
 
-    elif state == 'new_project_details_budget':
+    elif current_state == DETAILS_BUDGET:
         if text == "⬅️ بازگشت":
-            context.user_data['state'] = 'new_project_details'
+            context.user_data['state'] = DETAILS
             await update.message.reply_text(
                 f"📋 جزئیات درخواست:",
                 reply_markup=create_dynamic_keyboard(context)
             )
-            return True
+            return DETAILS
         budget = clean_budget(text)
         if budget:
             context.user_data['budget'] = budget
-            context.user_data['state'] = 'new_project_details'
+            context.user_data['state'] = DETAILS
             await update.message.reply_text(
                 f"💰 بودجه ثبت شد: {budget} تومان",
                 reply_markup=create_dynamic_keyboard(context)
             )
         else:
             await update.message.reply_text("❌ بودجه نامعتبر! لطفاً یه عدد وارد کن (مثلاً 500000).")
-        return True
+        return DETAILS_BUDGET
 
-    elif state == 'new_project_details_quantity':
+    elif current_state == DETAILS_QUANTITY:
         if text == "⬅️ بازگشت":
-            context.user_data['state'] = 'new_project_details'
+            context.user_data['state'] = DETAILS
             await update.message.reply_text(
                 f"📋 جزئیات درخواست:",
                 reply_markup=create_dynamic_keyboard(context)
             )
-            return True
+            return DETAILS
         context.user_data['quantity'] = text
-        context.user_data['state'] = 'new_project_details'
+        context.user_data['state'] = DETAILS
         await update.message.reply_text(
             f"📏 مقدار و واحد ثبت شد: {text}",
             reply_markup=create_dynamic_keyboard(context)
         )
-        return True
+        return DETAILS
 
-    return False
+    return current_state

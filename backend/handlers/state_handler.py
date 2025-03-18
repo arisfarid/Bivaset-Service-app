@@ -1,26 +1,28 @@
 from telegram import Update, KeyboardButton, ReplyKeyboardMarkup, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import ContextTypes
+from telegram.ext import ContextTypes, ConversationHandler
 from utils import BASE_URL, log_chat
 import requests
 import logging
-from .start_handler import start
+from handlers.start_handler import start
 
 logger = logging.getLogger(__name__)
 
-async def handle_project_states(update: Update, context: ContextTypes.DEFAULT_TYPE):
+START, REGISTER, ROLE, EMPLOYER_MENU, CATEGORY, SUBCATEGORY, DESCRIPTION, LOCATION_TYPE, LOCATION_INPUT, DETAILS, DETAILS_FILES, DETAILS_DATE, DETAILS_DEADLINE, DETAILS_BUDGET, DETAILS_QUANTITY, SUBMIT, VIEW_PROJECTS, PROJECT_ACTIONS = range(18)
+
+async def handle_project_states(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     text = update.message.text
-    state = context.user_data.get('state')
+    current_state = context.user_data.get('state', VIEW_PROJECTS)
     telegram_id = str(update.effective_user.id)
 
     await log_chat(update, context)
 
-    if state in ['view_projects_initial', 'view_projects_list']:
+    if current_state in [VIEW_PROJECTS, PROJECT_ACTIONS]:
         if text == "⬅️ بازگشت":
-            context.user_data['state'] = None
+            context.user_data['state'] = ROLE
             await start(update, context)
-            return True
+            return ROLE
         if text in ["درخواست‌های باز", "درخواست‌های بسته"]:
-            context.user_data['state'] = 'view_projects_list'
+            context.user_data['state'] = PROJECT_ACTIONS
             status = 'open' if text == "درخواست‌های باز" else 'closed'
             offset = context.user_data.get('project_offset', 0)
             try:
@@ -37,7 +39,7 @@ async def handle_project_states(update: Update, context: ContextTypes.DEFAULT_TY
                             "📊 ادامه بده یا برگرد:",
                             reply_markup=ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
                         )
-                        return True
+                        return PROJECT_ACTIONS
                     message = f"📋 برای مشاهده جزئیات و مدیریت هر کدام از {text} روی دکمه مربوطه ضربه بزنید:\n"
                     inline_keyboard = [
                         [InlineKeyboardButton(f"{project['title']} (کد: {project['id']})", callback_data=f"{project['id']}")]
@@ -77,8 +79,8 @@ async def handle_project_states(update: Update, context: ContextTypes.DEFAULT_TY
                     "📊 ادامه بده یا برگرد:",
                     reply_markup=ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
                 )
-            return True
+            return PROJECT_ACTIONS
         else:
             await update.message.reply_text("❌ گزینه نامعتبر! لطفاً یکی از دکمه‌ها رو انتخاب کن.")
-            return True
-    return False
+            return PROJECT_ACTIONS
+    return current_state

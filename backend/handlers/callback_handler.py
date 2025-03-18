@@ -1,21 +1,23 @@
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, KeyboardButton, ReplyKeyboardMarkup
-from telegram.ext import ContextTypes
+from telegram.ext import ContextTypes, ConversationHandler
 import logging
-from .start_handler import start
-from .category_handler import handle_category_callback
-from .edit_handler import handle_edit_callback
-from .view_handler import handle_view_callback
-from .attachment_handler import show_photo_management
-from utils import log_chat  # Added import
+from handlers.start_handler import start
+from handlers.category_handler import handle_category_callback
+from handlers.edit_handler import handle_edit_callback
+from handlers.view_handler import handle_view_callback
+from handlers.attachment_handler import show_photo_management
+from utils import log_chat
 
 logger = logging.getLogger(__name__)
 
-async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
+START, REGISTER, ROLE, EMPLOYER_MENU, CATEGORY, SUBCATEGORY, DESCRIPTION, LOCATION_TYPE, LOCATION_INPUT, DETAILS, DETAILS_FILES, DETAILS_DATE, DETAILS_DEADLINE, DETAILS_BUDGET, DETAILS_QUANTITY, SUBMIT, VIEW_PROJECTS, PROJECT_ACTIONS = range(18)
+
+async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     query = update.callback_query
     await query.answer()
     data = query.data
     logger.info(f"Callback data received: {data}")
-    await log_chat(update, context)  # Added log_chat call
+    await log_chat(update, context)
 
     if data.startswith('delete_photo_'):
         index = int(data.split('_')[2])
@@ -33,12 +35,13 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                         [KeyboardButton("📸 تصاویر یا فایل"), KeyboardButton("⬅️ بازگشت")]
                     ], resize_keyboard=True)
                 )
-        return
+        return DETAILS_FILES
     elif data.startswith('replace_photo_'):
         index = int(data.split('_')[2])
         context.user_data['replace_index'] = index
         await query.message.reply_text("📸 لطفاً عکس جدید رو بفرست تا جایگزین بشه:")
         context.user_data['state'] = 'replacing_photo'
+        return DETAILS_FILES
     elif data == 'back_to_upload':
         await query.message.reply_text(
             "📸 عکس دیگه‌ای داری؟",
@@ -47,18 +50,21 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 [KeyboardButton("⬅️ بازگشت")]
             ], resize_keyboard=True)
         )
-        context.user_data['state'] = 'new_project_details_files'
+        context.user_data['state'] = DETAILS_FILES
+        return DETAILS_FILES
     elif data == 'restart':
         context.user_data.clear()
-        await query.message.delete()  # پیام آپدیت رو حذف کن
+        await query.message.delete()
         await start(update, context)
+        return ROLE
     elif data == 'back':
-        state = context.user_data.get('state', 'start')
-        if state == 'new_project_category':
-            context.user_data['state'] = None
+        current_state = context.user_data.get('state', ROLE)
+        if current_state == CATEGORY:
+            context.user_data['state'] = ROLE
             await start(update, context)
-        elif state == 'new_project_subcategory':
-            context.user_data['state'] = 'new_project_category'
+            return ROLE
+        elif current_state == SUBCATEGORY:
+            context.user_data['state'] = CATEGORY
             categories = context.user_data.get('categories', {})
             root_cats = [cat_id for cat_id, cat in categories.items() if cat['parent'] is None]
             keyboard = [[KeyboardButton(categories[cat_id]['name'])] for cat_id in root_cats] + [[KeyboardButton("⬅️ بازگشت")]]
@@ -66,24 +72,32 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 f"🌟 دسته‌بندی خدماتت رو انتخاب کن:",
                 reply_markup=ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
             )
-        elif state in ['new_project_desc', 'new_project_location', 'new_project_location_input', 'new_project_details']:
+            return CATEGORY
+        elif current_state in [DESCRIPTION, LOCATION_TYPE, LOCATION_INPUT, DETAILS]:
             await show_employer_menu(update, context)
+            return EMPLOYER_MENU
         else:
             await start(update, context)
-    elif data.isdigit():  # دسته‌بندی
+            return ROLE
+    elif data.isdigit():
         await handle_category_callback(update, context)
+        return SUBMIT
     elif data in ['new_project', 'view_projects']:
         logger.info(f"Redirecting {data} to message_handler")
+        return EMPLOYER_MENU
     elif data.startswith(('edit_', 'delete_', 'close_', 'extend_', 'offers_')):
         await handle_edit_callback(update, context)
+        return PROJECT_ACTIONS
     elif data == 'select_location':
         await query.message.edit_text(
             "📍 لطفاً لوکیشن رو با استفاده از دکمه پیوست تلگرام (📎) بفرستید:\n"
             "1. روی 📎 بزنید.\n2. گزینه 'Location' رو انتخاب کنید.\n3. لوکیشن رو بفرستید."
         )
-        context.user_data['current_step'] = 'location'
+        context.user_data['state'] = LOCATION_INPUT
+        return LOCATION_INPUT
     else:
         await handle_view_callback(update, context)
+        return PROJECT_ACTIONS
 
 async def show_employer_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
     keyboard = [
@@ -95,10 +109,11 @@ async def show_employer_menu(update: Update, context: ContextTypes.DEFAULT_TYPE)
         "🎉 عالیه! می‌خوای خدمات جدید درخواست کنی یا پیشنهادات رو ببینی؟",
         reply_markup=reply_markup
     )
+    context.user_data['state'] = EMPLOYER_MENU
 
-async def handle_attachment(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    state = context.user_data.get('state')
-    if state == 'replacing_photo' and update.message and update.message.photo:
+async def handle_attachment(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    current_state = context.user_data.get('state')
+    if current_state == 'replacing_photo' and update.message and update.message.photo:
         new_photo = update.message.photo[-1].file_id
         index = context.user_data.get('replace_index')
         if 'files' in context.user_data and 0 <= index < len(context.user_data['files']):
@@ -107,5 +122,6 @@ async def handle_attachment(update: Update, context: ContextTypes.DEFAULT_TYPE):
             logger.info(f"Replaced photo {old_photo} with {new_photo} at index {index}")
             await update.message.reply_text("🔄 عکس جایگزین شد!")
             await show_photo_management(update, context)
-        context.user_data['state'] = 'managing_photos'
-        return True
+        context.user_data['state'] = DETAILS_FILES
+        return DETAILS_FILES
+    return current_state

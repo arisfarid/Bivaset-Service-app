@@ -1,17 +1,20 @@
 from telegram import Update, KeyboardButton, ReplyKeyboardMarkup
-from telegram.ext import ContextTypes
+from telegram.ext import ContextTypes, ConversationHandler
+from utils import get_categories, get_user_phone, log_chat
 import logging
-from .category_handler import handle_category_selection
-from .location_handler import handle_location
-from .attachment_handler import handle_attachment
-from .project_details_handler import handle_project_details
-from .state_handler import handle_project_states
-from .view_handler import handle_view_projects
-from utils import get_categories, get_user_phone, log_chat  # Import log_chat
+from handlers.category_handler import handle_category_selection
+from handlers.location_handler import handle_location
+from handlers.attachment_handler import handle_attachment
+from handlers.project_details_handler import handle_project_details
+from handlers.state_handler import handle_project_states
+from handlers.view_handler import handle_view_projects
 
 logger = logging.getLogger(__name__)
 
-async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
+# استفاده از حالت‌های تعریف‌شده
+START, REGISTER, ROLE, EMPLOYER_MENU, CATEGORY, SUBCATEGORY, DESCRIPTION, LOCATION_TYPE, LOCATION_INPUT, DETAILS, DETAILS_FILES, DETAILS_DATE, DETAILS_DEADLINE, DETAILS_BUDGET, DETAILS_QUANTITY, SUBMIT, VIEW_PROJECTS, PROJECT_ACTIONS = range(18)
+
+async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     text = update.message.text
     telegram_id = str(update.effective_user.id)
     
@@ -24,62 +27,79 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "😊 برای استفاده از ربات، لطفاً اول شماره تلفنت رو ثبت کن!",
             reply_markup=ReplyKeyboardMarkup(keyboard, resize_keyboard=True, one_time_keyboard=True)
         )
-        return
+        return REGISTER
 
-    # Log the chat
     await log_chat(update, context)
 
-    # بقیه منطق پیام‌ها
-    if text == "درخواست خدمات | کارفرما 👔":
-        keyboard = [
-            [KeyboardButton("📋 درخواست خدمات جدید"), KeyboardButton("📊 مشاهده درخواست‌ها")],
-            [KeyboardButton("⬅️ بازگشت")]
-        ]
-        await update.message.reply_text(
-            "🎉 عالیه، {}! می‌خوای خدمات جدید درخواست کنی یا پیشنهادات رو ببینی؟".format(update.effective_user.full_name),
-            reply_markup=ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
-        )
-        return
-    elif text == "پیشنهاد قیمت | مجری 🦺":
-        keyboard = [
-            [KeyboardButton("📋 مشاهده درخواست‌ها"), KeyboardButton("💡 پیشنهاد کار")],
-            [KeyboardButton("⬅️ بازگشت")]
-        ]
-        await update.message.reply_text(
-            "🌟 خوبه، {}! می‌خوای درخواست‌های موجود رو ببینی یا پیشنهاد کار بدی؟".format(update.effective_user.full_name),
-            reply_markup=ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
-        )
-        return
-    elif text == "📋 درخواست خدمات جدید":
-        context.user_data.clear()
-        context.user_data['files'] = []  # این رو اضافه کن تا مطمئن بشیم فایل‌ها ریست می‌شن
-        context.user_data['categories'] = await get_categories()
-        context.user_data['state'] = 'new_project_category'
-        categories = context.user_data['categories']
-        if not categories:
-            await update.message.reply_text("❌ خطا: دسته‌بندی‌ها در دسترس نیست! احتمالاً سرور API مشکل داره.")
-            return
-        root_cats = [cat_id for cat_id, cat in categories.items() if cat['parent'] is None]
-        keyboard = [[KeyboardButton(categories[cat_id]['name'])] for cat_id in root_cats] + [[KeyboardButton("⬅️ بازگشت")]]
-        await update.message.reply_text(
-            f"🌟 اول دسته‌بندی خدماتت رو انتخاب کن:",
-            reply_markup=ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
-        )
-        return
-    elif text == "📊 مشاهده درخواست‌ها":
-        await handle_view_projects(update, context)
-        return
+    # مدیریت پیام‌ها بر اساس حالت فعلی
+    current_state = context.user_data.get('state', ROLE)
+    if current_state == ROLE:
+        if text == "درخواست خدمات | کارفرما 👔":
+            keyboard = [
+                [KeyboardButton("📋 درخواست خدمات جدید"), KeyboardButton("📊 مشاهده درخواست‌ها")],
+                [KeyboardButton("⬅️ بازگشت")]
+            ]
+            await update.message.reply_text(
+                "🎉 عالیه، {}! می‌خوای خدمات جدید درخواست کنی یا پیشنهادات رو ببینی؟".format(update.effective_user.full_name),
+                reply_markup=ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
+            )
+            return EMPLOYER_MENU
+        elif text == "پیشنهاد قیمت | مجری 🦺":
+            keyboard = [
+                [KeyboardButton("📋 مشاهده درخواست‌ها"), KeyboardButton("💡 پیشنهاد کار")],
+                [KeyboardButton("⬅️ بازگشت")]
+            ]
+            await update.message.reply_text(
+                "🌟 خوبه، {}! می‌خوای درخواست‌های موجود رو ببینی یا پیشنهاد کار بدی؟".format(update.effective_user.full_name),
+                reply_markup=ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
+            )
+            return ROLE  # TODO: بعداً برای مجری‌ها گسترش داده بشه
+        else:
+            await update.message.reply_text("❌ گزینه نامعتبر! لطفاً از منو انتخاب کن.")
+            return ROLE
+    elif current_state == EMPLOYER_MENU:
+        if text == "📋 درخواست خدمات جدید":
+            context.user_data.clear()
+            context.user_data['files'] = []
+            context.user_data['categories'] = await get_categories()
+            if not context.user_data['categories']:
+                await update.message.reply_text("❌ خطا: دسته‌بندی‌ها در دسترس نیست!")
+                return EMPLOYER_MENU
+            root_cats = [cat_id for cat_id, cat in context.user_data['categories'].items() if cat['parent'] is None]
+            keyboard = [[KeyboardButton(context.user_data['categories'][cat_id]['name'])] for cat_id in root_cats] + [[KeyboardButton("⬅️ بازگشت")]]
+            await update.message.reply_text(
+                "🌟 دسته‌بندی خدماتت رو انتخاب کن:",
+                reply_markup=ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
+            )
+            context.user_data['state'] = CATEGORY
+            return CATEGORY
+        elif text == "📊 مشاهده درخواست‌ها":
+            await handle_view_projects(update, context)
+            return VIEW_PROJECTS
+        elif text == "⬅️ بازگشت":
+            keyboard = [["درخواست خدمات | کارفرما 👔"], ["پیشنهاد قیمت | مجری 🦺"]]
+            await update.message.reply_text("🌟 چی می‌خوای امروز؟", reply_markup=ReplyKeyboardMarkup(keyboard, resize_keyboard=True))
+            return ROLE
+        else:
+            await update.message.reply_text("❌ گزینه نامعتبر!")
+            return EMPLOYER_MENU
     
-    # بررسی حالت‌ها
+    # انتقال به handlerهای دیگر بر اساس حالت
     if await handle_category_selection(update, context):
-        return
+        return context.user_data.get('state', CATEGORY)
     if await handle_location(update, context):
-        return
+        return context.user_data.get('state', LOCATION_TYPE)
     if await handle_attachment(update, context):
-        return
+        return context.user_data.get('state', DETAILS_FILES)
     if await handle_project_details(update, context):
-        return
+        return context.user_data.get('state', DETAILS)
     if await handle_project_states(update, context):
-        return
+        return context.user_data.get('state', VIEW_PROJECTS)
     
     await update.message.reply_text("❌ گزینه نامعتبر! لطفاً از منو انتخاب کن.")
+    return current_state
+
+async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    context.user_data.clear()
+    await update.message.reply_text("عملیات لغو شد. دوباره شروع کن!")
+    return ConversationHandler.END

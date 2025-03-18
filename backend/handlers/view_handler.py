@@ -1,13 +1,15 @@
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import ContextTypes
+from telegram.ext import ContextTypes, ConversationHandler
 import requests
 import logging
-from utils import BASE_URL, log_chat  # Added log_chat import
+from utils import BASE_URL, log_chat
 
 logger = logging.getLogger(__name__)
 
-async def handle_view_projects(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    context.user_data['state'] = 'view_projects_initial'
+START, REGISTER, ROLE, EMPLOYER_MENU, CATEGORY, SUBCATEGORY, DESCRIPTION, LOCATION_TYPE, LOCATION_INPUT, DETAILS, DETAILS_FILES, DETAILS_DATE, DETAILS_DEADLINE, DETAILS_BUDGET, DETAILS_QUANTITY, SUBMIT, VIEW_PROJECTS, PROJECT_ACTIONS = range(18)
+
+async def handle_view_projects(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    context.user_data['state'] = VIEW_PROJECTS
     telegram_id = str(update.effective_user.id)
     try:
         response = requests.get(f"{BASE_URL}projects/?user_telegram_id={telegram_id}&ordering=-id&limit=5")
@@ -15,20 +17,37 @@ async def handle_view_projects(update: Update, context: ContextTypes.DEFAULT_TYP
             projects = response.json()
             if not projects:
                 await update.message.reply_text("📭 هنوز درخواستی ثبت نکردی!")
-                return
+                keyboard = [
+                    [KeyboardButton("درخواست‌های باز"), KeyboardButton("درخواست‌های بسته")],
+                    [KeyboardButton("⬅️ بازگشت")]
+                ]
+                await update.message.reply_text(
+                    "📊 ادامه بده یا برگرد:",
+                    reply_markup=ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
+                )
+                return VIEW_PROJECTS
             message = "📋 برای مشاهده جزئیات و مدیریت هر کدام از درخواست‌ها روی دکمه مربوطه ضربه بزنید:\n"
             inline_keyboard = [
                 [InlineKeyboardButton(f"{project['title']} (کد: {project['id']})", callback_data=f"{project['id']}")]
                 for project in projects
             ]
             await update.message.reply_text(message, reply_markup=InlineKeyboardMarkup(inline_keyboard))
+            keyboard = [
+                [KeyboardButton("درخواست‌های باز"), KeyboardButton("درخواست‌های بسته")],
+                [KeyboardButton("⬅️ بازگشت")]
+            ]
+            await update.message.reply_text(
+                "📊 ادامه بده یا برگرد:",
+                reply_markup=ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
+            )
         else:
             await update.message.reply_text(f"❌ خطا در دریافت درخواست‌ها: {response.status_code}")
     except requests.exceptions.ConnectionError:
         await update.message.reply_text("❌ خطا: سرور بک‌اند در دسترس نیست.")
-    await log_chat(update, context)  # Added log_chat call
+    await log_chat(update, context)
+    return VIEW_PROJECTS
 
-async def handle_view_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def handle_view_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     query = update.callback_query
     project_id = query.data
     try:
@@ -60,4 +79,5 @@ async def handle_view_callback(update: Update, context: ContextTypes.DEFAULT_TYP
             await query.edit_message_text(f"❌ خطا در دریافت اطلاعات: {response.status_code}")
     except requests.exceptions.ConnectionError:
         await query.edit_message_text("❌ خطا: سرور بک‌اند در دسترس نیست.")
-    await log_chat(update, context)  # Added log_chat call
+    await log_chat(update, context)
+    return PROJECT_ACTIONS

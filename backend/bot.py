@@ -2,14 +2,19 @@ import os
 import sys
 import logging
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import Application, CommandHandler, MessageHandler, filters, CallbackQueryHandler, ContextTypes
+from telegram.ext import Application, CommandHandler, MessageHandler, filters, CallbackQueryHandler, ContextTypes, ConversationHandler
 from utils import save_timestamp, check_for_updates
-from handlers.start_handler import start, handle_contact, check_phone, handle_role
+from handlers.start_handler import start, handle_contact, handle_role, cancel
+from handlers.message_handler import handle_message, cancel as message_cancel
+from handlers.category_handler import handle_category_selection, handle_category_callback
 from handlers.location_handler import handle_location
 from handlers.attachment_handler import handle_attachment
-from handlers.message_handler import handle_message
+from handlers.project_details_handler import handle_project_details
+from handlers.submission_handler import submit_project
+from handlers.state_handler import handle_project_states
+from handlers.view_handler import handle_view_projects, handle_view_callback
+from handlers.edit_handler import handle_edit_callback
 from handlers.callback_handler import handle_callback
-from handlers.view_handler import handle_view_projects
 
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -21,6 +26,9 @@ logging.getLogger('httpx').setLevel(logging.WARNING)
 logging.getLogger('apscheduler').setLevel(logging.WARNING)
 
 TOKEN = os.getenv('TELEGRAM_BOT_TOKEN')
+
+# تعریف حالت‌ها
+START, REGISTER, ROLE, EMPLOYER_MENU, CATEGORY, SUBCATEGORY, DESCRIPTION, LOCATION_TYPE, LOCATION_INPUT, DETAILS, DETAILS_FILES, DETAILS_DATE, DETAILS_DEADLINE, DETAILS_BUDGET, DETAILS_QUANTITY, SUBMIT, VIEW_PROJECTS, PROJECT_ACTIONS = range(18)
 
 async def send_update_and_restart(token: str, active_chats: list, context: ContextTypes.DEFAULT_TYPE):
     logger.info(f"Starting update and restart for {len(active_chats)} chats")
@@ -64,13 +72,37 @@ logger.info(f"Using Telegram Bot Token: {TOKEN[:10]}...")
 
 app = Application.builder().token(TOKEN).build()
 
-app.add_handler(CommandHandler("start", start))
-app.add_handler(MessageHandler(filters.CONTACT, handle_contact))
-app.add_handler(MessageHandler(filters.LOCATION, handle_location))
-app.add_handler(MessageHandler(filters.PHOTO, handle_attachment))
-app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
+# تنظیم ConversationHandler
+conv_handler = ConversationHandler(
+    entry_points=[CommandHandler("start", start)],
+    states={
+        START: [MessageHandler(filters.TEXT & ~filters.COMMAND, start)],
+        REGISTER: [MessageHandler(filters.CONTACT, handle_contact)],
+        ROLE: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_role)],
+        EMPLOYER_MENU: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message)],
+        CATEGORY: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_category_selection)],
+        SUBCATEGORY: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_category_selection)],
+        DESCRIPTION: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_project_details)],
+        LOCATION_TYPE: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_location), MessageHandler(filters.LOCATION, handle_location)],
+        LOCATION_INPUT: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_location), MessageHandler(filters.LOCATION, handle_location)],
+        DETAILS: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_project_details)],
+        DETAILS_FILES: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_attachment), MessageHandler(filters.PHOTO, handle_attachment)],
+        DETAILS_DATE: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_project_details)],
+        DETAILS_DEADLINE: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_project_details)],
+        DETAILS_BUDGET: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_project_details)],
+        DETAILS_QUANTITY: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_project_details)],
+        SUBMIT: [MessageHandler(filters.TEXT & ~filters.COMMAND, submit_project)],
+        VIEW_PROJECTS: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_view_projects)],
+        PROJECT_ACTIONS: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_project_states)],
+    },
+    fallbacks=[CommandHandler("cancel", cancel)],
+)
+
+# اضافه کردن handlerها
+app.add_handler(conv_handler)
 app.add_handler(CallbackQueryHandler(handle_callback))
 
+# اضافه کردن jobهای تکراری
 app.job_queue.run_repeating(test_job, interval=5, first=0, data=app)
 app.job_queue.run_repeating(check_and_notify, interval=10, first=0, data=app)
 

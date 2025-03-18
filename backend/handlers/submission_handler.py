@@ -1,27 +1,27 @@
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import ContextTypes
-from utils import generate_title, convert_deadline_to_date, log_chat
-from django.contrib.gis.geos import Point
+from telegram.ext import ContextTypes, ConversationHandler
+from utils import generate_title, convert_deadline_to_date, log_chat, BASE_URL
 import requests
 import logging
-from .start_handler import start
-from .attachment_handler import upload_attachments
+from handlers.start_handler import start
+from handlers.attachment_handler import upload_attachments
 
 logger = logging.getLogger(__name__)
-BASE_URL = 'http://185.204.171.107:8000/api/'
 
-async def submit_project(update: Update, context: ContextTypes.DEFAULT_TYPE):
+START, REGISTER, ROLE, EMPLOYER_MENU, CATEGORY, SUBCATEGORY, DESCRIPTION, LOCATION_TYPE, LOCATION_INPUT, DETAILS, DETAILS_FILES, DETAILS_DATE, DETAILS_DEADLINE, DETAILS_BUDGET, DETAILS_QUANTITY, SUBMIT, VIEW_PROJECTS, PROJECT_ACTIONS = range(18)
+
+async def submit_project(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     location = context.user_data.get('location')
     location_data = None
     if location:
-        location_data = [location['longitude'], location['latitude']]  # فقط مختصات به صورت لیست
-    
+        location_data = [location['longitude'], location['latitude']]
+
     data = {
         'title': generate_title(context),
         'description': context.user_data.get('description', ''),
         'category': context.user_data.get('category_id', ''),
         'service_location': context.user_data.get('service_location', ''),
-        'location': location_data,  # لیست مختصات
+        'location': location_data,
         'budget': context.user_data.get('budget', None),
         'deadline_date': convert_deadline_to_date(context.user_data.get('deadline', None)),
         'start_date': context.user_data.get('need_date', None),
@@ -78,3 +78,4 @@ async def submit_project(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("❌ خطا در ثبت درخواست.")
     context.user_data.clear()
     await start(update, context)
+    return ROLE
