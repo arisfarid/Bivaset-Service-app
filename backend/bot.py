@@ -95,7 +95,11 @@ conv_handler = ConversationHandler(
         SUBCATEGORY: [create_message_handler(handle_category_selection)],
         DESCRIPTION: [create_message_handler(handle_project_details)],
         LOCATION_TYPE: [create_message_handler(handle_location, filters.LOCATION)],
-        LOCATION_INPUT: [create_message_handler(handle_location, filters.LOCATION)],
+        LOCATION_INPUT: [
+            MessageHandler(filters.TEXT & ~filters.COMMAND, handle_location),
+            MessageHandler(filters.LOCATION, handle_location),
+            MessageHandler(filters.PHOTO, handle_location),  # چک کردن عکس
+        ],
         DETAILS: [create_message_handler(handle_project_details)],
         DETAILS_FILES: [create_message_handler(handle_attachment, filters.PHOTO)],
         DETAILS_DATE: [create_message_handler(handle_project_details)],
