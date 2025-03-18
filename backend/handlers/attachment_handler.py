@@ -15,11 +15,16 @@ async def handle_attachment(update: Update, context: ContextTypes.DEFAULT_TYPE) 
         new_photo = update.message.photo[-1].file_id
         index = context.user_data.get('replace_index')
         if 0 <= index < len(current_files):
+            if new_photo in current_files:
+                await update.message.reply_text("❌ این عکس قبلاً توی لیست هست!")
+                await log_chat(update, context)
+                await show_photo_management(update, context)
+                return True
             old_photo = current_files[index]
             current_files[index] = new_photo
             logger.info(f"Replaced photo {old_photo} with {new_photo} at index {index}")
             await update.message.reply_text("🔄 عکس جایگزین شد!")
-            await log_chat(update, context)  # Log chat
+            await log_chat(update, context)
             await show_photo_management(update, context)
             context.user_data['state'] = 'managing_photos'
         return True
@@ -67,6 +72,11 @@ async def handle_attachment(update: Update, context: ContextTypes.DEFAULT_TYPE) 
             await log_chat(update, context)  # Log chat
             context.user_data.pop('files', None)
             return True
+
+    if update.message and update.message.video:
+        await update.message.reply_text("❌ فقط عکس قبول می‌شه! ویدئو رو نمی‌تونم ثبت کنم.")
+        await log_chat(update, context)
+        return True
 
     # مدیریت دکمه‌ها
     text = update.message.text if update.message else None
