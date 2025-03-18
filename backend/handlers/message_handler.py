@@ -37,6 +37,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     if current_state == ROLE:
         if text == "درخواست خدمات | کارفرما 👔":
             context.user_data['state'] = EMPLOYER_MENU
+            logger.info(f"EMPLOYER_MENU value: {EMPLOYER_MENU}")  # لاگ برای دیباگ
             await update.message.reply_text(
                 "🎉 عالیه، {}! می‌خوای خدمات جدید درخواست کنی یا پیشنهادات رو ببینی؟".format(update.effective_user.full_name),
                 reply_markup=EMPLOYER_MENU
@@ -44,6 +45,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
             logger.info(f"State updated to EMPLOYER_MENU for {telegram_id}")
             return EMPLOYER_MENU
         elif text == "پیشنهاد قیمت | مجری 🦺":
+            logger.info(f"CONTRACTOR_MENU value: {CONTRACTOR_MENU}")  # لاگ برای دیباگ
             await update.message.reply_text(
                 "🌟 خوبه، {}! می‌خوای درخواست‌های موجود رو ببینی یا پیشنهاد کار بدی؟".format(update.effective_user.full_name),
                 reply_markup=CONTRACTOR_MENU
@@ -60,6 +62,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
             context.user_data['files'] = []
             context.user_data['categories'] = await get_categories()
             if not context.user_data['categories']:
+                logger.info(f"EMPLOYER_MENU value on error: {EMPLOYER_MENU}")  # لاگ برای دیباگ
                 await update.message.reply_text("❌ خطا: دسته‌بندی‌ها در دسترس نیست!", reply_markup=EMPLOYER_MENU)
                 return EMPLOYER_MENU
             root_cats = [cat_id for cat_id, cat in context.user_data['categories'].items() if cat['parent'] is None]
@@ -81,6 +84,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
             logger.info(f"State updated to ROLE for {telegram_id}")
             return ROLE
         else:
+            logger.info(f"EMPLOYER_MENU value on invalid input: {EMPLOYER_MENU}")  # لاگ برای دیباگ
             await update.message.reply_text("❌ گزینه نامعتبر! لطفاً از منو انتخاب کن.", reply_markup=EMPLOYER_MENU)
             return EMPLOYER_MENU
     
