@@ -7,6 +7,7 @@ from handlers.edit_handler import handle_edit_callback
 from handlers.view_handler import handle_view_callback
 from handlers.attachment_handler import show_photo_management
 from utils import log_chat
+from keyboards import EMPLOYER_INLINE_MENU, FILE_MANAGEMENT_MENU, RESTART_INLINE_MENU, BACK_INLINE_MENU  # اضافه شده
 
 logger = logging.getLogger(__name__)
 
@@ -32,9 +33,7 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
                 else:
                     await query.message.reply_text(
                         "📭 هنوز عکسی نفرستادی!\n📸 برو عکس بفرست یا برگرد:",
-                        reply_markup=ReplyKeyboardMarkup([
-                            [KeyboardButton("📸 تصاویر یا فایل"), KeyboardButton("⬅️ بازگشت")]
-                        ], resize_keyboard=True)
+                        reply_markup=FILE_MANAGEMENT_MENU  # استفاده از FILE_MANAGEMENT_MENU
                     )
             return DETAILS_FILES
         elif data.startswith('replace_photo_'):
@@ -46,10 +45,7 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         elif data == 'back_to_upload':
             await query.message.reply_text(
                 "📸 عکس دیگه‌ای داری؟",
-                reply_markup=ReplyKeyboardMarkup([
-                    [KeyboardButton("🏁 اتمام ارسال تصاویر"), KeyboardButton("📋 مدیریت عکس‌ها")],
-                    [KeyboardButton("⬅️ بازگشت")]
-                ], resize_keyboard=True)
+                reply_markup=FILE_MANAGEMENT_MENU  # استفاده از FILE_MANAGEMENT_MENU
             )
             context.user_data['state'] = DETAILS_FILES
             return DETAILS_FILES
@@ -104,20 +100,15 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         logger.error(f"Unexpected error in callback handler: {e}")
         await query.message.reply_text(
             "❌ یه مشکل پیش اومد! بریم از اول شروع کنیم؟",
-            reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("🔄 شروع دوباره", callback_data='restart')]])
+            reply_markup=RESTART_INLINE_MENU  # استفاده از RESTART_INLINE_MENU
         )
         context.user_data['state'] = ROLE
         return ROLE
 
 async def show_employer_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    keyboard = [
-        [InlineKeyboardButton("📋 درخواست خدمات جدید", callback_data='new_project')],
-        [InlineKeyboardButton("👀 مشاهده درخواست‌ها", callback_data='view_projects')],
-    ]
-    reply_markup = InlineKeyboardMarkup(keyboard)
     await update.callback_query.message.edit_text(
         "🎉 عالیه! می‌خوای خدمات جدید درخواست کنی یا پیشنهادات رو ببینی؟",
-        reply_markup=reply_markup
+        reply_markup=EMPLOYER_INLINE_MENU  # استفاده از EMPLOYER_INLINE_MENU
     )
     context.user_data['state'] = EMPLOYER_MENU
 

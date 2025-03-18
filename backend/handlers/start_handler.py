@@ -1,6 +1,7 @@
 from telegram import Update, KeyboardButton, ReplyKeyboardMarkup
 from telegram.ext import ContextTypes, ConversationHandler
 from utils import get_user_phone, BASE_URL, log_chat
+from keyboards import MAIN_MENU, REGISTER_MENU  # اضافه شده
 import requests
 import logging
 
@@ -28,15 +29,14 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     context.user_data['phone'] = phone
     await log_chat(update, context)
 
-    keyboard = [["درخواست خدمات | کارفرما 👔"], ["پیشنهاد قیمت | مجری 🦺"]]
     message = (
         f"👋 سلام {name}! به ربات خدمات بی‌واسط خوش اومدی.\n"
         "من رایگان کمکت می‌کنم برای خدمات مورد نیازت، مجری کاربلد پیدا کنی یا کار مرتبط با تخصصت پیدا کنی. چی می‌خوای امروز؟ 🌟"
     )
     if update.message:
-        await update.message.reply_text(message, reply_markup=ReplyKeyboardMarkup(keyboard, resize_keyboard=True, one_time_keyboard=True))
+        await update.message.reply_text(message, reply_markup=MAIN_MENU)  # استفاده از MAIN_MENU
     elif update.callback_query:
-        await context.bot.send_message(chat_id=chat_id, text=message, reply_markup=ReplyKeyboardMarkup(keyboard, resize_keyboard=True))
+        await context.bot.send_message(chat_id=chat_id, text=message, reply_markup=MAIN_MENU)
     return ROLE
 
 async def check_phone(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
@@ -47,10 +47,9 @@ async def check_phone(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int
         if phone and phone != f"tg_{telegram_id}":
             context.user_data['phone'] = phone
             return await start(update, context)  # برگشت به ROLE بعد از چک
-    keyboard = [[KeyboardButton("ثبت شماره تلفن", request_contact=True)]]
     await update.effective_message.reply_text(
         "😊 برای استفاده از امکانات ربات، لطفاً شماره تلفنت رو با دکمه زیر ثبت کن! 📱",
-        reply_markup=ReplyKeyboardMarkup(keyboard, resize_keyboard=True, one_time_keyboard=True)
+        reply_markup=REGISTER_MENU  # استفاده از REGISTER_MENU
     )
     return REGISTER
 

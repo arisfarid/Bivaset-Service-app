@@ -3,6 +3,7 @@ from telegram.ext import ContextTypes, ConversationHandler
 import requests
 import logging
 from utils import BASE_URL, log_chat
+from keyboards import VIEW_PROJECTS_MENU  # اضافه شده
 
 logger = logging.getLogger(__name__)
 
@@ -17,13 +18,9 @@ async def handle_view_projects(update: Update, context: ContextTypes.DEFAULT_TYP
             projects = response.json()
             if not projects:
                 await update.message.reply_text("📭 هنوز درخواستی ثبت نکردی!")
-                keyboard = [
-                    [KeyboardButton("درخواست‌های باز"), KeyboardButton("درخواست‌های بسته")],
-                    [KeyboardButton("⬅️ بازگشت")]
-                ]
                 await update.message.reply_text(
                     "📊 ادامه بده یا برگرد:",
-                    reply_markup=ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
+                    reply_markup=VIEW_PROJECTS_MENU  # استفاده از VIEW_PROJECTS_MENU
                 )
                 return VIEW_PROJECTS
             message = "📋 برای مشاهده جزئیات و مدیریت هر کدام از درخواست‌ها روی دکمه مربوطه ضربه بزنید:\n"
@@ -32,13 +29,9 @@ async def handle_view_projects(update: Update, context: ContextTypes.DEFAULT_TYP
                 for project in projects
             ]
             await update.message.reply_text(message, reply_markup=InlineKeyboardMarkup(inline_keyboard))
-            keyboard = [
-                [KeyboardButton("درخواست‌های باز"), KeyboardButton("درخواست‌های بسته")],
-                [KeyboardButton("⬅️ بازگشت")]
-            ]
             await update.message.reply_text(
                 "📊 ادامه بده یا برگرد:",
-                reply_markup=ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
+                reply_markup=VIEW_PROJECTS_MENU  # استفاده از VIEW_PROJECTS_MENU
             )
         else:
             await update.message.reply_text(f"❌ خطا در دریافت درخواست‌ها: {response.status_code}")

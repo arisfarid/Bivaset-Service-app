@@ -4,6 +4,7 @@ from utils import BASE_URL, log_chat
 import requests
 import logging
 from handlers.start_handler import start
+from keyboards import VIEW_PROJECTS_MENU, MAIN_MENU  # اضافه شده
 
 logger = logging.getLogger(__name__)
 
@@ -31,13 +32,9 @@ async def handle_project_states(update: Update, context: ContextTypes.DEFAULT_TY
                     projects = response.json()
                     if not projects:
                         await update.message.reply_text(f"📭 هیچ درخواست {text} پیدا نشد!")
-                        keyboard = [
-                            [KeyboardButton("درخواست‌های باز"), KeyboardButton("درخواست‌های بسته")],
-                            [KeyboardButton("⬅️ بازگشت")]
-                        ]
                         await update.message.reply_text(
                             "📊 ادامه بده یا برگرد:",
-                            reply_markup=ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
+                            reply_markup=VIEW_PROJECTS_MENU  # استفاده از VIEW_PROJECTS_MENU
                         )
                         return PROJECT_ACTIONS
                     message = f"📋 برای مشاهده جزئیات و مدیریت هر کدام از {text} روی دکمه مربوطه ضربه بزنید:\n"
@@ -51,36 +48,24 @@ async def handle_project_states(update: Update, context: ContextTypes.DEFAULT_TY
                     else:
                         context.user_data['project_offset'] = 0
                     await update.message.reply_text(message, reply_markup=InlineKeyboardMarkup(inline_keyboard))
-                    keyboard = [
-                        [KeyboardButton("درخواست‌های باز"), KeyboardButton("درخواست‌های بسته")],
-                        [KeyboardButton("⬅️ بازگشت")]
-                    ]
                     await update.message.reply_text(
                         "📊 ادامه بده یا برگرد:",
-                        reply_markup=ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
+                        reply_markup=VIEW_PROJECTS_MENU  # استفاده از VIEW_PROJECTS_MENU
                     )
                 else:
                     await update.message.reply_text(f"❌ خطا در دریافت درخواست‌ها: {response.status_code}")
-                    keyboard = [
-                        [KeyboardButton("درخواست‌های باز"), KeyboardButton("درخواست‌های بسته")],
-                        [KeyboardButton("⬅️ بازگشت")]
-                    ]
                     await update.message.reply_text(
                         "📊 ادامه بده یا برگرد:",
-                        reply_markup=ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
+                        reply_markup=VIEW_PROJECTS_MENU  # استفاده از VIEW_PROJECTS_MENU
                     )
             except requests.exceptions.ConnectionError:
                 await update.message.reply_text("❌ خطا: سرور بک‌اند در دسترس نیست.")
-                keyboard = [
-                    [KeyboardButton("درخواست‌های باز"), KeyboardButton("درخواست‌های بسته")],
-                    [KeyboardButton("⬅️ بازگشت")]
-                ]
                 await update.message.reply_text(
                     "📊 ادامه بده یا برگرد:",
-                    reply_markup=ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
+                    reply_markup=VIEW_PROJECTS_MENU  # استفاده از VIEW_PROJECTS_MENU
                 )
             return PROJECT_ACTIONS
         else:
-            await update.message.reply_text("❌ گزینه نامعتبر! لطفاً یکی از دکمه‌ها رو انتخاب کن.")
+            await update.message.reply_text("❌ گزینه نامعتبر! لطفاً یکی از دکمه‌ها رو انتخاب کن.", reply_markup=VIEW_PROJECTS_MENU)
             return PROJECT_ACTIONS
     return current_state
