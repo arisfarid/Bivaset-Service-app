@@ -76,31 +76,35 @@ async def log_state(update: Update, context: ContextTypes.DEFAULT_TYPE):
     logger.info(f"Processing message for user {update.effective_user.id}, current state: {current_state}")
     return current_state
 
+# Helper function to create MessageHandlers for states
+def create_message_handler(callback, additional_filters=None):
+    filters_combined = filters.TEXT & ~filters.COMMAND
+    if additional_filters:
+        filters_combined |= additional_filters
+    return MessageHandler(filters_combined, callback)
+
 # تنظیم ConversationHandler
 conv_handler = ConversationHandler(
     entry_points=[CommandHandler("start", start)],
     states={
-        START: [MessageHandler(filters.TEXT & ~filters.COMMAND, start)],
-        REGISTER: [MessageHandler(filters.CONTACT, handle_contact)],
-        ROLE: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message)],
-        EMPLOYER_MENU: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message)],
-        CATEGORY: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_category_selection)],
-        SUBCATEGORY: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_category_selection)],
-        DESCRIPTION: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_project_details)],
-        LOCATION_TYPE: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_location), 
-                       MessageHandler(filters.LOCATION, handle_location)],
-        LOCATION_INPUT: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_location), 
-                         MessageHandler(filters.LOCATION, handle_location)],
-        DETAILS: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_project_details)],
-        DETAILS_FILES: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_attachment), 
-                        MessageHandler(filters.PHOTO, handle_attachment)],
-        DETAILS_DATE: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_project_details)],
-        DETAILS_DEADLINE: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_project_details)],
-        DETAILS_BUDGET: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_project_details)],
-        DETAILS_QUANTITY: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_project_details)],
-        SUBMIT: [MessageHandler(filters.TEXT & ~filters.COMMAND, submit_project)],
-        VIEW_PROJECTS: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_view_projects)],
-        PROJECT_ACTIONS: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_project_states)],
+        START: [create_message_handler(start)],
+        REGISTER: [create_message_handler(handle_contact, filters.CONTACT)],
+        ROLE: [create_message_handler(handle_message)],
+        EMPLOYER_MENU: [create_message_handler(handle_message)],
+        CATEGORY: [create_message_handler(handle_category_selection)],
+        SUBCATEGORY: [create_message_handler(handle_category_selection)],
+        DESCRIPTION: [create_message_handler(handle_project_details)],
+        LOCATION_TYPE: [create_message_handler(handle_location, filters.LOCATION)],
+        LOCATION_INPUT: [create_message_handler(handle_location, filters.LOCATION)],
+        DETAILS: [create_message_handler(handle_project_details)],
+        DETAILS_FILES: [create_message_handler(handle_attachment, filters.PHOTO)],
+        DETAILS_DATE: [create_message_handler(handle_project_details)],
+        DETAILS_DEADLINE: [create_message_handler(handle_project_details)],
+        DETAILS_BUDGET: [create_message_handler(handle_project_details)],
+        DETAILS_QUANTITY: [create_message_handler(handle_project_details)],
+        SUBMIT: [create_message_handler(submit_project)],
+        VIEW_PROJECTS: [create_message_handler(handle_view_projects)],
+        PROJECT_ACTIONS: [create_message_handler(handle_project_states)],
     },
     fallbacks=[CommandHandler("cancel", cancel)],
 )
