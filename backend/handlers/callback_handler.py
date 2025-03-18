@@ -19,85 +19,95 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
     logger.info(f"Callback data received: {data}")
     await log_chat(update, context)
 
-    if data.startswith('delete_photo_'):
-        index = int(data.split('_')[2])
-        files = context.user_data.get('files', [])
-        if 0 <= index < len(files):
-            deleted_file = files.pop(index)
-            logger.info(f"Deleted photo {deleted_file} at index {index}")
-            await query.message.reply_text("🗑 عکس حذف شد! دوباره مدیریت کن یا ادامه بده.")
-            if files:
-                await show_photo_management(update, context)
-            else:
-                await query.message.reply_text(
-                    "📭 هنوز عکسی نفرستادی!\n📸 برو عکس بفرست یا برگرد:",
-                    reply_markup=ReplyKeyboardMarkup([
-                        [KeyboardButton("📸 تصاویر یا فایل"), KeyboardButton("⬅️ بازگشت")]
-                    ], resize_keyboard=True)
-                )
-        return DETAILS_FILES
-    elif data.startswith('replace_photo_'):
-        index = int(data.split('_')[2])
-        context.user_data['replace_index'] = index
-        await query.message.reply_text("📸 لطفاً عکس جدید رو بفرست تا جایگزین بشه:")
-        context.user_data['state'] = 'replacing_photo'
-        return DETAILS_FILES
-    elif data == 'back_to_upload':
-        await query.message.reply_text(
-            "📸 عکس دیگه‌ای داری؟",
-            reply_markup=ReplyKeyboardMarkup([
-                [KeyboardButton("🏁 اتمام ارسال تصاویر"), KeyboardButton("📋 مدیریت عکس‌ها")],
-                [KeyboardButton("⬅️ بازگشت")]
-            ], resize_keyboard=True)
-        )
-        context.user_data['state'] = DETAILS_FILES
-        return DETAILS_FILES
-    elif data == 'restart':
-        context.user_data.clear()
-        await query.message.delete()
-        await start(update, context)
-        return ROLE
-    elif data == 'back':
-        current_state = context.user_data.get('state', ROLE)
-        if current_state == CATEGORY:
-            context.user_data['state'] = ROLE
-            await start(update, context)
-            return ROLE
-        elif current_state == SUBCATEGORY:
-            context.user_data['state'] = CATEGORY
-            categories = context.user_data.get('categories', {})
-            root_cats = [cat_id for cat_id, cat in categories.items() if cat['parent'] is None]
-            keyboard = [[KeyboardButton(categories[cat_id]['name'])] for cat_id in root_cats] + [[KeyboardButton("⬅️ بازگشت")]]
-            await query.message.edit_text(
-                f"🌟 دسته‌بندی خدماتت رو انتخاب کن:",
-                reply_markup=ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
+    try:
+        if data.startswith('delete_photo_'):
+            index = int(data.split('_')[2])
+            files = context.user_data.get('files', [])
+            if 0 <= index < len(files):
+                deleted_file = files.pop(index)
+                logger.info(f"Deleted photo {deleted_file} at index {index}")
+                await query.message.reply_text("🗑 عکس حذف شد! دوباره مدیریت کن یا ادامه بده.")
+                if files:
+                    await show_photo_management(update, context)
+                else:
+                    await query.message.reply_text(
+                        "📭 هنوز عکسی نفرستادی!\n📸 برو عکس بفرست یا برگرد:",
+                        reply_markup=ReplyKeyboardMarkup([
+                            [KeyboardButton("📸 تصاویر یا فایل"), KeyboardButton("⬅️ بازگشت")]
+                        ], resize_keyboard=True)
+                    )
+            return DETAILS_FILES
+        elif data.startswith('replace_photo_'):
+            index = int(data.split('_')[2])
+            context.user_data['replace_index'] = index
+            await query.message.reply_text("📸 لطفاً عکس جدید رو بفرست تا جایگزین بشه:")
+            context.user_data['state'] = 'replacing_photo'
+            return DETAILS_FILES
+        elif data == 'back_to_upload':
+            await query.message.reply_text(
+                "📸 عکس دیگه‌ای داری؟",
+                reply_markup=ReplyKeyboardMarkup([
+                    [KeyboardButton("🏁 اتمام ارسال تصاویر"), KeyboardButton("📋 مدیریت عکس‌ها")],
+                    [KeyboardButton("⬅️ بازگشت")]
+                ], resize_keyboard=True)
             )
-            return CATEGORY
-        elif current_state in [DESCRIPTION, LOCATION_TYPE, LOCATION_INPUT, DETAILS]:
-            await show_employer_menu(update, context)
-            return EMPLOYER_MENU
-        else:
+            context.user_data['state'] = DETAILS_FILES
+            return DETAILS_FILES
+        elif data == 'restart':
+            context.user_data.clear()
+            await query.message.delete()
             await start(update, context)
             return ROLE
-    elif data.isdigit():
-        await handle_category_callback(update, context)
-        return SUBMIT
-    elif data in ['new_project', 'view_projects']:
-        logger.info(f"Redirecting {data} to message_handler")
-        return EMPLOYER_MENU
-    elif data.startswith(('edit_', 'delete_', 'close_', 'extend_', 'offers_')):
-        await handle_edit_callback(update, context)
-        return PROJECT_ACTIONS
-    elif data == 'select_location':
-        await query.message.edit_text(
-            "📍 لطفاً لوکیشن رو با استفاده از دکمه پیوست تلگرام (📎) بفرستید:\n"
-            "1. روی 📎 بزنید.\n2. گزینه 'Location' رو انتخاب کنید.\n3. لوکیشن رو بفرستید."
+        elif data == 'back':
+            current_state = context.user_data.get('state', ROLE)
+            if current_state == CATEGORY:
+                context.user_data['state'] = ROLE
+                await start(update, context)
+                return ROLE
+            elif current_state == SUBCATEGORY:
+                context.user_data['state'] = CATEGORY
+                categories = context.user_data.get('categories', {})
+                root_cats = [cat_id for cat_id, cat in categories.items() if cat['parent'] is None]
+                keyboard = [[KeyboardButton(categories[cat_id]['name'])] for cat_id in root_cats] + [[KeyboardButton("⬅️ بازگشت")]]
+                await query.message.edit_text(
+                    f"🌟 دسته‌بندی خدماتت رو انتخاب کن:",
+                    reply_markup=ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
+                )
+                return CATEGORY
+            elif current_state in [DESCRIPTION, LOCATION_TYPE, LOCATION_INPUT, DETAILS]:
+                await show_employer_menu(update, context)
+                return EMPLOYER_MENU
+            else:
+                await start(update, context)
+                return ROLE
+        elif data.isdigit():
+            await handle_category_callback(update, context)
+            return SUBMIT
+        elif data in ['new_project', 'view_projects']:
+            logger.info(f"Redirecting {data} to message_handler")
+            return EMPLOYER_MENU
+        elif data.startswith(('edit_', 'delete_', 'close_', 'extend_', 'offers_')):
+            await handle_edit_callback(update, context)
+            return PROJECT_ACTIONS
+        elif data == 'select_location':
+            await query.message.edit_text(
+                "📍 لطفاً لوکیشن رو با استفاده از دکمه پیوست تلگرام (📎) بفرستید:\n"
+                "1. روی 📎 بزنید.\n2. گزینه 'Location' رو انتخاب کنید.\n3. لوکیشن رو بفرستید."
+            )
+            context.user_data['state'] = LOCATION_INPUT
+            return LOCATION_INPUT
+        else:
+            await handle_view_callback(update, context)
+            return PROJECT_ACTIONS
+    except Exception as e:
+        # Fallback برای هر خطای غیرمنتظره
+        logger.error(f"Unexpected error in callback handler: {e}")
+        await query.message.reply_text(
+            "❌ یه مشکل پیش اومد! بریم از اول شروع کنیم؟",
+            reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("🔄 شروع دوباره", callback_data='restart')]])
         )
-        context.user_data['state'] = LOCATION_INPUT
-        return LOCATION_INPUT
-    else:
-        await handle_view_callback(update, context)
-        return PROJECT_ACTIONS
+        context.user_data['state'] = ROLE
+        return ROLE
 
 async def show_employer_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
     keyboard = [
