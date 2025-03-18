@@ -5,15 +5,14 @@ from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, CallbackQueryHandler, ContextTypes, ConversationHandler
 from utils import save_timestamp, check_for_updates
 from handlers.start_handler import start, handle_contact, handle_role, cancel
-from handlers.message_handler import handle_message, cancel as message_cancel
-from handlers.category_handler import handle_category_selection, handle_category_callback
+from handlers.message_handler import handle_message
+from handlers.category_handler import handle_category_selection
 from handlers.location_handler import handle_location
 from handlers.attachment_handler import handle_attachment
 from handlers.project_details_handler import handle_project_details
 from handlers.submission_handler import submit_project
 from handlers.state_handler import handle_project_states
-from handlers.view_handler import handle_view_projects, handle_view_callback
-from handlers.edit_handler import handle_edit_callback
+from handlers.view_handler import handle_view_projects
 from handlers.callback_handler import handle_callback
 
 logging.basicConfig(
@@ -83,10 +82,13 @@ conv_handler = ConversationHandler(
         CATEGORY: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_category_selection)],
         SUBCATEGORY: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_category_selection)],
         DESCRIPTION: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_project_details)],
-        LOCATION_TYPE: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_location), MessageHandler(filters.LOCATION, handle_location)],
-        LOCATION_INPUT: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_location), MessageHandler(filters.LOCATION, handle_location)],
+        LOCATION_TYPE: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_location), 
+                       MessageHandler(filters.LOCATION, handle_location)],
+        LOCATION_INPUT: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_location), 
+                         MessageHandler(filters.LOCATION, handle_location)],
         DETAILS: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_project_details)],
-        DETAILS_FILES: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_attachment), MessageHandler(filters.PHOTO, handle_attachment)],
+        DETAILS_FILES: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_attachment), 
+                        MessageHandler(filters.PHOTO, handle_attachment)],
         DETAILS_DATE: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_project_details)],
         DETAILS_DEADLINE: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_project_details)],
         DETAILS_BUDGET: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_project_details)],

@@ -30,11 +30,13 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
 
     await log_chat(update, context)
 
-    # مدیریت پیام‌ها بر اساس حالت فعلی
+    # لاگ کردن state فعلی
     current_state = context.user_data.get('state', ROLE)
+    logger.info(f"Current state for {telegram_id}: {current_state}")
+
     if current_state == ROLE:
         if text == "درخواست خدمات | کارفرما 👔":
-            context.user_data['state'] = EMPLOYER_MENU  # آپدیت state
+            context.user_data['state'] = EMPLOYER_MENU
             keyboard = [
                 [KeyboardButton("📋 درخواست خدمات جدید"), KeyboardButton("📊 مشاهده درخواست‌ها")],
                 [KeyboardButton("⬅️ بازگشت")]
@@ -58,6 +60,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
             await update.message.reply_text("❌ گزینه نامعتبر! لطفاً از منو انتخاب کن.")
             return ROLE
     elif current_state == EMPLOYER_MENU:
+        logger.info(f"Processing EMPLOYER_MENU input: {text}")
         if text == "📋 درخواست خدمات جدید":
             context.user_data.clear()
             context.user_data['files'] = []
