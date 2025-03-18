@@ -60,6 +60,12 @@ BACK_INLINE_MENU = InlineKeyboardMarkup([
     [InlineKeyboardButton("⬅️ برگشت به ارسال", callback_data="back_to_upload")]
 ])
 
+# منوی اینلاین مجری
+CONTRACTOR_INLINE_MENU = InlineKeyboardMarkup([
+    [InlineKeyboardButton("📋 مشاهده درخواست‌ها", callback_data='view_requests')],
+    [InlineKeyboardButton("💡 پیشنهاد کار", callback_data='offer_work')],
+])
+
 # منوی اینلاین ریستارت
 RESTART_INLINE_MENU = InlineKeyboardMarkup([
     [InlineKeyboardButton("🔄 راه‌اندازی مجدد", callback_data='restart')]
