@@ -62,5 +62,5 @@ BACK_INLINE_MENU = InlineKeyboardMarkup([
 
 # منوی اینلاین ریستارت
 RESTART_INLINE_MENU = InlineKeyboardMarkup([
-    [InlineKeyboardButton("🔄 شروع دوباره", callback_data='restart')]
+    [InlineKeyboardButton("🔄 راه‌اندازی مجدد", callback_data='restart')]
 ])

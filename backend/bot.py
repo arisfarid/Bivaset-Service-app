@@ -14,6 +14,7 @@ from handlers.submission_handler import submit_project
 from handlers.state_handler import handle_project_states
 from handlers.view_handler import handle_view_projects
 from handlers.callback_handler import handle_callback
+from keyboards import RESTART_INLINE_MENU  # اضافه شده
 
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -34,12 +35,10 @@ async def send_update_and_restart(token: str, active_chats: list, context: Conte
     updated = False
     for chat_id in active_chats:
         try:
-            keyboard = [[InlineKeyboardButton("راه‌اندازی مجدد", callback_data='restart')]]
-            reply_markup = InlineKeyboardMarkup(keyboard)
             await context.bot.send_message(
                 chat_id=chat_id,
                 text="🎉 ربات آپدیت شد! لطفاً برای ادامه روی دکمه بزنید.",
-                reply_markup=reply_markup,
+                reply_markup=RESTART_INLINE_MENU,  # استفاده از کیبورد متمرکز
                 disable_notification=True
             )
             logger.info(f"Sent update notification to {chat_id}")
@@ -109,6 +108,14 @@ conv_handler = ConversationHandler(
 # اضافه کردن handlerها
 app.add_handler(conv_handler)
 app.add_handler(CallbackQueryHandler(handle_callback))
+
+# اضافه کردن هندلر خطا
+async def error_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    logger.error(f"Exception occurred: {context.error}")
+    if update and update.message:
+        await update.message.reply_text("❌ یه خطا پیش اومد! لطفاً دوباره امتحان کن یا با پشتیبانی تماس بگیر.")
+
+app.add_error_handler(error_handler)  # اضافه کردن هندلر خطا
 
 # اضافه کردن jobهای تکراری
 app.job_queue.run_repeating(test_job, interval=5, first=0, data=app)
