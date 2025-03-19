@@ -39,6 +39,18 @@ async def upload_files(file_ids, context):
     uploaded_urls = []
     for file_id in file_ids:
         try:
+            # Check server reachability
+            try:
+                ping_response = requests.get(BASE_URL)
+                if ping_response.status_code != 200:
+                    logger.error(f"Server not reachable: {BASE_URL}, Status: {ping_response.status_code}")
+                    uploaded_urls.append(None)
+                    continue
+            except requests.exceptions.ConnectionError:
+                logger.error(f"Server not reachable: {BASE_URL}")
+                uploaded_urls.append(None)
+                continue
+
             file = await context.bot.get_file(file_id)
             file_data = await file.download_as_bytearray()
             files = {'file': ('image.jpg', file_data, 'image/jpeg')}
