@@ -39,7 +39,19 @@ async def upload_files(file_ids, context):
     uploaded_urls = []
     for file_id in file_ids:
         try:
-            # Check server reachability
+# Check server reachability
+            try:
+                ping_response = requests.get(BASE_URL)
+                if ping_response.status_code != 200:
+                    logger.error(f"Server not reachable: {BASE_URL}, Status: {ping_response.status_code}")
+                    uploaded_urls.append(None)
+                    continue
+            except requests.exceptions.ConnectionError:
+                logger.error(f"Server not reachable: {BASE_URL}")
+                uploaded_urls.append(None)
+                continue
+
+# Check server reachability
             try:
                 ping_response = requests.get(BASE_URL)
                 if ping_response.status_code != 200:
@@ -55,7 +67,8 @@ async def upload_files(file_ids, context):
             file_data = await file.download_as_bytearray()
             files = {'file': ('image.jpg', file_data, 'image/jpeg')}
             logger.info(f"Uploading file with file_id: {file_id}")
-            response = requests.post(f"{BASE_URL}upload/", files=files)
+            # اصلاح آدرس به /upload/
+            response = requests.post(f"{BASE_URL.rstrip('/api/')}upload/", files=files)
             if response.status_code == 201:
                 file_url = response.json().get('file_url')
                 logger.info(f"Successfully uploaded file: {file_url}")
@@ -69,6 +82,10 @@ async def upload_files(file_ids, context):
         except Exception as e:
             logger.error(f"Error uploading file_id {file_id}: {e}")
             uploaded_urls.append(None)
+    # اگر آپلود ناموفق بود، از file_idها استفاده کن
+    if all(url is None for url in uploaded_urls):
+        logger.warning("All uploads failed, using Telegram file_ids as fallback.")
+        return file_ids
     return uploaded_urls
 
 def get_last_mod_time():
