@@ -42,12 +42,20 @@ async def upload_files(file_ids, context):
             file = await context.bot.get_file(file_id)
             file_data = await file.download_as_bytearray()
             files = {'file': ('image.jpg', file_data, 'image/jpeg')}
+            logger.info(f"Uploading file with file_id: {file_id}")
             response = requests.post(f"{BASE_URL}upload/", files=files)
             if response.status_code == 201:
-                uploaded_urls.append(response.json().get('file_url'))
+                file_url = response.json().get('file_url')
+                logger.info(f"Successfully uploaded file: {file_url}")
+                uploaded_urls.append(file_url)
             else:
+                logger.error(f"Failed to upload file_id {file_id}. Status: {response.status_code}, Response: {response.text}")
                 uploaded_urls.append(None)
+        except requests.exceptions.ConnectionError as ce:
+            logger.error(f"Connection error while uploading file_id {file_id}: {ce}")
+            uploaded_urls.append(None)
         except Exception as e:
+            logger.error(f"Error uploading file_id {file_id}: {e}")
             uploaded_urls.append(None)
     return uploaded_urls
 

@@ -20,13 +20,15 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
     logger.info(f"Callback data received: {data}")
     await log_chat(update, context)
 
+    chat_id = update.effective_chat.id
+
     try:
         if data.startswith('view_photo_'):
             index = int(data.split('_')[2])
             files = context.user_data.get('files', [])
             if 0 <= index < len(files):
                 await context.bot.send_photo(
-                    chat_id=update.effective_chat.id,
+                    chat_id=chat_id,
                     photo=files[index],
                     caption=f"📸 عکس {index+1} از {len(files)}"
                 )
@@ -42,7 +44,7 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
                     [InlineKeyboardButton("⬅️ بازگشت", callback_data="back_to_management")]
                 ]
                 await context.bot.send_photo(
-                    chat_id=update.effective_chat.id,
+                    chat_id=chat_id,
                     photo=files[index],
                     caption=f"📸 عکس {index+1} از {len(files)}",
                     reply_markup=InlineKeyboardMarkup(keyboard)
@@ -55,17 +57,28 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
             if 0 <= index < len(files):
                 deleted_file = files.pop(index)
                 logger.info(f"Deleted photo {deleted_file} at index {index}")
-                await query.message.reply_text("🗑 عکس حذف شد! دوباره مدیریت کن یا ادامه بده.")
+                await context.bot.send_message(
+                    chat_id=chat_id,
+                    text="🗑 عکس حذف شد! دوباره مدیریت کن یا ادامه بده.",
+                    reply_markup=FILE_MANAGEMENT_MENU_KEYBOARD
+                )
                 await show_photo_management(update, context)
             else:
                 logger.warning(f"Attempted to delete non-existent photo at index {index}")
-                await query.message.reply_text("❌ عکس مورد نظر پیدا نشد!")
+                await context.bot.send_message(
+                    chat_id=chat_id,
+                    text="❌ عکس مورد نظر پیدا نشد!",
+                    reply_markup=FILE_MANAGEMENT_MENU_KEYBOARD
+                )
             return DETAILS_FILES
 
         elif data.startswith('replace_photo_'):
             index = int(data.split('_')[2])
             context.user_data['replace_index'] = index
-            await query.message.reply_text("📸 لطفاً عکس جدید رو بفرست تا جایگزین بشه:")
+            await context.bot.send_message(
+                chat_id=chat_id,
+                text="📸 لطفاً عکس جدید رو بفرست تا جایگزین بشه:"
+            )
             context.user_data['state'] = 'replacing_photo'
             return DETAILS_FILES
 
@@ -74,8 +87,9 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
             return DETAILS_FILES
 
         elif data == 'back_to_upload':
-            await query.message.reply_text(
-                "📸 عکس دیگه‌ای داری؟",
+            await context.bot.send_message(
+                chat_id=chat_id,
+                text="📸 عکس دیگه‌ای داری؟",
                 reply_markup=FILE_MANAGEMENT_MENU_KEYBOARD
             )
             context.user_data['state'] = DETAILS_FILES
@@ -136,16 +150,18 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
 
     except Exception as e:
         logger.error(f"Unexpected error in callback handler: {e}")
-        await update.effective_chat.send_message(
-            "❌ یه مشکل پیش اومد! لطفاً دوباره تلاش کن.",
+        await context.bot.send_message(
+            chat_id=chat_id,
+            text="❌ یه مشکل پیش اومد! لطفاً دوباره تلاش کن.",
             reply_markup=FILE_MANAGEMENT_MENU_KEYBOARD
         )
         await show_photo_management(update, context)
         return DETAILS_FILES
 
 async def show_employer_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.callback_query.message.edit_text(
-        "🎉 عالیه! می‌خوای خدمات جدید درخواست کنی یا پیشنهادات رو ببینی؟",
+    await context.bot.send_message(
+        chat_id=update.effective_chat.id,
+        text="🎉 عالیه! می‌خوای خدمات جدید درخواست کنی یا پیشنهادات رو ببینی؟",
         reply_markup=EMPLOYER_INLINE_MENU_KEYBOARD
     )
     context.user_data['state'] = EMPLOYER_MENU
