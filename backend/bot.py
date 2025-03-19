@@ -8,7 +8,7 @@ from handlers.start_handler import start, handle_contact, handle_role, cancel
 from handlers.message_handler import handle_message
 from handlers.category_handler import handle_category_selection
 from handlers.location_handler import handle_location
-from handlers.attachment_handler import handle_attachment
+from handlers.attachment_handler import handle_attachment, handle_photo_command
 from handlers.project_details_handler import handle_project_details
 from handlers.submission_handler import submit_project
 from handlers.state_handler import handle_project_states
@@ -115,6 +115,10 @@ conv_handler = ConversationHandler(
 # اضافه کردن handlerها
 app.add_handler(conv_handler)
 app.add_handler(CallbackQueryHandler(handle_callback))
+
+# ثبت هندلر جدید برای دستورات عکس
+photo_command_handler = CommandHandler("view_photo", handle_photo_command)
+app.add_handler(photo_command_handler)
 
 # اضافه کردن هندلر خطا
 async def error_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
