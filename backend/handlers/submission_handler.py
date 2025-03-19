@@ -47,7 +47,7 @@ async def submit_project(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
             await update.message.reply_text("🎉")
             
             message_lines = [
-                f"🎉 تبریک! درخواست شما با کد {project_id} ثبت شد!",
+                f"**🎉 تبریک! درخواست شما با کد {project_id} ثبت شد!**",
                 f"**📌 دسته‌بندی:** {context.user_data.get('categories', {}).get(context.user_data.get('category_id', ''), {}).get('name', 'نامشخص')}",
                 f"**📝 توضیحات:** {context.user_data.get('description', '')}"
             ]
@@ -60,7 +60,7 @@ async def submit_project(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
             if context.user_data.get('quantity'):
                 message_lines.append(f"**📏 مقدار و واحد:** {context.user_data['quantity']}")
             if location_data:
-                message_lines.append(f"**📍 لوکیشن:** https://maps.google.com/maps?q={location['latitude']},{location['longitude']}")
+                message_lines.append(f"**📍 لوکیشن:** [مشاهده روی نقشه](https://maps.google.com/maps?q={location['latitude']},{location['longitude']})")
             if len(files) > 1:  # استفاده از files به جای uploaded_files برای نمایش لینک‌های داخلی
                 message_lines.append("**📸 لینک عکس‌ها:**\n" + "\n".join([f"- {file}" for file in files[1:]]))
             message = "\n".join(message_lines)
