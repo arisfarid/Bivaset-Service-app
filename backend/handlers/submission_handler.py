@@ -66,8 +66,7 @@ async def submit_project(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
             if uploaded_files:  # بررسی وجود فایل‌های آپلود شده
                 context.user_data['uploaded_files'] = uploaded_files  # ذخیره لینک‌های آپلود شده
                 links = "\n".join([
-                    f"<a href=\"tg://bot_command?command=view_photo_{i}\">📷 عکس {i + 1}</a>"
-                    for i in range(len(uploaded_files))
+                    f"/view_photo_{i}" for i in range(len(uploaded_files))
                 ])
                 message_lines.append(f"<b>📸 لینک عکس‌ها:</b>\n{links}")
             message = "\n".join(message_lines)
