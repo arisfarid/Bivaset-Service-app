@@ -11,7 +11,7 @@ from telegram.ext import ContextTypes
 
 logger = logging.getLogger(__name__)  # اضافه شده
 
-BASE_URL = 'http://185.204.171.107:8000/'  # تعریف صحیح BASE_URL بدون /api/
+BASE_URL = 'http://185.204.171.107:8000/api/'
 BOT_FILE = os.path.abspath(__file__)
 TIMESTAMP_FILE = '/home/ubuntu/Bivaset-Service-app/backend/last_update.txt'
 
@@ -56,7 +56,7 @@ async def upload_files(file_ids, context):
             files = {'file': ('image.jpg', file_data, 'image/jpeg')}
             logger.info(f"Uploading file with file_id: {file_id}")
 # اصلاح آدرس به /upload/
-            response = requests.post(f"{BASE_URL}upload/", files=files)
+            response = requests.post(f"{BASE_URL.rstrip('/api/')}upload/", files=files)
             if response.status_code == 201:
                 file_url = response.json().get('file_url')
                 logger.info(f"Successfully uploaded file: {file_url}")
