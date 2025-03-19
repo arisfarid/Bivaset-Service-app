@@ -35,7 +35,7 @@ async def handle_attachment(update: Update, context: ContextTypes.DEFAULT_TYPE) 
         return DETAILS_FILES
 
     if update.message and update.message.photo:
-        new_photo = update.message.photo[-1].file_id  # فقط بزرگ‌ترین اندازه عکس
+        new_photo = update.message.photo[-1].file_id
         if 'files' not in context.user_data:
             context.user_data['files'] = []
         files = context.user_data['files']
