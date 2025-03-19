@@ -52,7 +52,7 @@ async def submit_project(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
                 f"📝 توضیحات: {context.user_data.get('description', '')}"
             ]
             if context.user_data.get('need_date'):
-                message_lines.append(f"📅 تاریخ نیاز: {context.user_data['need_date']}")
+                message_lines.append(f"📅 **تاریخ نیاز:** {context.user_data['need_date']}")
             if context.user_data.get('deadline'):
                 message_lines.append(f"⏳ مهلت انجام: {context.user_data['deadline']} روز")
             if context.user_data.get('budget'):

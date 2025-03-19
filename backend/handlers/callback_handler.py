@@ -13,6 +13,21 @@ logger = logging.getLogger(__name__)
 
 START, REGISTER, ROLE, EMPLOYER_MENU, CATEGORY, SUBCATEGORY, DESCRIPTION, LOCATION_TYPE, LOCATION_INPUT, DETAILS, DETAILS_FILES, DETAILS_DATE, DETAILS_DEADLINE, DETAILS_BUDGET, DETAILS_QUANTITY, SUBMIT, VIEW_PROJECTS, PROJECT_ACTIONS = range(18)
 
+async def send_photo_with_caption(context, chat_id, photo, caption, reply_markup=None):
+    await context.bot.send_photo(
+        chat_id=chat_id,
+        photo=photo,
+        caption=caption,
+        reply_markup=reply_markup
+    )
+
+async def send_message_with_keyboard(context, chat_id, text, reply_markup):
+    await context.bot.send_message(
+        chat_id=chat_id,
+        text=text,
+        reply_markup=reply_markup
+    )
+
 async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     query = update.callback_query
     await query.answer()
@@ -27,10 +42,11 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
             index = int(data.split('_')[2])
             files = context.user_data.get('files', [])
             if 0 <= index < len(files):
-                await context.bot.send_photo(
-                    chat_id=chat_id,
-                    photo=files[index],
-                    caption=f"📸 عکس {index+1} از {len(files)}"
+                await send_photo_with_caption(
+                    context,
+                    chat_id,
+                    files[index],
+                    f"📸 عکس {index+1} از {len(files)}"
                 )
             return DETAILS_FILES
 
@@ -43,11 +59,12 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
                      InlineKeyboardButton("🔄 جایگزینی", callback_data=f"replace_photo_{index}")],
                     [InlineKeyboardButton("⬅️ بازگشت", callback_data="back_to_management")]
                 ]
-                await context.bot.send_photo(
-                    chat_id=chat_id,
-                    photo=files[index],
-                    caption=f"📸 عکس {index+1} از {len(files)}",
-                    reply_markup=InlineKeyboardMarkup(keyboard)
+                await send_photo_with_caption(
+                    context,
+                    chat_id,
+                    files[index],
+                    f"📸 عکس {index+1} از {len(files)}",
+                    InlineKeyboardMarkup(keyboard)
                 )
             return DETAILS_FILES
 
@@ -57,27 +74,31 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
             if 0 <= index < len(files):
                 deleted_file = files.pop(index)
                 logger.info(f"Deleted photo {deleted_file} at index {index}")
-                await context.bot.send_message(
-                    chat_id=chat_id,
-                    text="🗑 عکس حذف شد! دوباره مدیریت کن یا ادامه بده.",
-                    reply_markup=FILE_MANAGEMENT_MENU_KEYBOARD
+                await send_message_with_keyboard(
+                    context,
+                    chat_id,
+                    "🗑 عکس حذف شد! دوباره مدیریت کن یا ادامه بده.",
+                    FILE_MANAGEMENT_MENU_KEYBOARD
                 )
                 await show_photo_management(update, context)
             else:
                 logger.warning(f"Attempted to delete non-existent photo at index {index}")
-                await context.bot.send_message(
-                    chat_id=chat_id,
-                    text="❌ عکس مورد نظر پیدا نشد!",
-                    reply_markup=FILE_MANAGEMENT_MENU_KEYBOARD
+                await send_message_with_keyboard(
+                    context,
+                    chat_id,
+                    "❌ عکس مورد نظر پیدا نشد!",
+                    FILE_MANAGEMENT_MENU_KEYBOARD
                 )
             return DETAILS_FILES
 
         elif data.startswith('replace_photo_'):
             index = int(data.split('_')[2])
             context.user_data['replace_index'] = index
-            await context.bot.send_message(
-                chat_id=chat_id,
-                text="📸 لطفاً عکس جدید رو بفرست تا جایگزین بشه:"
+            await send_message_with_keyboard(
+                context,
+                chat_id,
+                "📸 لطفاً عکس جدید رو بفرست تا جایگزین بشه:",
+                None
             )
             context.user_data['state'] = 'replacing_photo'
             return DETAILS_FILES
@@ -87,10 +108,11 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
             return DETAILS_FILES
 
         elif data == 'back_to_upload':
-            await context.bot.send_message(
-                chat_id=chat_id,
-                text="📸 عکس دیگه‌ای داری؟",
-                reply_markup=FILE_MANAGEMENT_MENU_KEYBOARD
+            await send_message_with_keyboard(
+                context,
+                chat_id,
+                "📸 عکس دیگه‌ای داری؟",
+                FILE_MANAGEMENT_MENU_KEYBOARD
             )
             context.user_data['state'] = DETAILS_FILES
             return DETAILS_FILES
@@ -150,10 +172,11 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
 
     except Exception as e:
         logger.error(f"Unexpected error in callback handler: {e}")
-        await context.bot.send_message(
-            chat_id=chat_id,
-            text="❌ یه مشکل پیش اومد! لطفاً دوباره تلاش کن.",
-            reply_markup=FILE_MANAGEMENT_MENU_KEYBOARD
+        await send_message_with_keyboard(
+            context,
+            chat_id,
+            "❌ یه مشکل پیش اومد! لطفاً دوباره تلاش کن.",
+            FILE_MANAGEMENT_MENU_KEYBOARD
         )
         await show_photo_management(update, context)
         return DETAILS_FILES
