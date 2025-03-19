@@ -137,11 +137,11 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
     except Exception as e:
         logger.error(f"Unexpected error in callback handler: {e}")
         await update.effective_chat.send_message(
-            "❌ یه مشکل پیش اومد! بریم از اول شروع کنیم؟",
-            reply_markup=RESTART_INLINE_MENU_KEYBOARD
+            "❌ یه مشکل پیش اومد! لطفاً دوباره تلاش کن.",
+            reply_markup=FILE_MANAGEMENT_MENU_KEYBOARD
         )
-        context.user_data['state'] = ROLE
-        return ROLE
+        await show_photo_management(update, context)
+        return DETAILS_FILES
 
 async def show_employer_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.callback_query.message.edit_text(
