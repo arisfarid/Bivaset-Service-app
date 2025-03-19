@@ -44,7 +44,7 @@ async def submit_project(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
             project = response.json()
             project_id = project.get('id', 'نامشخص')
             # ارسال انیمیشن تبریک
-            await update.message.reply_text("🎉✨ درخواستت با موفقیت ثبت شد!")
+            await update.message.reply_text("🎉")
             
             message_lines = [
                 f"🎉 درخواست شما با کد {project_id} ثبت شد!",
