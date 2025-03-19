@@ -63,6 +63,9 @@ async def submit_project(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
                 message_lines.append(f"<b>📍 لوکیشن:</b> <a href=\"https://maps.google.com/maps?q={location['latitude']},{location['longitude']}\">نمایش روی نقشه</a>")
             if files:
                 message_lines.append(f"<b>📸 تعداد عکس‌ها:</b> {len(files)} عکس ارسال شده")
+            if uploaded_files:  # بررسی وجود فایل‌های آپلود شده
+                links = "\n".join([f"<a href=\"{file}\">📷 عکس {i + 1}</a>" for i, file in enumerate(uploaded_files)])
+                message_lines.append(f"<b>📸 لینک عکس‌ها:</b>\n{links}")
             message = "\n".join(message_lines)
 
             inline_keyboard = [
@@ -85,6 +88,13 @@ async def submit_project(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
                     reply_markup=InlineKeyboardMarkup(inline_keyboard),
                     parse_mode='HTML'  # استفاده از HTML
                 )
+            if uploaded_files:  # بررسی وجود فایل‌های آپلود شده
+                for i, file in enumerate(uploaded_files):
+                    await update.message.reply_photo(
+                        photo=file,  # ارسال هر عکس
+                        caption=f"📷 عکس {i + 1}",
+                        parse_mode='HTML'
+                    )
         else:
             logger.error(f"API error: {response.text}")
             await update.message.reply_text(f"❌ خطا در ثبت درخواست: {response.text[:50]}...")
