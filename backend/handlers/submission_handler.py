@@ -1,4 +1,3 @@
-# submission_handler.py
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ContextTypes, ConversationHandler
 from utils import generate_title, convert_deadline_to_date, log_chat, BASE_URL
@@ -18,13 +17,16 @@ async def submit_project(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     location = context.user_data.get('location')
     location_data = [location['longitude'], location['latitude']] if location else None
 
+    files = context.user_data.get('files', [])
+    uploaded_files = await upload_attachments(files, context) if files else []
+
     data = {
         'title': generate_title(context),
         'description': context.user_data.get('description', ''),
         'category': context.user_data.get('category_id', ''),
         'service_location': context.user_data.get('service_location', ''),
         'location': location_data,
-        'files': await upload_attachments(context.user_data.get('files', []), context),
+        'files': uploaded_files,
         'user_telegram_id': str(update.effective_user.id)
     }
     if context.user_data.get('budget'):
@@ -41,7 +43,9 @@ async def submit_project(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         if response.status_code == 201:
             project = response.json()
             project_id = project.get('id', 'نامشخص')
-            files = context.user_data.get('files', [])
+            # ارسال انیمیشن تبریک
+            await update.message.reply_text("🎉✨ درخواستت با موفقیت ثبت شد!")
+            
             message_lines = [
                 f"🎉 درخواست شما با کد {project_id} ثبت شد!",
                 f"📌 دسته‌بندی: {context.user_data.get('categories', {}).get(context.user_data.get('category_id', ''), {}).get('name', 'نامشخص')}",
@@ -57,7 +61,7 @@ async def submit_project(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
                 message_lines.append(f"📏 مقدار و واحد: {context.user_data['quantity']}")
             if location_data:
                 message_lines.append(f"📍 لوکیشن: https://maps.google.com/maps?q={location['latitude']},{location['longitude']}")
-            if len(files) > 1:
+            if len(files) > 1:  # نمایش لینک داخلی تلگرام برای عکس‌های اضافی
                 message_lines.append("📸 لینک عکس‌ها:\n" + "\n".join([f"- {file}" for file in files[1:]]))
             message = "\n".join(message_lines)
 
@@ -70,7 +74,7 @@ async def submit_project(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
             ]
             if files:
                 await update.message.reply_photo(
-                    photo=files[0],
+                    photo=files[0],  # نمایش اولین عکس
                     caption=message,
                     reply_markup=InlineKeyboardMarkup(inline_keyboard)
                 )

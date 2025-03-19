@@ -1,4 +1,3 @@
-# callback_handler.py
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, KeyboardButton, ReplyKeyboardMarkup
 from telegram.ext import ContextTypes, ConversationHandler
 import logging
@@ -66,7 +65,7 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         elif data.startswith('replace_photo_'):
             index = int(data.split('_')[2])
             context.user_data['replace_index'] = index
-            await update.effective_message.reply_text("📸 لطفاً عکس جدید رو بفرست تا جایگزین بشه:")
+            await query.message.reply_text("📸 لطفاً عکس جدید رو بفرست تا جایگزین بشه:")
             context.user_data['state'] = 'replacing_photo'
             return DETAILS_FILES
 
@@ -75,7 +74,7 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
             return DETAILS_FILES
 
         elif data == 'back_to_upload':
-            await update.effective_message.reply_text(
+            await query.message.reply_text(
                 "📸 عکس دیگه‌ای داری؟",
                 reply_markup=FILE_MANAGEMENT_MENU_KEYBOARD
             )
