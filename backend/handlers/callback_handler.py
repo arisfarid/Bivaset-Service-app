@@ -56,10 +56,11 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
             if 0 <= index < len(files):
                 deleted_file = files.pop(index)
                 logger.info(f"Deleted photo {deleted_file} at index {index}")
-                await update.effective_message.reply_text("🗑 عکس حذف شد! دوباره مدیریت کن یا ادامه بده.")
+                await query.message.reply_text("🗑 عکس حذف شد! دوباره مدیریت کن یا ادامه بده.")
                 await show_photo_management(update, context)
             else:
-                await update.effective_message.reply_text("❌ عکس مورد نظر پیدا نشد!")
+                logger.warning(f"Attempted to delete non-existent photo at index {index}")
+                await query.message.reply_text("❌ عکس مورد نظر پیدا نشد!")
             return DETAILS_FILES
 
         elif data.startswith('replace_photo_'):
