@@ -1,5 +1,6 @@
 from telegram import Update, KeyboardButton, ReplyKeyboardMarkup
 from telegram.ext import ContextTypes, ConversationHandler
+from keyboards import FILE_MANAGEMENT_MENU_KEYBOARD
 from utils import clean_budget, validate_date, validate_deadline, create_dynamic_keyboard, log_chat
 from khayyam import JalaliDatetime
 from datetime import datetime, timedelta
@@ -59,11 +60,13 @@ async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_T
             files = context.user_data.get('files', [])
             if files:
                 await update.message.reply_text(
-                    f"📸 تا الان {len(files)} عکس فرستادی. می‌تونی عکس جدید بفرستی یا مدیریت کنی."
+                    f"📸 تا الان {len(files)} عکس فرستادی. می‌تونی عکس جدید بفرستی یا مدیریت کنی.",
+                    reply_markup=FILE_MANAGEMENT_MENU_KEYBOARD
                 )
             else:
                 await update.message.reply_text(
-                    "📸 لطفاً تصاویر رو یکی‌یکی بفرست (حداکثر ۵ تا). فقط عکس قبول می‌شه!"
+                    "📸 لطفاً تصاویر رو یکی‌یکی بفرست (حداکثر ۵ تا). فقط عکس قبول می‌شه!",
+                    reply_markup=FILE_MANAGEMENT_MENU_KEYBOARD
                 )
             return DETAILS_FILES
         elif text == "📅 تاریخ نیاز":
