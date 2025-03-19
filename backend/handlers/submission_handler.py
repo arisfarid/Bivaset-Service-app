@@ -92,13 +92,6 @@ async def submit_project(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
                     reply_markup=InlineKeyboardMarkup(inline_keyboard),
                     parse_mode='HTML'  # استفاده از HTML
                 )
-            if uploaded_files:  # بررسی وجود فایل‌های آپلود شده
-                for i, file in enumerate(uploaded_files):
-                    await update.message.reply_photo(
-                        photo=file,  # ارسال هر عکس
-                        caption=f"📷 عکس {i + 1}",
-                        parse_mode='HTML'
-                    )
         else:
             logger.error(f"API error: {response.text}")
             await update.message.reply_text(f"❌ خطا در ثبت درخواست: {response.text[:50]}...")
