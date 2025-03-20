@@ -56,7 +56,7 @@ async def upload_files(file_ids, context):
             files = {'file': ('image.jpg', file_data, 'image/jpeg')}
             logger.info(f"Uploading file with file_id: {file_id}")
 # اصلاح آدرس به /upload/
-            response = requests.post(f"{BASE_URL.rstrip('/api/')}upload/", files=files)
+            response = requests.post(f"{BASE_URL.rstrip('/api/')}/upload/", files=files)
             if response.status_code == 201:
                 file_url = response.json().get('file_url')
                 logger.info(f"Successfully uploaded file: {file_url}")
