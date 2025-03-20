@@ -73,11 +73,16 @@ class ProposalSerializer(serializers.ModelSerializer):
 @api_view(['POST'])
 def upload_file(request):
     file = request.FILES.get('file')
-    if (file):
-        project_file = ProjectFile(file=file)
-        project_file.save()
-        return Response({'file_url': project_file.file.url}, status=201)
-    return Response({'error': 'No file provided'}, status=400)
+    project_id = request.data.get('project_id')
+    if file and project_id:
+        try:
+            project = Project.objects.get(id=project_id)
+            project_file = ProjectFile(file=file, project=project)
+            project_file.save()
+            return Response({'file_url': project_file.file.url}, status=201)
+        except Project.DoesNotExist:
+            return Response({'error': 'Invalid project_id'}, status=400)
+    return Response({'error': 'No file or project_id provided'}, status=400)
 
 class CategoryViewSet(viewsets.ModelViewSet):
     queryset = Category.objects.all()
@@ -99,6 +104,12 @@ class UserViewSet(viewsets.ModelViewSet):
 class ProjectViewSet(viewsets.ModelViewSet):
     queryset = Project.objects.all()
     serializer_class = ProjectSerializer
+
+    def get_queryset(self):
+        user_telegram_id = self.request.query_params.get('user_telegram_id')
+        if user_telegram_id:
+            return Project.objects.filter(user__telegram_id=user_telegram_id)
+        return super().get_queryset()
 
     def create(self, request, *args, **kwargs):
         data = request.data.copy()

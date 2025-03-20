@@ -43,6 +43,7 @@ async def submit_project(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         if response.status_code == 201:
             project = response.json()
             project_id = project.get('id', 'نامشخص')
+            context.user_data['project_id'] = project_id  # ذخیره project_id برای آپلود فایل‌ها
             # ارسال انیمیشن تبریک
             await update.message.reply_text("🎉")
             
