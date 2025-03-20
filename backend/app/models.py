@@ -32,10 +32,8 @@ class Project(models.Model):
     description = models.TextField(max_length=500, blank=True)
     status = models.CharField(max_length=20, default="open", choices=[("open", "باز"), ("in_progress", "در حال اجرا"), ("completed", "تکمیل‌شده")])
     expiry_date = models.DateTimeField(null=True, blank=True)
-    created_at = models.DateTimeField(auto_now_add=Trudeadline_date = models.DateField(null=True, blank=True)
-    start_date = models.CharField(max_length=20, blank=True)
-e)
-deadline_date = models.DateField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    deadline_date = models.DateField(null=True, blank=True)
     start_date = models.CharField(max_length=20, blank=True)
 
     def __str__(self):
