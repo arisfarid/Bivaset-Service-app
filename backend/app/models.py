@@ -22,6 +22,7 @@ class User(models.Model):
 class Project(models.Model):
     id = models.BigAutoField(primary_key=True)  # شماره منحصر به فرد پروژه
     user = models.ForeignKey(User, on_delete=models.CASCADE)
+    user_telegram_id = models.CharField(max_length=50, default="unknown")
     title = models.CharField(max_length=200)
     category = models.ForeignKey(Category, on_delete=models.SET_NULL, null=True)
     service_location = models.CharField(max_length=20, choices=[("client_site", "محل کارفرما"), ("contractor_site", "محل مجری"), ("remote", "غیرحضوری")])
@@ -31,7 +32,11 @@ class Project(models.Model):
     description = models.TextField(max_length=500, blank=True)
     status = models.CharField(max_length=20, default="open", choices=[("open", "باز"), ("in_progress", "در حال اجرا"), ("completed", "تکمیل‌شده")])
     expiry_date = models.DateTimeField(null=True, blank=True)
-    created_at = models.DateTimeField(auto_now_add=True)
+    created_at = models.DateTimeField(auto_now_add=Trudeadline_date = models.DateField(null=True, blank=True)
+    start_date = models.CharField(max_length=20, blank=True)
+e)
+deadline_date = models.DateField(null=True, blank=True)
+    start_date = models.CharField(max_length=20, blank=True)
 
     def __str__(self):
         return self.title
