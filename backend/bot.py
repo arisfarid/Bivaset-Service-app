@@ -119,6 +119,7 @@ app.add_handler(CallbackQueryHandler(handle_callback))
 # ثبت هندلر جدید برای دستورات عکس
 photo_command_handler = CommandHandler("view_photo", handle_photo_command)
 app.add_handler(photo_command_handler)
+logger.info("Photo command handler registered successfully.")
 
 # اضافه کردن هندلر خطا
 async def error_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
