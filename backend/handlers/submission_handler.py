@@ -17,18 +17,13 @@ async def submit_project(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     location = context.user_data.get('location')
     location_data = [location['longitude'], location['latitude']] if location else None
 
-    files = context.user_data.get('files', [])
-
-
-    uploaded_files = await upload_attachments(files, context) if files else []
-
+    # آماده‌سازی داده‌های پروژه
     data = {
         'title': generate_title(context),
         'description': context.user_data.get('description', ''),
         'category': context.user_data.get('category_id', ''),
         'service_location': context.user_data.get('service_location', ''),
         'location': location_data,
-        'files': uploaded_files,
         'user_telegram_id': str(update.effective_user.id)
     }
     if context.user_data.get('budget'):
@@ -40,15 +35,24 @@ async def submit_project(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
 
     logger.info(f"Sending project data to API: {data}")
     await log_chat(update, context)
+
     try:
+        # ثبت پروژه
         response = requests.post(f"{BASE_URL}projects/", json=data)
         if response.status_code == 201:
             project = response.json()
             project_id = project.get('id', 'نامشخص')
             context.user_data['project_id'] = project_id  # ذخیره project_id برای آپلود فایل‌ها
-            # ارسال انیمیشن تبریک
-            await update.message.reply_text("🎉")
-            
+            logger.info(f"Project created with ID: {project_id}")
+
+            # آپلود فایل‌ها
+            files = context.user_data.get('files', [])
+            uploaded_files = []
+            if files:
+                uploaded_files = await upload_attachments(files, context)
+                context.user_data['uploaded_files'] = uploaded_files  # ذخیره لینک‌های آپلود شده
+
+            # آماده‌سازی پیام نهایی
             message_lines = [
                 f"🎉 تبریک! درخواست شما با کد {project_id} ثبت شد!",
                 f"<b>📌 دسته‌بندی:</b> {context.user_data.get('categories', {}).get(context.user_data.get('category_id', ''), {}).get('name', 'نامشخص')}",
@@ -67,13 +71,13 @@ async def submit_project(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
             if files:
                 message_lines.append(f"<b>📸 تعداد عکس‌ها:</b> {len(files)} عکس ارسال شده")
             if uploaded_files:  # بررسی وجود فایل‌های آپلود شده
-                context.user_data['uploaded_files'] = uploaded_files  # ذخیره لینک‌های آپلود شده
                 links = "\n".join([
                     f"/view_photo_{i}" for i in range(len(uploaded_files))
                 ])
                 message_lines.append(f"<b>📸 لینک عکس‌ها:</b>\n{links}")
             message = "\n".join(message_lines)
 
+            # دکمه‌های InlineKeyboard
             inline_keyboard = [
                 [InlineKeyboardButton("✏️ ویرایش", callback_data=f"edit_{project_id}"),
                  InlineKeyboardButton("⛔ بستن", callback_data=f"close_{project_id}")],
@@ -81,6 +85,8 @@ async def submit_project(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
                  InlineKeyboardButton("⏰ تمدید", callback_data=f"extend_{project_id}")],
                 [InlineKeyboardButton("💡 پیشنهادها", callback_data=f"offers_{project_id}")]
             ]
+
+            # ارسال پیام نهایی
             if files:
                 await update.message.reply_photo(
                     photo=files[0],  # نمایش اولین عکس

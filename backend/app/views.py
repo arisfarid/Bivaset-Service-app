@@ -74,13 +74,13 @@ class ProposalSerializer(serializers.ModelSerializer):
 def upload_file(request):
     file = request.FILES.get('file')
     project_id = request.data.get('project_id')
-    logger.info(f"Project ID: {project_id}")
+    logger.info(f"Received upload request. Project ID: {project_id}, File: {file}")
     if file and project_id:
         try:
             project = Project.objects.get(id=project_id)
             project_file = ProjectFile(file=file, project=project)
             project_file.save()
-            logger.info(f"File saved: {project_file.file.url}")  # اضافه کردن لاگ برای بررسی مسیر فایل
+            logger.info(f"File saved successfully: {project_file.file.url}")
             return Response({'file_url': project_file.file.url}, status=201)
         except Project.DoesNotExist:
             logger.error(f"Invalid project_id: {project_id}")
