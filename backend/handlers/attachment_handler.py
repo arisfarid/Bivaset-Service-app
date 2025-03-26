@@ -141,12 +141,14 @@ async def upload_files(file_ids, context):
             file_data = await file.download_as_bytearray()
             files = {'file': ('image.jpg', file_data, 'image/jpeg')}
             data = {'project_id': project_id}  # ارسال project_id
-            response = requests.post(f"{BASE_URL}/upload/", files=files, data=data)
+            response = requests.post(f"{BASE_URL.rstrip('/api/')}/upload/", files=files, data=data)
+            logger.info(f"Upload response: {response.status_code}, {response.text}")  # اضافه کردن لاگ
             if response.status_code == 201:
                 file_url = response.json().get('file_url')
                 uploaded_urls.append(file_url)
             else:
                 uploaded_urls.append(None)
         except Exception as e:
+            logger.error(f"Error uploading file: {e}")
             uploaded_urls.append(None)
     return uploaded_urls
