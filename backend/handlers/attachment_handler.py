@@ -118,32 +118,39 @@ async def upload_attachments(files, context):
 
 async def handle_photo_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     command = update.message.text
-    logger.info(f"Received command: {command}")
-    if command.startswith("/view_photo_"):
-        try:
-            photo_index = int(command.split("_")[2])
-            uploaded_files = context.user_data.get('uploaded_files', [])
-            logger.info(f"Uploaded files in context: {uploaded_files}")
-            if 0 <= photo_index < len(uploaded_files):
-                photo_path = uploaded_files[photo_index]
-                full_photo_path = os.path.join(settings.MEDIA_ROOT, photo_path)  # ساخت مسیر کامل فایل
-                logger.info(f"Full photo path: {full_photo_path}")
-                if not os.path.exists(full_photo_path):
+    logger.info(f"Received photo command: {command}")
+    try:
+        photo_index = int(command.split("_")[2])
+        project_id = context.user_data.get('project_id')
+        logger.info(f"Attempting to fetch photo {photo_index} for project {project_id}")
+        
+        # استفاده از API برای دریافت اطلاعات فایل
+        response = requests.get(f"{BASE_URL}projects/{project_id}/files/")
+        if response.status_code == 200:
+            files = response.json()
+            if 0 <= photo_index < len(files):
+                file_path = files[photo_index]['file']
+                full_photo_path = os.path.join(settings.MEDIA_ROOT, file_path)
+                logger.info(f"Attempting to send photo from path: {full_photo_path}")
+                
+                if os.path.exists(full_photo_path):
+                    with open(full_photo_path, 'rb') as photo_file:
+                        await update.message.reply_photo(
+                            photo=photo_file,
+                            caption=f"📷 عکس {photo_index + 1}"
+                        )
+                else:
                     logger.error(f"File not found at path: {full_photo_path}")
                     await update.message.reply_text("❌ فایل مورد نظر یافت نشد.")
-                    return
-                with open(full_photo_path, 'rb') as photo_file:
-                    logger.info(f"Sending photo from path: {full_photo_path}")
-                    await update.message.reply_photo(photo=photo_file, caption=f"📷 عکس {photo_index + 1}")
             else:
-                logger.warning(f"Photo index {photo_index} out of range.")
-                await update.message.reply_text("❌ عکس مورد نظر یافت نشد.")
-        except (IndexError, ValueError) as e:
-            logger.error(f"Error processing command {command}: {e}")
-            await update.message.reply_text("❌ دستور نامعتبر است.")
-        except FileNotFoundError as e:
-            logger.error(f"File not found: {e}")
-            await update.message.reply_text("❌ فایل مورد نظر یافت نشد.")
+                logger.warning(f"Invalid photo index: {photo_index}")
+                await update.message.reply_text("❌ شماره عکس نامعتبر است.")
+        else:
+            logger.error(f"Failed to fetch project files. Status: {response.status_code}")
+            await update.message.reply_text("❌ خطا در دریافت اطلاعات فایل‌ها.")
+    except Exception as e:
+        logger.error(f"Error in handle_photo_command: {e}")
+        await update.message.reply_text("❌ خطا در پردازش درخواست.")
 
 async def upload_files(file_ids, context):
     uploaded_urls = []

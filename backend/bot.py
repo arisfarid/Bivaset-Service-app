@@ -117,7 +117,10 @@ app.add_handler(conv_handler)
 app.add_handler(CallbackQueryHandler(handle_callback))
 
 # ثبت هندلر جدید برای دستورات عکس
-photo_command_handler = CommandHandler("view_photo", handle_photo_command)
+photo_command_handler = MessageHandler(
+    filters.Regex(r'^/view_photo_\d+$') & filters.TEXT,
+    handle_photo_command
+)
 app.add_handler(photo_command_handler)
 logger.info("Photo command handler registered successfully.")
 
