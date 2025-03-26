@@ -136,3 +136,22 @@ async def handle_photo_command(update: Update, context: ContextTypes.DEFAULT_TYP
         except (IndexError, ValueError) as e:
             logger.error(f"Error processing command {command}: {e}")
             await update.message.reply_text("❌ دستور نامعتبر است.")
+
+async def upload_files(file_ids, context):
+    uploaded_urls = []
+    project_id = context.user_data.get('project_id')  # دریافت project_id از context
+    for file_id in file_ids:
+        try:
+            file = await context.bot.get_file(file_id)
+            file_data = await file.download_as_bytearray()
+            files = {'file': ('image.jpg', file_data, 'image/jpeg')}
+            data = {'project_id': project_id}  # ارسال project_id
+            response = requests.post(f"{BASE_URL}/upload/", files=files, data=data)
+            if response.status_code == 201:
+                file_url = response.json().get('file_url')
+                uploaded_urls.append(file_url)
+            else:
+                uploaded_urls.append(None)
+        except Exception as e:
+            uploaded_urls.append(None)
+    return uploaded_urls
