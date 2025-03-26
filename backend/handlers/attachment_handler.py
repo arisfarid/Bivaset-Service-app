@@ -125,10 +125,10 @@ async def handle_photo_command(update: Update, context: ContextTypes.DEFAULT_TYP
             uploaded_files = context.user_data.get('uploaded_files', [])
             logger.info(f"Uploaded files: {uploaded_files}")
             if 0 <= photo_index < len(uploaded_files):
-                photo_url = uploaded_files[photo_index]
-                full_photo_url = f"{settings.MEDIA_URL}{photo_url}"  # ساخت لینک کامل
+                photo_path = uploaded_files[photo_index]
+                full_photo_url = f"{settings.MEDIA_URL}{photo_path}"  # ساخت لینک کامل
                 logger.info(f"Sending photo: {full_photo_url}")
-                await update.message.reply_photo(photo=full_photo_url, caption=f"📷 عکس {photo_index + 1}")
+                await update.message.reply_photo(photo=f"{settings.MEDIA_ROOT}/{photo_path}", caption=f"📷 عکس {photo_index + 1}")
             else:
                 logger.warning(f"Photo index {photo_index} out of range.")
                 await update.message.reply_text("❌ عکس مورد نظر یافت نشد.")
