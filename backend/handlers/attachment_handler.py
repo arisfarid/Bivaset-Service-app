@@ -118,13 +118,6 @@ async def upload_attachments(files, context):
 async def handle_photo_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     command = update.message.text
     logger.info(f"Received command: {command}")
-# Ensure context is passed or available in the scope
-async def handle_photo_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    command = update.message.text
-    logger.info(f"Received command: {command}")
-    logger.info(f"Uploaded files in context: {context.user_data.get('uploaded_files', [])}")  # Added log statement
-
-async def handle_view_photo_command(update: Update, context: ContextTypes.DEFAULT_TYPE, command: str):
     if command.startswith("/view_photo_"):
         try:
             photo_index = int(command.split("_")[2])
