@@ -5,6 +5,7 @@ from utils import upload_files, log_chat, BASE_URL
 import logging
 from handlers.project_details_handler import create_dynamic_keyboard
 from keyboards import FILE_MANAGEMENT_MENU_KEYBOARD
+from django.conf import settings  # اضافه کردن ایمپورت
 
 logger = logging.getLogger(__name__)
 
@@ -117,6 +118,7 @@ async def upload_attachments(files, context):
 async def handle_photo_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     command = update.message.text
     logger.info(f"Received command: {command}")
+    logger.info(f"Uploaded files in context: {context.user_data.get('uploaded_files', [])}")  # Added log statement
     if command.startswith("/view_photo_"):
         try:
             photo_index = int(command.split("_")[2])
@@ -124,8 +126,9 @@ async def handle_photo_command(update: Update, context: ContextTypes.DEFAULT_TYP
             logger.info(f"Uploaded files: {uploaded_files}")
             if 0 <= photo_index < len(uploaded_files):
                 photo_url = uploaded_files[photo_index]
-                logger.info(f"Sending photo: {photo_url}")
-                await update.message.reply_photo(photo=f"{settings.MEDIA_URL}{photo_url}", caption=f"📷 عکس {photo_index + 1}")
+                full_photo_url = f"{settings.MEDIA_URL}{photo_url}"  # ساخت لینک کامل
+                logger.info(f"Sending photo: {full_photo_url}")
+                await update.message.reply_photo(photo=full_photo_url, caption=f"📷 عکس {photo_index + 1}")
             else:
                 logger.warning(f"Photo index {photo_index} out of range.")
                 await update.message.reply_text("❌ عکس مورد نظر یافت نشد.")
