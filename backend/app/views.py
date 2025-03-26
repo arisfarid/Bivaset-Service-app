@@ -74,6 +74,7 @@ class ProposalSerializer(serializers.ModelSerializer):
 def upload_file(request):
     file = request.FILES.get('file')
     project_id = request.data.get('project_id')
+    logger.info(f"Project ID: {project_id}")
     if file and project_id:
         try:
             project = Project.objects.get(id=project_id)

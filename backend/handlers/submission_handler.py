@@ -18,6 +18,8 @@ async def submit_project(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     location_data = [location['longitude'], location['latitude']] if location else None
 
     files = context.user_data.get('files', [])
+
+
     uploaded_files = await upload_attachments(files, context) if files else []
 
     data = {
