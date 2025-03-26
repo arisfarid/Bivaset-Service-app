@@ -126,7 +126,7 @@ async def handle_photo_command(update: Update, context: ContextTypes.DEFAULT_TYP
             logger.info(f"Uploaded files in context: {uploaded_files}")
             if 0 <= photo_index < len(uploaded_files):
                 photo_path = uploaded_files[photo_index]
-                full_photo_path = f"{settings.MEDIA_ROOT}/{photo_path}"  # ساخت مسیر کامل فایل
+                full_photo_path = os.path.join(settings.MEDIA_ROOT, photo_path)  # ساخت مسیر کامل فایل
                 logger.info(f"Full photo path: {full_photo_path}")
                 if not os.path.exists(full_photo_path):
                     logger.error(f"File not found at path: {full_photo_path}")
