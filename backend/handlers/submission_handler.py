@@ -43,6 +43,7 @@ async def submit_project(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
             project = response.json()
             project_id = project.get('id', 'نامشخص')
             context.user_data['project_id'] = project_id  # ذخیره project_id برای آپلود فایل‌ها
+            context.user_data['current_project_id'] = project_id  # اضافه کردن این خط
             logger.info(f"Project created with ID: {project_id}")
 
             # آپلود فایل‌ها

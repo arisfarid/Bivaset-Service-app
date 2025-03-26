@@ -26,13 +26,14 @@ class ProjectSerializer(serializers.ModelSerializer):
     location = serializers.ListField(
         child=serializers.FloatField(), write_only=True, required=False
     )  # برای دریافت [longitude, latitude]
+    files = serializers.SerializerMethodField()
 
     class Meta:
         model = Project
         fields = [
             'id', 'user', 'user_telegram_id', 'title', 'category', 'service_location',
             'location', 'address', 'budget', 'description', 'status', 'expiry_date',
-            'created_at', 'deadline_date', 'start_date'
+            'created_at', 'deadline_date', 'start_date', 'files'
         ]
         read_only_fields = ['user']
 
@@ -63,6 +64,9 @@ class ProjectSerializer(serializers.ModelSerializer):
         project = Project.objects.create(**validated_data)
         logger.info(f"Project created with ID: {project.id}")
         return project
+
+    def get_files(self, obj):
+        return [file.file.name for file in obj.files.all()]
 
 class ProposalSerializer(serializers.ModelSerializer):
     class Meta:
