@@ -6,6 +6,7 @@ import logging
 from handlers.project_details_handler import create_dynamic_keyboard
 from keyboards import FILE_MANAGEMENT_MENU_KEYBOARD
 from django.conf import settings  # اضافه کردن ایمپورت
+import os  # اضافه کردن ایمپورت
 
 logger = logging.getLogger(__name__)
 
@@ -122,12 +123,17 @@ async def handle_photo_command(update: Update, context: ContextTypes.DEFAULT_TYP
         try:
             photo_index = int(command.split("_")[2])
             uploaded_files = context.user_data.get('uploaded_files', [])
-            logger.info(f"Uploaded files: {uploaded_files}")
+            logger.info(f"Uploaded files in context: {uploaded_files}")
             if 0 <= photo_index < len(uploaded_files):
                 photo_path = uploaded_files[photo_index]
                 full_photo_path = f"{settings.MEDIA_ROOT}/{photo_path}"  # ساخت مسیر کامل فایل
-                logger.info(f"Sending photo from path: {full_photo_path}")
+                logger.info(f"Full photo path: {full_photo_path}")
+                if not os.path.exists(full_photo_path):
+                    logger.error(f"File not found at path: {full_photo_path}")
+                    await update.message.reply_text("❌ فایل مورد نظر یافت نشد.")
+                    return
                 with open(full_photo_path, 'rb') as photo_file:
+                    logger.info(f"Sending photo from path: {full_photo_path}")
                     await update.message.reply_photo(photo=photo_file, caption=f"📷 عکس {photo_index + 1}")
             else:
                 logger.warning(f"Photo index {photo_index} out of range.")
