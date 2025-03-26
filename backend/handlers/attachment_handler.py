@@ -118,7 +118,13 @@ async def upload_attachments(files, context):
 async def handle_photo_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     command = update.message.text
     logger.info(f"Received command: {command}")
+# Ensure context is passed or available in the scope
+if context:
     logger.info(f"Uploaded files in context: {context.user_data.get('uploaded_files', [])}")  # Added log statement
+else:
+    logger.error("Context is not defined.")
+
+async def handle_view_photo_command(update: Update, context: ContextTypes.DEFAULT_TYPE, command: str):
     if command.startswith("/view_photo_"):
         try:
             photo_index = int(command.split("_")[2])
@@ -126,15 +132,19 @@ async def handle_photo_command(update: Update, context: ContextTypes.DEFAULT_TYP
             logger.info(f"Uploaded files: {uploaded_files}")
             if 0 <= photo_index < len(uploaded_files):
                 photo_path = uploaded_files[photo_index]
-                full_photo_url = f"{settings.MEDIA_URL}{photo_path}"  # ساخت لینک کامل
-                logger.info(f"Sending photo: {full_photo_url}")
-                await update.message.reply_photo(photo=f"{settings.MEDIA_ROOT}/{photo_path}", caption=f"📷 عکس {photo_index + 1}")
+                full_photo_path = f"{settings.MEDIA_ROOT}/{photo_path}"  # ساخت مسیر کامل فایل
+                logger.info(f"Sending photo from path: {full_photo_path}")
+                with open(full_photo_path, 'rb') as photo_file:
+                    await update.message.reply_photo(photo=photo_file, caption=f"📷 عکس {photo_index + 1}")
             else:
                 logger.warning(f"Photo index {photo_index} out of range.")
                 await update.message.reply_text("❌ عکس مورد نظر یافت نشد.")
         except (IndexError, ValueError) as e:
             logger.error(f"Error processing command {command}: {e}")
             await update.message.reply_text("❌ دستور نامعتبر است.")
+        except FileNotFoundError as e:
+            logger.error(f"File not found: {e}")
+            await update.message.reply_text("❌ فایل مورد نظر یافت نشد.")
 
 async def upload_files(file_ids, context):
     uploaded_urls = []
