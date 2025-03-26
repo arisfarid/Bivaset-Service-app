@@ -79,9 +79,12 @@ def upload_file(request):
             project = Project.objects.get(id=project_id)
             project_file = ProjectFile(file=file, project=project)
             project_file.save()
+            logger.info(f"File saved: {project_file.file.url}")  # اضافه کردن لاگ برای بررسی مسیر فایل
             return Response({'file_url': project_file.file.url}, status=201)
         except Project.DoesNotExist:
+            logger.error(f"Invalid project_id: {project_id}")
             return Response({'error': 'Invalid project_id'}, status=400)
+    logger.error("No file or project_id provided")
     return Response({'error': 'No file or project_id provided'}, status=400)
 
 class CategoryViewSet(viewsets.ModelViewSet):

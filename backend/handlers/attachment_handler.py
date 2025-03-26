@@ -114,22 +114,17 @@ async def upload_attachments(files, context):
     return await upload_files(files, context)
 
 async def handle_photo_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """
-    هندلر برای مدیریت دستورات مربوط به ارسال عکس‌ها
-    """
     command = update.message.text
     logger.info(f"Received command: {command}")
     if command.startswith("/view_photo_"):
         try:
-            # استخراج شماره عکس از دستور
             photo_index = int(command.split("_")[2])
-            logger.info(f"Extracted photo index: {photo_index}")
             uploaded_files = context.user_data.get('uploaded_files', [])
             logger.info(f"Uploaded files: {uploaded_files}")
             if 0 <= photo_index < len(uploaded_files):
                 photo_url = uploaded_files[photo_index]
                 logger.info(f"Sending photo: {photo_url}")
-                await update.message.reply_photo(photo=photo_url, caption=f"📷 عکس {photo_index + 1}")
+                await update.message.reply_photo(photo=f"{settings.MEDIA_URL}{photo_url}", caption=f"📷 عکس {photo_index + 1}")
             else:
                 logger.warning(f"Photo index {photo_index} out of range.")
                 await update.message.reply_text("❌ عکس مورد نظر یافت نشد.")
