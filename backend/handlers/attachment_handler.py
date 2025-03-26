@@ -121,7 +121,8 @@ async def handle_photo_command(update: Update, context: ContextTypes.DEFAULT_TYP
     logger.info(f"Received photo command: {command}")
     try:
         photo_index = int(command.split("_")[2])
-        project_id = context.user_data.get('current_project_id')
+        # بررسی هر دو کلید برای project_id
+        project_id = context.user_data.get('current_project_id') or context.user_data.get('project_id')
         logger.info(f"Attempting to fetch photo {photo_index} for project {project_id}")
         
         if not project_id:
@@ -129,15 +130,22 @@ async def handle_photo_command(update: Update, context: ContextTypes.DEFAULT_TYP
             await update.message.reply_text("❌ خطا: شناسه پروژه یافت نشد.")
             return
 
-        # دریافت فایل‌ها از دیتابیس
-        response = requests.get(f"{BASE_URL}projects/{project_id}/files/")
+        # دریافت فایل‌های پروژه
+        response = requests.get(f"{BASE_URL}projects/{project_id}/")
         logger.info(f"API Response status: {response.status_code}")
         logger.info(f"API Response content: {response.text}")
         
         if response.status_code == 200:
-            project_files = response.json()
+            project_data = response.json()
+            project_files = project_data.get('files', [])
+            
+            if not project_files:
+                logger.warning(f"No files found for project {project_id}")
+                await update.message.reply_text("❌ هیچ فایلی برای این پروژه یافت نشد.")
+                return
+
             if 0 <= photo_index < len(project_files):
-                file_path = project_files[photo_index]['file']
+                file_path = project_files[photo_index]
                 full_photo_path = os.path.join(settings.MEDIA_ROOT, file_path)
                 logger.info(f"Attempting to send photo from path: {full_photo_path}")
                 
@@ -145,7 +153,7 @@ async def handle_photo_command(update: Update, context: ContextTypes.DEFAULT_TYP
                     with open(full_photo_path, 'rb') as photo_file:
                         await update.message.reply_photo(
                             photo=photo_file,
-                            caption=f"📷 عکس {photo_index + 1}"
+                            caption=f"📷 عکس {photo_index + 1} از {len(project_files)}"
                         )
                 else:
                     logger.error(f"File not found at path: {full_photo_path}")

@@ -37,13 +37,13 @@ async def submit_project(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     await log_chat(update, context)
 
     try:
-        # ثبت پروژه
         response = requests.post(f"{BASE_URL}projects/", json=data)
         if response.status_code == 201:
             project = response.json()
             project_id = project.get('id')
-            # ذخیره project_id در context
-            context.user_data['current_project_id'] = project_id
+            # ذخیره project_id در context با هر دو کلید
+            context.user_data['project_id'] = project_id  # برای آپلود فایل‌ها
+            context.user_data['current_project_id'] = project_id  # برای نمایش فایل‌ها
             logger.info(f"Project created with ID: {project_id}")
 
             # آپلود فایل‌ها
@@ -51,7 +51,8 @@ async def submit_project(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
             uploaded_files = []
             if files:
                 uploaded_files = await upload_attachments(files, context)
-                context.user_data['uploaded_files'] = uploaded_files  # ذخیره لینک‌های آپلود شده
+                context.user_data['uploaded_files'] = uploaded_files
+                logger.info(f"Uploaded files: {uploaded_files}")
 
             # آماده‌سازی پیام نهایی
             message_lines = [
