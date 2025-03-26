@@ -1,7 +1,7 @@
 import requests
 from telegram import Update, KeyboardButton, ReplyKeyboardMarkup, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ContextTypes, ConversationHandler
-from utils import upload_files, log_chat
+from utils import upload_files, log_chat, BASE_URL
 import logging
 from handlers.project_details_handler import create_dynamic_keyboard
 from keyboards import FILE_MANAGEMENT_MENU_KEYBOARD
