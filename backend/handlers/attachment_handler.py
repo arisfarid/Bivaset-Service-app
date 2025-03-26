@@ -121,7 +121,6 @@ async def handle_photo_command(update: Update, context: ContextTypes.DEFAULT_TYP
     logger.info(f"Received photo command: {command}")
     try:
         photo_index = int(command.split("_")[2])
-        # استفاده از current_project_id به جای project_id
         project_id = context.user_data.get('current_project_id')
         logger.info(f"Attempting to fetch photo {photo_index} for project {project_id}")
         
@@ -130,19 +129,15 @@ async def handle_photo_command(update: Update, context: ContextTypes.DEFAULT_TYP
             await update.message.reply_text("❌ خطا: شناسه پروژه یافت نشد.")
             return
 
-        # تغییر مسیر API برای دریافت فایل‌های پروژه
-        response = requests.get(f"{BASE_URL}projects/{project_id}/")
+        # دریافت فایل‌ها از دیتابیس
+        response = requests.get(f"{BASE_URL}projects/{project_id}/files/")
+        logger.info(f"API Response status: {response.status_code}")
+        logger.info(f"API Response content: {response.text}")
+        
         if response.status_code == 200:
-            project_data = response.json()
-            project_files = project_data.get('files', [])
-            
-            if not project_files:
-                logger.warning(f"No files found for project {project_id}")
-                await update.message.reply_text("❌ هیچ فایلی برای این پروژه یافت نشد.")
-                return
-
+            project_files = response.json()
             if 0 <= photo_index < len(project_files):
-                file_path = project_files[photo_index]
+                file_path = project_files[photo_index]['file']
                 full_photo_path = os.path.join(settings.MEDIA_ROOT, file_path)
                 logger.info(f"Attempting to send photo from path: {full_photo_path}")
                 
