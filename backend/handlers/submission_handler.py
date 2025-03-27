@@ -17,11 +17,14 @@ async def submit_project(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         return DETAILS
 
     try:
-        # آماده‌سازی داده‌های اولیه بدون location
+        # آماده‌سازی داده‌های پروژه
+        category_id = context.user_data.get('category_id')
+        category_name = context.user_data.get('categories', {}).get(category_id, {}).get('name', 'نامشخص')
+        
         data = {
             'title': generate_title(context),
             'description': context.user_data.get('description', ''),
-            'category': context.user_data.get('category_id', ''),
+            'category': category_id,  # حتماً باید category_id باشد
             'service_location': context.user_data.get('service_location', ''),
             'user_telegram_id': str(update.effective_user.id)
         }
@@ -76,8 +79,16 @@ async def submit_project(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
                 reply_markup=EMPLOYER_MENU_KEYBOARD
             )
 
-            # پاک کردن context
+            # نگهداری اطلاعات مهم قبل از پاک کردن context
+            temp_data = {
+                'category_id': category_id,
+                'category_name': category_name,
+                'categories': context.user_data.get('categories', {})
+            }
+            
+            # پاک کردن context و بازیابی اطلاعات مهم
             context.user_data.clear()
+            context.user_data.update(temp_data)
             
             return EMPLOYER_MENU
 
