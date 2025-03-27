@@ -11,57 +11,48 @@ logger = logging.getLogger(__name__)
 
 START, REGISTER, ROLE, EMPLOYER_MENU, CATEGORY, SUBCATEGORY, DESCRIPTION, LOCATION_TYPE, LOCATION_INPUT, DETAILS, DETAILS_FILES, DETAILS_DATE, DETAILS_DEADLINE, DETAILS_BUDGET, DETAILS_QUANTITY, SUBMIT, VIEW_PROJECTS, PROJECT_ACTIONS = range(18)
 
+# در متد submit_project در submission_handler.py
 async def submit_project(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     if update.message.text != "✅ ثبت درخواست":
         return DETAILS
 
     try:
-        # تنظیم عنوان بر اساس محل خدمات
-        service_location = context.user_data.get('service_location', '')
-        title_suffix = {
-            'remote': '(غیرحضوری)',
-            'client_site': f"در {context.user_data.get('location_name', 'محل مشتری')}",
-            'contractor_site': 'در محل مجری'
-        }.get(service_location, '')
-
-        # آماده‌سازی داده‌های پروژه
+        # آماده‌سازی داده‌های اولیه بدون location
         data = {
             'title': generate_title(context),
             'description': context.user_data.get('description', ''),
             'category': context.user_data.get('category_id', ''),
             'service_location': context.user_data.get('service_location', ''),
-            'user_telegram_id': str(update.effective_user.id),
-            'location': None  # مقدار پیش‌فرض None
+            'user_telegram_id': str(update.effective_user.id)
         }
 
-        # اضافه کردن location فقط برای حالت‌های حضوری
-        if context.user_data.get('service_location') in ['client_site', 'contractor_site']:
+        # مدیریت location براساس نوع خدمت
+        service_location = context.user_data.get('service_location')
+        if service_location == 'remote':
+            # برای خدمات غیرحضوری، location را با یک آرایه خالی تنظیم می‌کنیم
+            data['location'] = []
+        elif service_location in ['client_site', 'contractor_site']:
+            # برای خدمات حضوری، location را از context می‌گیریم
             if location := context.user_data.get('location'):
-                data['location'] = [
-                    location['longitude'],
-                    location['latitude']
-                ]
+                data['location'] = [location['longitude'], location['latitude']]
             else:
                 await update.message.reply_text("❌ برای خدمات حضوری، باید لوکیشن را وارد کنید.")
                 return DETAILS
 
         # اضافه کردن فیلدهای اختیاری
-        optional_fields = {
-            'budget': 'budget',
-            'need_date': 'start_date',
-            'deadline': 'deadline_date'
-        }
+        if context.user_data.get('budget'):
+            data['budget'] = context.user_data['budget']
+        if context.user_data.get('need_date'):
+            data['start_date'] = context.user_data['need_date']
+        if context.user_data.get('deadline'):
+            data['deadline_date'] = convert_deadline_to_date(context.user_data['deadline'])
 
-        for context_key, api_key in optional_fields.items():
-            if value := context.user_data.get(context_key):
-                data[api_key] = value if api_key != 'deadline_date' else convert_deadline_to_date(value)
-
-        logger.info(f"Sending project data to API: {data}")  # اضافه کردن لاگ
+        logger.info(f"Sending project data to API: {data}")
         await log_chat(update, context)
 
         response = requests.post(f"{BASE_URL}projects/", json=data)
-        logger.info(f"API Response: {response.status_code} - {response.text}")  # اضافه کردن لاگ
-        
+        logger.info(f"API Response: {response.status_code} - {response.text}")
+
         if response.status_code == 201:
             project_data = response.json()
             project_id = project_data.get('id')

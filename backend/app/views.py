@@ -83,22 +83,28 @@ class ProjectSerializer(serializers.ModelSerializer):
 
     def validate(self, data):
         """
-        اعتبارسنجی اطلاعات پروژه
+        اعتبارسنجی داده‌های پروژه
         """
-        # اول سرویس لوکیشن را چک می‌کنیم
         service_location = data.get('service_location')
         
         # برای خدمات غیرحضوری
         if service_location == 'remote':
-            # مقدار None را برای location مجاز می‌کنیم 
             data['location'] = None
             return data
             
-        # برای خدمات حضوری، چک می‌کنیم که location وجود داشته باشد
+        # برای خدمات حضوری
         if service_location in ['client_site', 'contractor_site']:
-            if not data.get('location'):
+            location = data.get('location', [])
+            if not location or len(location) != 2:
                 raise serializers.ValidationError({
                     'location': ['برای خدمات حضوری، ثبت لوکیشن الزامی است']
+                })
+            try:
+                longitude, latitude = location
+                data['location'] = Point(longitude, latitude, srid=4326)
+            except (ValueError, TypeError, IndexError) as e:
+                raise serializers.ValidationError({
+                    'location': ['فرمت لوکیشن نامعتبر است']
                 })
         
         return data
