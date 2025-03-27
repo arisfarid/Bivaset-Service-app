@@ -1,7 +1,7 @@
 import os
 import sys
 import logging
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update, InputMediaPhoto
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, CallbackQueryHandler, ContextTypes, ConversationHandler
 from utils import save_timestamp, check_for_updates
 from handlers.start_handler import start, handle_contact, handle_role, cancel
@@ -123,6 +123,14 @@ photo_command_handler = MessageHandler(
 )
 app.add_handler(photo_command_handler)
 logger.info("Photo command handler registered successfully.")
+
+# ثبت هندلر جدید برای دستور view_photos
+photos_command_handler = MessageHandler(
+    filters.Regex(r'^/view_photos_\d+$') & filters.TEXT,
+    handle_photos_command
+)
+app.add_handler(photos_command_handler)
+logger.info("Photos command handler registered successfully.")
 
 # اضافه کردن هندلر خطا
 async def error_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:

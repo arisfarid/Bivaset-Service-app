@@ -73,8 +73,9 @@ async def submit_project(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
             
             if files:
                 message_lines.append(f"<b>📸 تعداد عکس‌ها:</b> {len(files)} عکس ارسال شده")
-                links = "\n".join([f"/view_photo_{i}" for i in range(len(uploaded_files))])
-                message_lines.append(f"<b>📸 لینک عکس‌ها:</b>\n{links}")
+                # تغییر نحوه نمایش لینک عکس‌ها
+                view_photos_command = f"/view_photos_{project_id}"
+                message_lines.append(f"<b>📸 عکس‌ها:</b> <a href=\"{view_photos_command}\">نمایش عکس‌ها</a>")
             
             message = "\n".join(message_lines)
 

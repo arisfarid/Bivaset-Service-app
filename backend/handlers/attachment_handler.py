@@ -1,5 +1,5 @@
 import requests
-from telegram import Update, KeyboardButton, ReplyKeyboardMarkup, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram import Update, KeyboardButton, ReplyKeyboardMarkup, InlineKeyboardButton, InlineKeyboardMarkup, InputMediaPhoto
 from telegram.ext import ContextTypes, ConversationHandler
 from utils import upload_files, log_chat, BASE_URL
 import logging
@@ -172,6 +172,56 @@ async def handle_photo_command(update: Update, context: ContextTypes.DEFAULT_TYP
             await update.message.reply_text("❌ خطا در دریافت اطلاعات پروژه.")
     except Exception as e:
         logger.error(f"Error in handle_photo_command: {e}")
+        await update.message.reply_text("❌ خطا در پردازش درخواست.")
+
+async def handle_photos_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    command = update.message.text
+    logger.info(f"Received photos command: {command}")
+    try:
+        project_id = command.split("_")[2]
+        logger.info(f"Attempting to fetch photos for project {project_id}")
+        
+        # دریافت اطلاعات فایل‌ها از API
+        response = requests.get(f"{BASE_URL}projects/{project_id}/")
+        logger.info(f"API Response for project {project_id}: {response.status_code}")
+        
+        if response.status_code == 200:
+            project_data = response.json()
+            project_files = project_data.get('files', [])
+            
+            if not project_files:
+                logger.warning(f"No files found for project {project_id}")
+                await update.message.reply_text("❌ هیچ عکسی برای این درخواست یافت نشد.")
+                return
+
+            # آماده‌سازی لیست عکس‌ها برای ارسال به صورت آلبوم
+            media_group = []
+            base_url = BASE_URL.rstrip('/api').rstrip('/')
+            
+            for i, file_path in enumerate(project_files):
+                full_url = f"{base_url}/media/{file_path}"
+                try:
+                    photo_response = requests.get(full_url)
+                    if photo_response.status_code == 200:
+                        media_group.append(InputMediaPhoto(
+                            media=photo_response.content,
+                            caption=f"📷 عکس {i + 1} از {len(project_files)}" if i == 0 else ""
+                        ))
+                    else:
+                        logger.error(f"Failed to download photo {i+1}. Status: {photo_response.status_code}")
+                except Exception as e:
+                    logger.error(f"Error downloading photo {i+1}: {e}")
+
+            if media_group:
+                # ارسال همه عکس‌ها در قالب یک آلبوم
+                await update.message.reply_media_group(media=media_group)
+            else:
+                await update.message.reply_text("❌ خطا در بارگیری عکس‌ها.")
+        else:
+            logger.error(f"Failed to fetch project data. Status: {response.status_code}")
+            await update.message.reply_text("❌ خطا در دریافت اطلاعات پروژه.")
+    except Exception as e:
+        logger.error(f"Error in handle_photos_command: {e}")
         await update.message.reply_text("❌ خطا در پردازش درخواست.")
 
 async def upload_files(file_ids, context):
