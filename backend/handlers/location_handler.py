@@ -19,12 +19,6 @@ async def handle_location(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         context.user_data['location'] = {'longitude': location.longitude, 'latitude': location.latitude}
         await log_chat(update, context)
         if current_state in [LOCATION_TYPE, LOCATION_INPUT]:
-            if 'service_location' not in context.user_data or not context.user_data['service_location']:
-                await update.message.reply_text(
-                    "❌ لطفاً محل انجام خدمات رو انتخاب کن!",
-                    reply_markup=LOCATION_TYPE_MENU_KEYBOARD
-                )
-                return LOCATION_TYPE
             context.user_data['state'] = DETAILS
             await update.message.reply_text(
                 "📋 جزئیات درخواست\n"
@@ -49,9 +43,10 @@ async def handle_location(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
                     reply_markup=LOCATION_TYPE_MENU_KEYBOARD
                 )
                 return LOCATION_TYPE
-            if context.user_data['service_location'] == 'client_site' and 'location' not in context.user_data:
+            # اگر غیرحضوری نیست، لوکیشن اجباری است
+            if context.user_data['service_location'] in ['client_site', 'contractor_site'] and 'location' not in context.user_data:
                 await update.message.reply_text(
-                    "❌ لطفاً لوکیشن رو ثبت کن!",
+                    "❌ لطفاً لوکیشن خود را ثبت کنید تا به نزدیک‌ترین مجری متصل شوید.",
                     reply_markup=LOCATION_INPUT_MENU_KEYBOARD
                 )
                 return LOCATION_TYPE
@@ -69,14 +64,9 @@ async def handle_location(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
                 '💻 غیرحضوری': 'remote'
             }[text]
             await log_chat(update, context)
-            if text == "🏠 محل من":
-                context.user_data['state'] = LOCATION_INPUT
-                await update.message.reply_text(
-                    "📍 برای دریافت قیمت از نزدیک‌ترین مجری، محل انجام خدمات رو از نقشه انتخاب کن:",
-                    reply_markup=LOCATION_INPUT_MENU_KEYBOARD
-                )
-                return LOCATION_INPUT
-            else:
+            
+            # اگر غیرحضوری است، نیازی به لوکیشن نیست
+            if text == "💻 غیرحضوری":
                 context.user_data['location'] = None
                 context.user_data['state'] = DETAILS
                 await update.message.reply_text(
@@ -84,6 +74,15 @@ async def handle_location(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
                     reply_markup=create_dynamic_keyboard(context)
                 )
                 return DETAILS
+            else:
+                # برای هر دو حالت "محل من" و "محل مجری"
+                context.user_data['state'] = LOCATION_INPUT
+                await update.message.reply_text(
+                    "📍 برای اتصال به نزدیک‌ترین مجری، لطفاً لوکیشن خود را ارسال کنید:",
+                    reply_markup=LOCATION_INPUT_MENU_KEYBOARD
+                )
+                return LOCATION_INPUT
+
         else:
             await update.message.reply_text(
                 "❌ لطفاً گزینه معتبر انتخاب کن!",
