@@ -121,19 +121,18 @@ async def handle_photo_command(update: Update, context: ContextTypes.DEFAULT_TYP
     logger.info(f"Received photo command: {command}")
     try:
         photo_index = int(command.split("_")[2])
-        # بررسی هر دو کلید برای project_id
-        project_id = context.user_data.get('current_project_id') or context.user_data.get('project_id')
-        logger.info(f"Attempting to fetch photo {photo_index} for project {project_id}")
+        # بررسی project_id
+        project_id = context.user_data.get('current_project_id')
+        logger.info(f"Found project_id in context: {project_id}")
         
         if not project_id:
             logger.error("Project ID not found in context")
             await update.message.reply_text("❌ خطا: شناسه پروژه یافت نشد.")
             return
 
-        # دریافت فایل‌های پروژه
+        # دریافت فایل‌ها از دیتابیس
         response = requests.get(f"{BASE_URL}projects/{project_id}/")
-        logger.info(f"API Response status: {response.status_code}")
-        logger.info(f"API Response content: {response.text}")
+        logger.info(f"API Response for project {project_id}: {response.status_code}")
         
         if response.status_code == 200:
             project_data = response.json()

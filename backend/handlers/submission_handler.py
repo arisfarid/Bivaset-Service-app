@@ -41,18 +41,28 @@ async def submit_project(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         if response.status_code == 201:
             project = response.json()
             project_id = project.get('id')
-            # ذخیره project_id در context با هر دو کلید
-            context.user_data['project_id'] = project_id  # برای آپلود فایل‌ها
-            context.user_data['current_project_id'] = project_id  # برای نمایش فایل‌ها
-            logger.info(f"Project created with ID: {project_id}")
-
+            context.user_data['project_id'] = project_id
+            
             # آپلود فایل‌ها
             files = context.user_data.get('files', [])
             uploaded_files = []
             if files:
                 uploaded_files = await upload_attachments(files, context)
                 context.user_data['uploaded_files'] = uploaded_files
-                logger.info(f"Uploaded files: {uploaded_files}")
+            
+            # ذخیره اطلاعات مهم قبل از پاک کردن context
+            temp_project_id = project_id
+            temp_uploaded_files = uploaded_files
+            
+            # پاک کردن context و شروع مجدد
+            context.user_data.clear()
+            
+            # بازگرداندن اطلاعات مهم
+            context.user_data['current_project_id'] = temp_project_id
+            context.user_data['uploaded_files'] = temp_uploaded_files
+            
+            await start(update, context)
+            return ROLE
 
             # آماده‌سازی پیام نهایی
             message_lines = [
