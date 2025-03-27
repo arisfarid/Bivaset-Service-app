@@ -68,18 +68,34 @@ async def submit_project(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
                 context.user_data['uploaded_files'] = uploaded_files
                 logger.info(f"Uploaded files: {uploaded_files}")
             
-            # آماده‌سازی پیام نهایی
+            # آماده‌سازی پیام نهایی و دکمه‌ها
             message = prepare_final_message(context, project_id)
-            
-            # آماده‌سازی دکمه‌های inline
-            keyboard = prepare_inline_keyboard(project_id, bool(context.user_data.get('files', [])))
+            keyboard = prepare_inline_keyboard(project_id, bool(files))
 
-            # ارسال پیام نهایی
-            await update.message.reply_text(
-                text=message,
-                reply_markup=InlineKeyboardMarkup(keyboard),
-                parse_mode='HTML'
-            )
+            # ارسال پیام نهایی با عکس اول (اگر وجود داشته باشد)
+            if files:
+                try:
+                    # ارسال عکس اول با کپشن و دکمه‌ها
+                    await update.message.reply_photo(
+                        photo=files[0],  # استفاده از اولین عکس
+                        caption=message,
+                        reply_markup=InlineKeyboardMarkup(keyboard),
+                        parse_mode='HTML'
+                    )
+                except Exception as e:
+                    logger.error(f"Error sending photo message: {e}")
+                    # اگر ارسال عکس با خطا مواجه شد، پیام متنی ارسال می‌کنیم
+                    await update.message.reply_text(
+                        text=message,
+                        reply_markup=InlineKeyboardMarkup(keyboard),
+                        parse_mode='HTML'
+                    )
+            else:
+                await update.message.reply_text(
+                    text=message,
+                    reply_markup=InlineKeyboardMarkup(keyboard),
+                    parse_mode='HTML'
+                )
 
             # نمایش منوی کارفرما
             await update.message.reply_text(
@@ -112,15 +128,23 @@ async def submit_project(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
 
 def prepare_final_message(context, project_id):
     """آماده‌سازی پیام نهایی"""
-    # دریافت نام دسته‌بندی از context
     category_id = context.user_data.get('category_id')
     category_name = context.user_data.get('categories', {}).get(str(category_id), {}).get('name') or \
                    context.user_data.get('categories', {}).get(category_id, {}).get('name', 'نامشخص')
     
+    # نمایش نوع محل خدمات
+    service_location = context.user_data.get('service_location')
+    location_text = {
+        'remote': 'غیرحضوری',
+        'client_site': 'محل من',
+        'contractor_site': 'محل مجری'
+    }.get(service_location, 'نامشخص')
+    
     message_lines = [
         f"🎉 تبریک! درخواست شما با کد {project_id} ثبت شد!",
         f"<b>📌 دسته‌بندی:</b> {category_name}",
-        f"<b>📝 توضیحات:</b> {context.user_data.get('description', '')}"
+        f"<b>📝 توضیحات:</b> {context.user_data.get('description', '')}",
+        f"<b>📍 محل خدمات:</b> {location_text}"
     ]
     
     # اضافه کردن اطلاعات عکس‌ها
