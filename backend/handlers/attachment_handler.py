@@ -116,64 +116,6 @@ async def show_photo_management(update: Update, context: ContextTypes.DEFAULT_TY
 async def upload_attachments(files, context):
     return await upload_files(files, context)
 
-async def handle_photo_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    command = update.message.text
-    logger.info(f"Received photo command: {command}")
-    try:
-        photo_index = int(command.split("_")[2])
-        project_id = context.user_data.get('current_project_id')
-        logger.info(f"Found project_id in context: {project_id}")
-        
-        if not project_id:
-            logger.error("Project ID not found in context")
-            await update.message.reply_text("❌ خطا: شناسه پروژه یافت نشد.")
-            return
-
-        # دریافت اطلاعات فایل از API
-        response = requests.get(f"{BASE_URL}projects/{project_id}/")
-        logger.info(f"API Response for project {project_id}: {response.status_code}")
-        
-        if response.status_code == 200:
-            project_data = response.json()
-            project_files = project_data.get('files', [])
-            
-            if not project_files:
-                logger.warning(f"No files found for project {project_id}")
-                await update.message.reply_text("❌ هیچ فایلی برای این پروژه یافت نشد.")
-                return
-
-            if 0 <= photo_index < len(project_files):
-                file_path = project_files[photo_index]
-                # ساخت آدرس کامل فایل - اصلاح شده
-                base_url = BASE_URL.rstrip('/api').rstrip('/')
-                full_url = f"{base_url}/media/{file_path}"  # اضافه کردن /media/
-                logger.info(f"Attempting to download and send photo from URL: {full_url}")
-                
-                try:
-                    # دانلود فایل از API
-                    photo_response = requests.get(full_url)
-                    if photo_response.status_code == 200:
-                        # ارسال عکس به کاربر
-                        await update.message.reply_photo(
-                            photo=photo_response.content,
-                            caption=f"📷 عکس {photo_index + 1} از {len(project_files)}"
-                        )
-                    else:
-                        logger.error(f"Failed to download photo. Status: {photo_response.status_code}")
-                        await update.message.reply_text("❌ خطا در دریافت عکس.")
-                except Exception as e:
-                    logger.error(f"Error downloading photo: {e}")
-                    await update.message.reply_text("❌ خطا در دریافت عکس.")
-            else:
-                logger.warning(f"Invalid photo index: {photo_index}")
-                await update.message.reply_text("❌ شماره عکس نامعتبر است.")
-        else:
-            logger.error(f"Failed to fetch project data. Status: {response.status_code}")
-            await update.message.reply_text("❌ خطا در دریافت اطلاعات پروژه.")
-    except Exception as e:
-        logger.error(f"Error in handle_photo_command: {e}")
-        await update.message.reply_text("❌ خطا در پردازش درخواست.")
-
 async def handle_photos_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     command = update.message.text
     logger.info(f"Received photos command: {command}")
