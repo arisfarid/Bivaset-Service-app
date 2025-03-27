@@ -119,19 +119,25 @@ async def submit_project(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
                     )
                 else:
                     sent_message = await update.message.reply_text(
-                        message,
+                        text=message,  # اضافه کردن text=
                         reply_markup=InlineKeyboardMarkup(inline_keyboard),
                         parse_mode='HTML'
                     )
                 
                 logger.info(f"Message sent successfully: {sent_message.message_id}")
 
-                # پاک کردن context پس از ارسال پیام
+                # پاک کردن context و ذخیره اطلاعات مهم
+                temp_project_id = project_id
+                temp_user_data = {
+                    'current_project_id': project_id,
+                    'uploaded_files': uploaded_files
+                }
                 context.user_data.clear()
+                context.user_data.update(temp_user_data)
 
                 # نمایش منوی کارفرما
                 await update.message.reply_text(
-                    text="",
+                    text=" ",  # استفاده از یک فاصله خالی به جای رشته خالی
                     reply_markup=EMPLOYER_MENU_KEYBOARD
                 )
 
