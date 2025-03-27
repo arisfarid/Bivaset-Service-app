@@ -119,7 +119,7 @@ async def submit_project(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
                     )
                 else:
                     sent_message = await update.message.reply_text(
-                        text=message,  # اضافه کردن text=
+                        text=message,
                         reply_markup=InlineKeyboardMarkup(inline_keyboard),
                         parse_mode='HTML'
                     )
@@ -135,9 +135,9 @@ async def submit_project(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
                 context.user_data.clear()
                 context.user_data.update(temp_user_data)
 
-                # نمایش منوی کارفرما
+                # نمایش منوی کارفرما با تنظیم کیبورد به جای ارسال پیام جدید
                 await update.message.reply_text(
-                    text=" ",  # استفاده از یک فاصله خالی به جای رشته خالی
+                    text="درخواستهای قبلی را مشاهده، یا درخواست جدید ثبت کنید:",  # متن مناسب برای نمایش منوی کارفرما
                     reply_markup=EMPLOYER_MENU_KEYBOARD
                 )
 
