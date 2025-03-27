@@ -121,7 +121,6 @@ async def handle_photo_command(update: Update, context: ContextTypes.DEFAULT_TYP
     logger.info(f"Received photo command: {command}")
     try:
         photo_index = int(command.split("_")[2])
-        # بررسی project_id
         project_id = context.user_data.get('current_project_id')
         logger.info(f"Found project_id in context: {project_id}")
         
@@ -130,7 +129,7 @@ async def handle_photo_command(update: Update, context: ContextTypes.DEFAULT_TYP
             await update.message.reply_text("❌ خطا: شناسه پروژه یافت نشد.")
             return
 
-        # دریافت فایل‌ها از دیتابیس
+        # دریافت اطلاعات فایل از API
         response = requests.get(f"{BASE_URL}projects/{project_id}/")
         logger.info(f"API Response for project {project_id}: {response.status_code}")
         
@@ -145,18 +144,25 @@ async def handle_photo_command(update: Update, context: ContextTypes.DEFAULT_TYP
 
             if 0 <= photo_index < len(project_files):
                 file_path = project_files[photo_index]
-                full_photo_path = os.path.join(settings.MEDIA_ROOT, file_path)
-                logger.info(f"Attempting to send photo from path: {full_photo_path}")
+                # ساخت آدرس کامل فایل
+                full_url = f"{BASE_URL.rstrip('api/')}{file_path}"
+                logger.info(f"Attempting to download and send photo from URL: {full_url}")
                 
-                if os.path.exists(full_photo_path):
-                    with open(full_photo_path, 'rb') as photo_file:
+                try:
+                    # دانلود فایل از API
+                    photo_response = requests.get(full_url)
+                    if photo_response.status_code == 200:
+                        # ارسال عکس به کاربر
                         await update.message.reply_photo(
-                            photo=photo_file,
+                            photo=photo_response.content,
                             caption=f"📷 عکس {photo_index + 1} از {len(project_files)}"
                         )
-                else:
-                    logger.error(f"File not found at path: {full_photo_path}")
-                    await update.message.reply_text("❌ فایل مورد نظر یافت نشد.")
+                    else:
+                        logger.error(f"Failed to download photo. Status: {photo_response.status_code}")
+                        await update.message.reply_text("❌ خطا در دریافت عکس.")
+                except Exception as e:
+                    logger.error(f"Error downloading photo: {e}")
+                    await update.message.reply_text("❌ خطا در دریافت عکس.")
             else:
                 logger.warning(f"Invalid photo index: {photo_index}")
                 await update.message.reply_text("❌ شماره عکس نامعتبر است.")
