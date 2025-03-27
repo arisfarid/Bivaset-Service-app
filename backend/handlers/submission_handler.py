@@ -132,7 +132,7 @@ def prepare_final_message(context, project_id):
     category_name = context.user_data.get('categories', {}).get(str(category_id), {}).get('name') or \
                    context.user_data.get('categories', {}).get(category_id, {}).get('name', 'نامشخص')
     
-    # نمایش نوع محل خدمات
+    # نمایش نوع محل خدمات و لوکیشن
     service_location = context.user_data.get('service_location')
     location_text = {
         'remote': 'غیرحضوری',
@@ -146,6 +146,13 @@ def prepare_final_message(context, project_id):
         f"<b>📝 توضیحات:</b> {context.user_data.get('description', '')}",
         f"<b>📍 محل خدمات:</b> {location_text}"
     ]
+
+    # اضافه کردن لینک لوکیشن اگر غیرحضوری نیست
+    if service_location in ['client_site', 'contractor_site'] and context.user_data.get('location'):
+        location = context.user_data['location']
+        message_lines.append(
+            f"<b>📍 موقعیت:</b> <a href=\"https://maps.google.com/maps?q={location['latitude']},{location['longitude']}\">نمایش روی نقشه</a>"
+        )
     
     # اضافه کردن اطلاعات عکس‌ها
     files = context.user_data.get('files', [])
