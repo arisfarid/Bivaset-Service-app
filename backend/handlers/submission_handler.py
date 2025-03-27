@@ -5,6 +5,7 @@ import requests
 import logging
 from handlers.start_handler import start
 from handlers.attachment_handler import upload_attachments
+from keyboards import EMPLOYER_MENU_KEYBOARD  # اضافه کردن import در بالای فایل
 
 logger = logging.getLogger(__name__)
 
@@ -95,11 +96,6 @@ async def submit_project(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
                 InlineKeyboardButton("💡 پیشنهادها", callback_data=f"offers_{project_id}")
             ])
 
-            # اضافه کردن دکمه منوی اصلی به آخر inline_keyboard
-            inline_keyboard.append([
-                InlineKeyboardButton("🏠 منوی اصلی", callback_data="main_menu")
-            ])
-
             # ارسال پیام نهایی
             if files:
                 await update.message.reply_photo(
@@ -114,6 +110,12 @@ async def submit_project(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
                     reply_markup=InlineKeyboardMarkup(inline_keyboard),
                     parse_mode='HTML'
                 )
+
+            # نمایش منوی کارفرما به صورت ReplyKeyboard
+            await update.message.reply_text(
+                text="",  # پیام خالی
+                reply_markup=EMPLOYER_MENU_KEYBOARD
+            )
 
             # پاک کردن context پس از ارسال پیام
             temp_project_id = project_id
