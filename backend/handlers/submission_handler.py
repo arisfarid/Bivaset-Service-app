@@ -15,18 +15,23 @@ async def submit_project(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     if update.message.text != "✅ ثبت درخواست":
         return DETAILS
 
-    location = context.user_data.get('location')
-    location_data = [location['longitude'], location['latitude']] if location else None
-
     # آماده‌سازی داده‌های پروژه
     data = {
         'title': generate_title(context),
         'description': context.user_data.get('description', ''),
         'category': context.user_data.get('category_id', ''),
         'service_location': context.user_data.get('service_location', ''),
-        'location': location_data,
         'user_telegram_id': str(update.effective_user.id)
     }
+
+    # اضافه کردن location فقط اگر سرویس حضوری باشد
+    location = context.user_data.get('location')
+    if data['service_location'] == 'client_site' and location:
+        data['location'] = [location['longitude'], location['latitude']]
+    else:
+        data['location'] = None  # برای حالت غیرحضوری یا بدون لوکیشن
+
+    # اضافه کردن فیلدهای اختیاری
     if context.user_data.get('budget'):
         data['budget'] = context.user_data['budget']
     if context.user_data.get('need_date'):
@@ -63,11 +68,6 @@ async def submit_project(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
                 if category_name:
                     message_lines.append(f"<b>📌 دسته‌بندی:</b> {category_name}")
                 
-                description = context.user_data.get('description')
-                if description:
-                    message_lines.append(f"<b>📝 توضیحات:</b> {description}")
-                
-                if context.user_data.get('need_date'):
                     message_lines.append(f"<b>📅 تاریخ نیاز:</b> {context.user_data['need_date']}")
                 
                 if context.user_data.get('deadline'):
