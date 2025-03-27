@@ -38,7 +38,6 @@ async def submit_project(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     await log_chat(update, context)
 
     try:
-        # ثبت پروژه در API
         response = requests.post(f"{BASE_URL}projects/", json=data)
         if response.status_code == 201:
             project = response.json()
@@ -53,83 +52,95 @@ async def submit_project(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
                 uploaded_files = await upload_attachments(files, context)
                 context.user_data['uploaded_files'] = uploaded_files
             
-            # آماده‌سازی پیام نهایی
-            message_lines = [
-                f"🎉 تبریک! درخواست شما با کد {project_id} ثبت شد!",
-                f"<b>📌 دسته‌بندی:</b> {context.user_data.get('categories', {}).get(context.user_data.get('category_id', ''), {}).get('name', 'نامشخص')}",
-                f"<b>📝 توضیحات:</b> {context.user_data.get('description', '')}"
-            ]
-            if context.user_data.get('need_date'):
-                message_lines.append(f"<b>📅 تاریخ نیاز:</b> {context.user_data['need_date']}")
-            if context.user_data.get('deadline'):
-                message_lines.append(f"<b>⏳ مهلت انجام:</b> {context.user_data['deadline']} روز")
-            if context.user_data.get('budget'):
-                message_lines.append(f"<b>💰 بودجه:</b> {context.user_data['budget']} تومان")
-            if context.user_data.get('quantity'):
-                message_lines.append(f"<b>📏 مقدار و واحد:</b> {context.user_data['quantity']}")
-            
-            location = context.user_data.get('location')
-            if location:
-                message_lines.append(f"<b>📍 لوکیشن:</b> <a href=\"https://maps.google.com/maps?q={location['latitude']},{location['longitude']}\">نمایش روی نقشه</a>")
-            
-            # فقط تعداد عکس‌ها را نمایش می‌دهیم، بدون نمایش کامند
-            if files:
-                message_lines.append(f"<b>📸 تعداد عکس‌ها:</b> {len(files)} عکس ارسال شده")
-            
-            message = "\n".join(message_lines)
+            try:
+                # آماده‌سازی پیام نهایی
+                message_lines = [
+                    f"🎉 تبریک! درخواست شما با کد {project_id} ثبت شد!"
+                ]
+                
+                # بررسی وجود هر فیلد قبل از اضافه کردن به پیام
+                category_name = context.user_data.get('categories', {}).get(context.user_data.get('category_id', ''), {}).get('name')
+                if category_name:
+                    message_lines.append(f"<b>📌 دسته‌بندی:</b> {category_name}")
+                
+                description = context.user_data.get('description')
+                if description:
+                    message_lines.append(f"<b>📝 توضیحات:</b> {description}")
+                
+                if context.user_data.get('need_date'):
+                    message_lines.append(f"<b>📅 تاریخ نیاز:</b> {context.user_data['need_date']}")
+                
+                if context.user_data.get('deadline'):
+                    message_lines.append(f"<b>⏳ مهلت انجام:</b> {context.user_data['deadline']} روز")
+                
+                if context.user_data.get('budget'):
+                    message_lines.append(f"<b>💰 بودجه:</b> {context.user_data['budget']} تومان")
+                
+                if context.user_data.get('quantity'):
+                    message_lines.append(f"<b>📏 مقدار و واحد:</b> {context.user_data['quantity']}")
+                
+                location = context.user_data.get('location')
+                if location:
+                    message_lines.append(f"<b>📍 لوکیشن:</b> <a href=\"https://maps.google.com/maps?q={location['latitude']},{location['longitude']}\">نمایش روی نقشه</a>")
+                
+                if files:
+                    message_lines.append(f"<b>📸 تعداد عکس‌ها:</b> {len(files)} عکس ارسال شده")
 
-            # دکمه‌های InlineKeyboard
-            inline_keyboard = [
-                [InlineKeyboardButton("✏️ ویرایش", callback_data=f"edit_{project_id}"),
-                 InlineKeyboardButton("⛔ بستن", callback_data=f"close_{project_id}")],
-                [InlineKeyboardButton("🗑 حذف", callback_data=f"delete_{project_id}"),
-                 InlineKeyboardButton("⏰ تمدید", callback_data=f"extend_{project_id}")],
-            ]
-            
-            # اضافه کردن دکمه نمایش عکس‌ها فقط اگر عکسی وجود داشته باشد
-            if files:
+                message = "\n".join(message_lines)
+                logger.info(f"Prepared message: {message}")  # اضافه کردن لاگ
+                
+                if not message:
+                    raise ValueError("Message text is empty")
+
+                # دکمه‌های InlineKeyboard
+                inline_keyboard = [
+                    [InlineKeyboardButton("✏️ ویرایش", callback_data=f"edit_{project_id}"),
+                     InlineKeyboardButton("⛔ بستن", callback_data=f"close_{project_id}")],
+                    [InlineKeyboardButton("🗑 حذف", callback_data=f"delete_{project_id}"),
+                     InlineKeyboardButton("⏰ تمدید", callback_data=f"extend_{project_id}")],
+                ]
+                
+                if files:
+                    inline_keyboard.append([
+                        InlineKeyboardButton("📸 نمایش عکس‌ها", callback_data=f"view_photos_{project_id}")
+                    ])
+                
                 inline_keyboard.append([
-                    InlineKeyboardButton("📸 نمایش عکس‌ها", callback_data=f"view_photos_{project_id}")
+                    InlineKeyboardButton("💡 پیشنهادها", callback_data=f"offers_{project_id}")
                 ])
-            
-            inline_keyboard.append([
-                InlineKeyboardButton("💡 پیشنهادها", callback_data=f"offers_{project_id}")
-            ])
 
-            # ارسال پیام نهایی
-            if files:
-                await update.message.reply_photo(
-                    photo=files[0],
-                    caption=message,
-                    reply_markup=InlineKeyboardMarkup(inline_keyboard),
-                    parse_mode='HTML'
-                )
-            else:
+                # ارسال پیام نهایی
+                if files:
+                    sent_message = await update.message.reply_photo(
+                        photo=files[0],
+                        caption=message,
+                        reply_markup=InlineKeyboardMarkup(inline_keyboard),
+                        parse_mode='HTML'
+                    )
+                else:
+                    sent_message = await update.message.reply_text(
+                        message,
+                        reply_markup=InlineKeyboardMarkup(inline_keyboard),
+                        parse_mode='HTML'
+                    )
+                
+                logger.info(f"Message sent successfully: {sent_message.message_id}")
+
+                # پاک کردن context پس از ارسال پیام
+                context.user_data.clear()
+
+                # نمایش منوی کارفرما
                 await update.message.reply_text(
-                    message,
-                    reply_markup=InlineKeyboardMarkup(inline_keyboard),
-                    parse_mode='HTML'
+                    text="",
+                    reply_markup=EMPLOYER_MENU_KEYBOARD
                 )
 
-            # نمایش منوی کارفرما به صورت ReplyKeyboard
-            await update.message.reply_text(
-                text="",  # پیام خالی
-                reply_markup=EMPLOYER_MENU_KEYBOARD
-            )
+                return ROLE
 
-            # پاک کردن context پس از ارسال پیام
-            temp_project_id = project_id
-            temp_uploaded_files = uploaded_files
-            context.user_data.clear()
-            context.user_data['current_project_id'] = temp_project_id
-            context.user_data['uploaded_files'] = temp_uploaded_files
-            
-            return ROLE  # برگشت به ROLE برای حفظ state
-
-        else:
-            logger.error(f"API error: {response.text}")
-            await update.message.reply_text(f"❌ خطا در ثبت درخواست: {response.text[:50]}...")
-            return DETAILS
+            except Exception as message_error:
+                logger.error(f"Error creating final message: {message_error}")
+                await update.message.reply_text("❌ خطا در نمایش جزئیات درخواست.")
+                return DETAILS
 
     except Exception as e:
         logger.error(f"Error submitting project: {e}")
