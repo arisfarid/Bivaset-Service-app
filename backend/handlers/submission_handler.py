@@ -37,11 +37,13 @@ async def submit_project(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     await log_chat(update, context)
 
     try:
+        # ثبت پروژه در API
         response = requests.post(f"{BASE_URL}projects/", json=data)
         if response.status_code == 201:
             project = response.json()
             project_id = project.get('id')
             context.user_data['project_id'] = project_id
+            logger.info(f"Project created with ID: {project_id}")
             
             # آپلود فایل‌ها
             files = context.user_data.get('files', [])
@@ -50,20 +52,6 @@ async def submit_project(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
                 uploaded_files = await upload_attachments(files, context)
                 context.user_data['uploaded_files'] = uploaded_files
             
-            # ذخیره اطلاعات مهم قبل از پاک کردن context
-            temp_project_id = project_id
-            temp_uploaded_files = uploaded_files
-            
-            # پاک کردن context و شروع مجدد
-            context.user_data.clear()
-            
-            # بازگرداندن اطلاعات مهم
-            context.user_data['current_project_id'] = temp_project_id
-            context.user_data['uploaded_files'] = temp_uploaded_files
-            
-            await start(update, context)
-            return ROLE
-
             # آماده‌سازی پیام نهایی
             message_lines = [
                 f"🎉 تبریک! درخواست شما با کد {project_id} ثبت شد!",
@@ -78,15 +66,16 @@ async def submit_project(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
                 message_lines.append(f"<b>💰 بودجه:</b> {context.user_data['budget']} تومان")
             if context.user_data.get('quantity'):
                 message_lines.append(f"<b>📏 مقدار و واحد:</b> {context.user_data['quantity']}")
-            if location_data:
+            
+            location = context.user_data.get('location')
+            if location:
                 message_lines.append(f"<b>📍 لوکیشن:</b> <a href=\"https://maps.google.com/maps?q={location['latitude']},{location['longitude']}\">نمایش روی نقشه</a>")
+            
             if files:
                 message_lines.append(f"<b>📸 تعداد عکس‌ها:</b> {len(files)} عکس ارسال شده")
-            if uploaded_files:  # بررسی وجود فایل‌های آپلود شده
-                links = "\n".join([
-                    f"/view_photo_{i}" for i in range(len(uploaded_files))
-                ])
+                links = "\n".join([f"/view_photo_{i}" for i in range(len(uploaded_files))])
                 message_lines.append(f"<b>📸 لینک عکس‌ها:</b>\n{links}")
+            
             message = "\n".join(message_lines)
 
             # دکمه‌های InlineKeyboard
@@ -101,26 +90,34 @@ async def submit_project(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
             # ارسال پیام نهایی
             if files:
                 await update.message.reply_photo(
-                    photo=files[0],  # نمایش اولین عکس
+                    photo=files[0],
                     caption=message,
                     reply_markup=InlineKeyboardMarkup(inline_keyboard),
-                    parse_mode='HTML'  # استفاده از HTML
+                    parse_mode='HTML'
                 )
             else:
                 await update.message.reply_text(
                     message,
                     reply_markup=InlineKeyboardMarkup(inline_keyboard),
-                    parse_mode='HTML'  # استفاده از HTML
+                    parse_mode='HTML'
                 )
+
+            # پاک کردن context پس از ارسال پیام
+            temp_project_id = project_id
+            temp_uploaded_files = uploaded_files
+            context.user_data.clear()
+            context.user_data['current_project_id'] = temp_project_id
+            context.user_data['uploaded_files'] = temp_uploaded_files
+            
+            await start(update, context)
+            return ROLE
+
         else:
             logger.error(f"API error: {response.text}")
             await update.message.reply_text(f"❌ خطا در ثبت درخواست: {response.text[:50]}...")
-    except requests.exceptions.ConnectionError:
-        logger.error("Connection error while submitting project")
-        await update.message.reply_text("❌ خطا: سرور بک‌اند در دسترس نیست.")
+            return DETAILS
+
     except Exception as e:
         logger.error(f"Error submitting project: {e}")
         await update.message.reply_text("❌ خطا در ثبت درخواست.")
-    context.user_data.clear()
-    await start(update, context)
-    return ROLE
+        return DETAILS
