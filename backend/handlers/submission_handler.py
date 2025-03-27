@@ -95,6 +95,11 @@ async def submit_project(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
                 InlineKeyboardButton("💡 پیشنهادها", callback_data=f"offers_{project_id}")
             ])
 
+            # اضافه کردن دکمه منوی اصلی به آخر inline_keyboard
+            inline_keyboard.append([
+                InlineKeyboardButton("🏠 منوی اصلی", callback_data="main_menu")
+            ])
+
             # ارسال پیام نهایی
             if files:
                 await update.message.reply_photo(
@@ -117,8 +122,7 @@ async def submit_project(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
             context.user_data['current_project_id'] = temp_project_id
             context.user_data['uploaded_files'] = temp_uploaded_files
             
-            await start(update, context)
-            return ROLE
+            return ROLE  # برگشت به ROLE برای حفظ state
 
         else:
             logger.error(f"API error: {response.text}")

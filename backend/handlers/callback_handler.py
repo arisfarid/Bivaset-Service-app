@@ -7,7 +7,7 @@ from handlers.edit_handler import handle_edit_callback
 from handlers.view_handler import handle_view_callback
 from handlers.attachment_handler import show_photo_management, handle_photos_command
 from utils import log_chat
-from keyboards import EMPLOYER_INLINE_MENU_KEYBOARD, FILE_MANAGEMENT_MENU_KEYBOARD, RESTART_INLINE_MENU_KEYBOARD, BACK_INLINE_MENU_KEYBOARD
+from keyboards import EMPLOYER_INLINE_MENU_KEYBOARD, FILE_MANAGEMENT_MENU_KEYBOARD, RESTART_INLINE_MENU_KEYBOARD, BACK_INLINE_MENU_KEYBOARD, MAIN_MENU_KEYBOARD
 
 logger = logging.getLogger(__name__)
 
@@ -183,6 +183,14 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
             )
             context.user_data['state'] = LOCATION_INPUT
             return LOCATION_INPUT
+
+        elif data == "main_menu":
+            await query.message.reply_text(
+                "📋 چه کاری می‌تونم برات انجام بدم؟",
+                reply_markup=MAIN_MENU_KEYBOARD
+            )
+            await query.answer()
+            return ROLE
 
         else:
             await handle_view_callback(update, context)
