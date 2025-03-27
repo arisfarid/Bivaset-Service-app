@@ -26,7 +26,7 @@ class Project(models.Model):
     title = models.CharField(max_length=200)
     category = models.ForeignKey(Category, on_delete=models.SET_NULL, null=True)
     service_location = models.CharField(max_length=20, choices=[("client_site", "محل کارفرما"), ("contractor_site", "محل مجری"), ("remote", "غیرحضوری")])
-    location = gis_models.PointField(null=True, blank=True)
+    location = gis_models.PointField(null=True, blank=True, srid=4326)  # اضافه کردن srid=4326
     address = models.CharField(max_length=200, blank=True)
     budget = models.IntegerField(null=True, blank=True)
     description = models.TextField(max_length=500, blank=True)

@@ -50,17 +50,30 @@ class ProjectSerializer(serializers.ModelSerializer):
         return super().to_internal_value(data)
 
     def create(self, validated_data):
-        logger.info(f"Creating project with data: {validated_data}")  # اضافه کردن لاگ
+        logger.info(f"Creating project with data: {validated_data}")
         user_telegram_id = validated_data.pop('user_telegram_id')
+        
+        # اول کاربر را پیدا یا ایجاد می‌کنیم
         user, created = User.objects.get_or_create(
             telegram_id=user_telegram_id,
             defaults={'phone': f"tg_{user_telegram_id}", 'name': 'کاربر', 'role': 'client'}
         )
+        
+        # اضافه کردن user به داده‌ها
         validated_data['user'] = user
-        # مطمئن شو که location یه Point باشه
-        if 'location' in validated_data and validated_data['location'] and not isinstance(validated_data['location'], Point):
-            longitude, latitude = validated_data['location']
-            validated_data['location'] = Point(longitude, latitude, srid=4326)
+        
+        # مدیریت location برای حالت‌های مختلف
+        if validated_data.get('service_location') == 'remote':
+            validated_data['location'] = None
+        elif 'location' in validated_data and validated_data['location']:
+            try:
+                longitude, latitude = validated_data['location']
+                validated_data['location'] = Point(longitude, latitude, srid=4326)
+            except (ValueError, TypeError, IndexError) as e:
+                logger.error(f"Error creating Point: {e}")
+                validated_data['location'] = None
+
+        # ایجاد پروژه
         project = Project.objects.create(**validated_data)
         logger.info(f"Project created with ID: {project.id}")
         return project
