@@ -1,7 +1,7 @@
-from telegram import Update, KeyboardButton, ReplyKeyboardMarkup
+from telegram import Update, KeyboardButton, ReplyKeyboardMarkup, ForceReply
 from telegram.ext import ContextTypes, ConversationHandler
 from keyboards import FILE_MANAGEMENT_MENU_KEYBOARD
-from utils import clean_budget, validate_date, validate_deadline, create_dynamic_keyboard, log_chat
+from utils import clean_budget, validate_date, validate_deadline, create_dynamic_keyboard, log_chat, format_price
 from khayyam import JalaliDatetime
 from datetime import datetime, timedelta
 from handlers.submission_handler import submit_project
@@ -88,11 +88,27 @@ async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_T
             return DETAILS_DATE
         elif text == "⏳ مهلت انجام":
             context.user_data['state'] = DETAILS_DEADLINE
-            await update.message.reply_text("⏳ مهلت انجام رو به روز وارد کن (مثلاً 7):")
+            await update.message.reply_text(
+                "⏳ مهلت انجام رو بر حسب روز وارد کن:",
+                reply_markup=ForceReply(input_field_placeholder="مثلاً: 7", selective=True)
+            )
+            context.bot.send_message(
+                chat_id=update.effective_chat.id,
+                text="لطفاً تعداد روز را وارد کنید:",
+                reply_markup={"input_field_content_type": "number"}
+            )
             return DETAILS_DEADLINE
         elif text == "💰 بودجه":
             context.user_data['state'] = DETAILS_BUDGET
-            await update.message.reply_text("💰 بودجه رو وارد کن (مثلاً 500000):")
+            await update.message.reply_text(
+                "💰 بودجه رو به تومان وارد کن:",
+                reply_markup=ForceReply(input_field_placeholder="مثلاً: 500000", selective=True)
+            )
+            context.bot.send_message(
+                chat_id=update.effective_chat.id, 
+                text="لطفاً مبلغ را وارد کنید:",
+                reply_markup={"input_field_content_type": "number"}
+            )
             return DETAILS_BUDGET
         elif text == "📏 مقدار و واحد":
             context.user_data['state'] = DETAILS_QUANTITY
@@ -168,16 +184,21 @@ async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_T
                 reply_markup=create_dynamic_keyboard(context)
             )
             return DETAILS
+            
         budget = clean_budget(text)
         if budget:
+            formatted_budget = format_price(budget)
             context.user_data['budget'] = budget
             context.user_data['state'] = DETAILS
             await update.message.reply_text(
-                f"💰 بودجه ثبت شد: {budget} تومان",
+                f"💰 بودجه ثبت شد: {formatted_budget} تومان",
                 reply_markup=create_dynamic_keyboard(context)
             )
         else:
-            await update.message.reply_text("❌ بودجه نامعتبر! لطفاً یه عدد وارد کن (مثلاً 500000).")
+            await update.message.reply_text(
+                "❌ بودجه نامعتبر! لطفاً فقط عدد وارد کن (مثلاً 500000).",
+                reply_markup=ForceReply(selective=True)
+            )
         return DETAILS_BUDGET
 
     elif current_state == DETAILS_QUANTITY:

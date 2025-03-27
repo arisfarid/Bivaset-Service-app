@@ -170,3 +170,10 @@ async def log_chat(update: Update, context: ContextTypes.DEFAULT_TYPE):
     elif update.callback_query:  # برای callback‌ها
         timestamp = datetime.now().strftime('%d/%m/%Y %H:%M:%S')
         logger.info(f"{user.first_name}, [{timestamp}] - Callback: {update.callback_query.data}")
+
+def format_price(number):
+    """تبدیل اعداد مبلغ به فرمت هزارگان با کاما"""
+    try:
+        return "{:,}".format(int(number))
+    except (ValueError, TypeError):
+        return number
