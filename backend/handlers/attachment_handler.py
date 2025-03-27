@@ -156,20 +156,20 @@ async def handle_photos_command(update: Update, context: ContextTypes.DEFAULT_TY
             
             for i, file_path in enumerate(project_files):
                 full_url = f"{base_url}/media/{file_path}"
-                logger.info(f"Processing file {i+1}: {full_url}")  # لاگ پردازش هر فایل
+                logger.info(f"Processing file {i+1}: {full_url}")
                 
                 try:
                     photo_response = requests.get(full_url)
                     if photo_response.status_code == 200:
                         media_group.append(InputMediaPhoto(
                             media=photo_response.content,
-                            caption=f"📷 عکس {i + 1} از {len(project_files)}" if i == 0 else ""
+                            caption="عکس اصلی" if i == 0 else ""  # تغییر کپشن فقط برای اولین عکس
                         ))
-                        logger.info(f"Successfully added file {i+1} to media group")  # لاگ موفقیت
+                        logger.info(f"Successfully added file {i+1} to media group")
                     else:
-                        logger.error(f"Failed to download photo {i+1}. Status: {photo_response.status_code}")  # لاگ خطای دانلود
+                        logger.error(f"Failed to download photo {i+1}. Status: {photo_response.status_code}")
                 except Exception as e:
-                    logger.error(f"Error processing photo {i+1}: {e}")  # لاگ خطای پردازش
+                    logger.error(f"Error processing photo {i+1}: {e}")
 
             if media_group:
                 # ارسال عکس‌ها
