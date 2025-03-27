@@ -59,6 +59,14 @@ async def submit_project(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         if response.status_code == 201:
             project_data = response.json()
             project_id = project_data.get('id')
+            context.user_data['project_id'] = project_id  # ذخیره project_id
+            
+            # آپلود فایل‌ها
+            files = context.user_data.get('files', [])
+            if files:
+                uploaded_files = await upload_attachments(files, context)
+                context.user_data['uploaded_files'] = uploaded_files
+                logger.info(f"Uploaded files: {uploaded_files}")
             
             # آماده‌سازی پیام نهایی
             message = prepare_final_message(context, project_id)
@@ -104,19 +112,31 @@ async def submit_project(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
 
 def prepare_final_message(context, project_id):
     """آماده‌سازی پیام نهایی"""
+    # دریافت نام دسته‌بندی از context
+    category_id = context.user_data.get('category_id')
+    category_name = context.user_data.get('categories', {}).get(str(category_id), {}).get('name') or \
+                   context.user_data.get('categories', {}).get(category_id, {}).get('name', 'نامشخص')
+    
     message_lines = [
         f"🎉 تبریک! درخواست شما با کد {project_id} ثبت شد!",
-        f"<b>📌 دسته‌بندی:</b> {context.user_data.get('category_name', 'نامشخص')}",
+        f"<b>📌 دسته‌بندی:</b> {category_name}",
         f"<b>📝 توضیحات:</b> {context.user_data.get('description', '')}"
     ]
     
+    # اضافه کردن اطلاعات عکس‌ها
+    files = context.user_data.get('files', [])
+    if files:
+        message_lines.append(f"<b>📸 تعداد عکس‌ها:</b> {len(files)}")
+    
+    # سایر اطلاعات
     if context.user_data.get('need_date'):
         message_lines.append(f"<b>📅 تاریخ نیاز:</b> {context.user_data['need_date']}")
     if context.user_data.get('budget'):
         message_lines.append(f"<b>💰 بودجه:</b> {context.user_data['budget']} تومان")
-    if context.user_data.get('location'):
-        loc = context.user_data['location']
-        message_lines.append(f"<b>📍 لوکیشن:</b> <a href=\"https://maps.google.com/maps?q={loc['latitude']},{loc['longitude']}\">نمایش روی نقشه</a>")
+    if context.user_data.get('deadline'):
+        message_lines.append(f"<b>⏳ مهلت انجام:</b> {context.user_data['deadline']} روز")
+    if context.user_data.get('quantity'):
+        message_lines.append(f"<b>📏 مقدار و واحد:</b> {context.user_data['quantity']}")
     
     return "\n".join(message_lines)
 
@@ -126,9 +146,10 @@ def prepare_inline_keyboard(project_id, has_files):
         [InlineKeyboardButton("✏️ ویرایش", callback_data=f"edit_{project_id}"),
          InlineKeyboardButton("⛔ بستن", callback_data=f"close_{project_id}")],
         [InlineKeyboardButton("🗑 حذف", callback_data=f"delete_{project_id}"),
-         InlineKeyboardButton("⏰ تمدید", callback_data=f"extend_{project_id}")],
+         InlineKeyboardButton("⏰ تمدید", callback_data=f"extend_{project_id}")]
     ]
     
+    # فقط اگر عکس داشته باشیم، دکمه نمایش عکس‌ها را اضافه می‌کنیم
     if has_files:
         keyboard.append([
             InlineKeyboardButton("📸 نمایش عکس‌ها", callback_data=f"view_photos_{project_id}")
