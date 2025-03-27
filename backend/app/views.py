@@ -50,7 +50,7 @@ class ProjectSerializer(serializers.ModelSerializer):
         return super().to_internal_value(data)
 
     def create(self, validated_data):
-        logger.info(f"Validated data before creating project: {validated_data}")
+        logger.info(f"Creating project with data: {validated_data}")  # اضافه کردن لاگ
         user_telegram_id = validated_data.pop('user_telegram_id')
         user, created = User.objects.get_or_create(
             telegram_id=user_telegram_id,
@@ -72,16 +72,20 @@ class ProjectSerializer(serializers.ModelSerializer):
         """
         اعتبارسنجی اطلاعات پروژه
         """
-        # برای خدمات غیرحضوری، location را None قرار می‌دهیم
-        if data.get('service_location') == 'remote':
+        # اول سرویس لوکیشن را چک می‌کنیم
+        service_location = data.get('service_location')
+        
+        # برای خدمات غیرحضوری
+        if service_location == 'remote':
+            # مقدار None را برای location مجاز می‌کنیم 
             data['location'] = None
             return data
             
-        # برای خدمات حضوری، لوکیشن اجباری است    
-        if data.get('service_location') in ['client_site', 'contractor_site']:
+        # برای خدمات حضوری، چک می‌کنیم که location وجود داشته باشد
+        if service_location in ['client_site', 'contractor_site']:
             if not data.get('location'):
                 raise serializers.ValidationError({
-                    'location': ['برای خدمات حضوری، ثبت لوکیشن الزامی است.']
+                    'location': ['برای خدمات حضوری، ثبت لوکیشن الزامی است']
                 })
         
         return data

@@ -30,33 +30,20 @@ async def submit_project(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
             'description': context.user_data.get('description', ''),
             'category': context.user_data.get('category_id', ''),
             'service_location': context.user_data.get('service_location', ''),
-            'user_telegram_id': str(update.effective_user.id)
+            'user_telegram_id': str(update.effective_user.id),
+            'location': None  # مقدار پیش‌فرض None
         }
 
-        # مدیریت location برای حالت‌های مختلف
-        if context.user_data.get('service_location') == 'client_site':
-            # برای خدمات در محل مشتری، از لوکیشن مشتری استفاده می‌شود
+        # اضافه کردن location فقط برای حالت‌های حضوری
+        if context.user_data.get('service_location') in ['client_site', 'contractor_site']:
             if location := context.user_data.get('location'):
                 data['location'] = [
                     location['longitude'],
                     location['latitude']
                 ]
             else:
-                await update.message.reply_text("❌ برای خدمات در محل مشتری، باید لوکیشن را وارد کنید.")
+                await update.message.reply_text("❌ برای خدمات حضوری، باید لوکیشن را وارد کنید.")
                 return DETAILS
-        elif context.user_data.get('service_location') == 'contractor_site':
-            # برای خدمات در محل مجری، از لوکیشن مشتری برای یافتن نزدیک‌ترین مجری استفاده می‌شود
-            if location := context.user_data.get('location'):
-                data['location'] = [
-                    location['longitude'],
-                    location['latitude']
-                ]
-            else:
-                await update.message.reply_text("❌ برای یافتن نزدیک‌ترین مجری، باید لوکیشن خود را وارد کنید.")
-                return DETAILS
-        else:
-            # برای خدمات غیرحضوری، نیازی به لوکیشن نیست
-            data['location'] = None
 
         # اضافه کردن فیلدهای اختیاری
         optional_fields = {
@@ -69,10 +56,11 @@ async def submit_project(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
             if value := context.user_data.get(context_key):
                 data[api_key] = value if api_key != 'deadline_date' else convert_deadline_to_date(value)
 
-        logger.info(f"Sending project data to API: {data}")
+        logger.info(f"Sending project data to API: {data}")  # اضافه کردن لاگ
         await log_chat(update, context)
 
         response = requests.post(f"{BASE_URL}projects/", json=data)
+        logger.info(f"API Response: {response.status_code} - {response.text}")  # اضافه کردن لاگ
         
         if response.status_code == 201:
             project_data = response.json()
