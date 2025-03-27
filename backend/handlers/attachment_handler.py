@@ -144,8 +144,9 @@ async def handle_photo_command(update: Update, context: ContextTypes.DEFAULT_TYP
 
             if 0 <= photo_index < len(project_files):
                 file_path = project_files[photo_index]
-                # ساخت آدرس کامل فایل
-                full_url = f"{BASE_URL.rstrip('api/')}{file_path}"
+                # ساخت آدرس کامل فایل - اصلاح شده
+                base_url = BASE_URL.rstrip('api/').rstrip('/')
+                full_url = f"{base_url}/{file_path}"
                 logger.info(f"Attempting to download and send photo from URL: {full_url}")
                 
                 try:
