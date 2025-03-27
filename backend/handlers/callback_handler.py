@@ -31,14 +31,28 @@ async def send_message_with_keyboard(context, chat_id, text, reply_markup):
 async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     query = update.callback_query
     data = query.data
+    logger.info(f"Received callback data: {data}")  # لاگ اولیه
 
     if data.startswith('view_photos_'):
-        project_id = data.split('_')[2]
-        # اجرای دستور view_photos
-        context.user_data['current_project_id'] = project_id
-        await handle_photos_command(update, context)
-        await query.answer()
-        return PROJECT_ACTIONS
+        try:
+            project_id = data.split('_')[2]
+            logger.info(f"Processing view_photos callback for project {project_id}")  # لاگ پردازش
+            
+            # اجرای دستور view_photos
+            context.user_data['current_project_id'] = project_id
+            logger.info(f"Set current_project_id to {project_id}")  # لاگ تنظیم project_id
+            
+            # اجرای مستقیم تابع handle_photos_command
+            await handle_photos_command(update, context)
+            logger.info("Finished handling photos command")  # لاگ اتمام پردازش
+            
+            await query.answer()
+            return PROJECT_ACTIONS
+            
+        except Exception as e:
+            logger.error(f"Error processing view_photos callback: {e}")  # لاگ خطا
+            await query.answer("خطا در نمایش عکس‌ها")
+            return PROJECT_ACTIONS
 
     await query.answer()
     data = query.data

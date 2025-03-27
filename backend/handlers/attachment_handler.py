@@ -117,23 +117,37 @@ async def upload_attachments(files, context):
     return await upload_files(files, context)
 
 async def handle_photos_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    command = update.message.text
-    logger.info(f"Received photos command: {command}")
+    logger.info("Starting handle_photos_command")  # لاگ شروع
+    
     try:
-        project_id = command.split("_")[2]
-        logger.info(f"Attempting to fetch photos for project {project_id}")
-        
+        # اگر از callback آمده
+        if update.callback_query:
+            project_id = context.user_data.get('current_project_id')
+            chat_id = update.callback_query.message.chat_id
+        # اگر از کامند مستقیم آمده
+        else:
+            command = update.message.text
+            project_id = command.split("_")[2]
+            chat_id = update.message.chat_id
+            
+        logger.info(f"Attempting to fetch photos for project {project_id} for chat {chat_id}")  # لاگ اطلاعات
+
         # دریافت اطلاعات فایل‌ها از API
         response = requests.get(f"{BASE_URL}projects/{project_id}/")
-        logger.info(f"API Response for project {project_id}: {response.status_code}")
+        logger.info(f"API Response: status={response.status_code}")  # لاگ پاسخ API
         
         if response.status_code == 200:
             project_data = response.json()
             project_files = project_data.get('files', [])
+            logger.info(f"Found {len(project_files)} files for project")  # لاگ تعداد فایل‌ها
             
             if not project_files:
-                logger.warning(f"No files found for project {project_id}")
-                await update.message.reply_text("❌ هیچ عکسی برای این درخواست یافت نشد.")
+                logger.warning("No files found for project")  # لاگ عدم وجود فایل
+                message = "❌ هیچ عکسی برای این درخواست یافت نشد."
+                if update.callback_query:
+                    await update.callback_query.message.reply_text(message)
+                else:
+                    await update.message.reply_text(message)
                 return
 
             # آماده‌سازی لیست عکس‌ها برای ارسال به صورت آلبوم
@@ -142,6 +156,8 @@ async def handle_photos_command(update: Update, context: ContextTypes.DEFAULT_TY
             
             for i, file_path in enumerate(project_files):
                 full_url = f"{base_url}/media/{file_path}"
+                logger.info(f"Processing file {i+1}: {full_url}")  # لاگ پردازش هر فایل
+                
                 try:
                     photo_response = requests.get(full_url)
                     if photo_response.status_code == 200:
@@ -149,22 +165,41 @@ async def handle_photos_command(update: Update, context: ContextTypes.DEFAULT_TY
                             media=photo_response.content,
                             caption=f"📷 عکس {i + 1} از {len(project_files)}" if i == 0 else ""
                         ))
+                        logger.info(f"Successfully added file {i+1} to media group")  # لاگ موفقیت
                     else:
-                        logger.error(f"Failed to download photo {i+1}. Status: {photo_response.status_code}")
+                        logger.error(f"Failed to download photo {i+1}. Status: {photo_response.status_code}")  # لاگ خطای دانلود
                 except Exception as e:
-                    logger.error(f"Error downloading photo {i+1}: {e}")
+                    logger.error(f"Error processing photo {i+1}: {e}")  # لاگ خطای پردازش
 
             if media_group:
-                # ارسال همه عکس‌ها در قالب یک آلبوم
-                await update.message.reply_media_group(media=media_group)
+                # ارسال عکس‌ها
+                if update.callback_query:
+                    await context.bot.send_media_group(chat_id=chat_id, media=media_group)
+                else:
+                    await update.message.reply_media_group(media=media_group)
+                logger.info("Successfully sent all photos")  # لاگ موفقیت نهایی
             else:
-                await update.message.reply_text("❌ خطا در بارگیری عکس‌ها.")
+                message = "❌ خطا در بارگیری عکس‌ها."
+                if update.callback_query:
+                    await update.callback_query.message.reply_text(message)
+                else:
+                    await update.message.reply_text(message)
+                logger.error("No photos were successfully processed")  # لاگ خطای کلی
         else:
-            logger.error(f"Failed to fetch project data. Status: {response.status_code}")
-            await update.message.reply_text("❌ خطا در دریافت اطلاعات پروژه.")
+            logger.error(f"Failed to fetch project data. Status: {response.status_code}")  # لاگ خطای API
+            message = "❌ خطا در دریافت اطلاعات پروژه."
+            if update.callback_query:
+                await update.callback_query.message.reply_text(message)
+            else:
+                await update.message.reply_text(message)
+                
     except Exception as e:
-        logger.error(f"Error in handle_photos_command: {e}")
-        await update.message.reply_text("❌ خطا در پردازش درخواست.")
+        logger.error(f"Error in handle_photos_command: {e}")  # لاگ خطای کلی
+        message = "❌ خطا در پردازش درخواست."
+        if update.callback_query:
+            await update.callback_query.message.reply_text(message)
+        else:
+            await update.message.reply_text(message)
 
 async def upload_files(file_ids, context):
     uploaded_urls = []
