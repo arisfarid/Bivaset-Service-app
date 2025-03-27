@@ -71,11 +71,9 @@ async def submit_project(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
             if location:
                 message_lines.append(f"<b>📍 لوکیشن:</b> <a href=\"https://maps.google.com/maps?q={location['latitude']},{location['longitude']}\">نمایش روی نقشه</a>")
             
+            # فقط تعداد عکس‌ها را نمایش می‌دهیم، بدون نمایش کامند
             if files:
                 message_lines.append(f"<b>📸 تعداد عکس‌ها:</b> {len(files)} عکس ارسال شده")
-                # استفاده از تگ code برای نمایش دستور به صورت قابل کلیک
-                view_photos_command = f"/view_photos_{project_id}"
-                message_lines.append(f"<b>📸 عکس‌ها:</b> <code>{view_photos_command}</code>")
             
             message = "\n".join(message_lines)
 
@@ -85,8 +83,17 @@ async def submit_project(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
                  InlineKeyboardButton("⛔ بستن", callback_data=f"close_{project_id}")],
                 [InlineKeyboardButton("🗑 حذف", callback_data=f"delete_{project_id}"),
                  InlineKeyboardButton("⏰ تمدید", callback_data=f"extend_{project_id}")],
-                [InlineKeyboardButton("💡 پیشنهادها", callback_data=f"offers_{project_id}")]
             ]
+            
+            # اضافه کردن دکمه نمایش عکس‌ها فقط اگر عکسی وجود داشته باشد
+            if files:
+                inline_keyboard.append([
+                    InlineKeyboardButton("📸 نمایش عکس‌ها", callback_data=f"view_photos_{project_id}")
+                ])
+            
+            inline_keyboard.append([
+                InlineKeyboardButton("💡 پیشنهادها", callback_data=f"offers_{project_id}")
+            ])
 
             # ارسال پیام نهایی
             if files:

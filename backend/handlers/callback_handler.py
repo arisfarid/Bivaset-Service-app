@@ -5,7 +5,7 @@ from handlers.start_handler import start
 from handlers.category_handler import handle_category_callback
 from handlers.edit_handler import handle_edit_callback
 from handlers.view_handler import handle_view_callback
-from handlers.attachment_handler import show_photo_management
+from handlers.attachment_handler import show_photo_management, handle_photos_command
 from utils import log_chat
 from keyboards import EMPLOYER_INLINE_MENU_KEYBOARD, FILE_MANAGEMENT_MENU_KEYBOARD, RESTART_INLINE_MENU_KEYBOARD, BACK_INLINE_MENU_KEYBOARD
 
@@ -30,6 +30,16 @@ async def send_message_with_keyboard(context, chat_id, text, reply_markup):
 
 async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     query = update.callback_query
+    data = query.data
+
+    if data.startswith('view_photos_'):
+        project_id = data.split('_')[2]
+        # اجرای دستور view_photos
+        context.user_data['current_project_id'] = project_id
+        await handle_photos_command(update, context)
+        await query.answer()
+        return PROJECT_ACTIONS
+
     await query.answer()
     data = query.data
     logger.info(f"Callback data received: {data}")
