@@ -26,20 +26,36 @@ async def submit_project(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
 
         # آماده‌سازی داده‌های پروژه
         data = {
-            'title': f"{context.user_data.get('category_name', '')}: {context.user_data.get('description', '')} {title_suffix}",
+            'title': generate_title(context),
             'description': context.user_data.get('description', ''),
             'category': context.user_data.get('category_id', ''),
-            'service_location': service_location,
+            'service_location': context.user_data.get('service_location', ''),
             'user_telegram_id': str(update.effective_user.id)
         }
 
-        # اضافه کردن location فقط برای حالت client_site
-        if service_location == 'client_site' and context.user_data.get('location'):
-            data['location'] = [
-                context.user_data['location']['longitude'],
-                context.user_data['location']['latitude']
-            ]
+        # مدیریت location برای حالت‌های مختلف
+        if context.user_data.get('service_location') == 'client_site':
+            # برای خدمات در محل مشتری، از لوکیشن مشتری استفاده می‌شود
+            if location := context.user_data.get('location'):
+                data['location'] = [
+                    location['longitude'],
+                    location['latitude']
+                ]
+            else:
+                await update.message.reply_text("❌ برای خدمات در محل مشتری، باید لوکیشن را وارد کنید.")
+                return DETAILS
+        elif context.user_data.get('service_location') == 'contractor_site':
+            # برای خدمات در محل مجری، از لوکیشن مشتری برای یافتن نزدیک‌ترین مجری استفاده می‌شود
+            if location := context.user_data.get('location'):
+                data['location'] = [
+                    location['longitude'],
+                    location['latitude']
+                ]
+            else:
+                await update.message.reply_text("❌ برای یافتن نزدیک‌ترین مجری، باید لوکیشن خود را وارد کنید.")
+                return DETAILS
         else:
+            # برای خدمات غیرحضوری، نیازی به لوکیشن نیست
             data['location'] = None
 
         # اضافه کردن فیلدهای اختیاری

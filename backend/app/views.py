@@ -68,6 +68,21 @@ class ProjectSerializer(serializers.ModelSerializer):
     def get_files(self, obj):
         return [file.file.name for file in obj.files.all()]
 
+    def validate(self, data):
+        """
+        اعتبارسنجی اطلاعات پروژه
+        """
+        if data.get('service_location') in ['client_site', 'contractor_site']:
+            if not data.get('location'):
+                raise serializers.ValidationError({
+                    'location': ['برای خدمات حضوری، ثبت لوکیشن الزامی است.']
+                })
+        elif data.get('service_location') == 'remote':
+            # برای خدمات غیرحضوری، لوکیشن اختیاری است
+            data['location'] = None
+            
+        return data
+
 class ProposalSerializer(serializers.ModelSerializer):
     class Meta:
         model = Proposal
