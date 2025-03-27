@@ -72,15 +72,18 @@ class ProjectSerializer(serializers.ModelSerializer):
         """
         اعتبارسنجی اطلاعات پروژه
         """
+        # برای خدمات غیرحضوری، location را None قرار می‌دهیم
+        if data.get('service_location') == 'remote':
+            data['location'] = None
+            return data
+            
+        # برای خدمات حضوری، لوکیشن اجباری است    
         if data.get('service_location') in ['client_site', 'contractor_site']:
             if not data.get('location'):
                 raise serializers.ValidationError({
                     'location': ['برای خدمات حضوری، ثبت لوکیشن الزامی است.']
                 })
-        elif data.get('service_location') == 'remote':
-            # برای خدمات غیرحضوری، لوکیشن اختیاری است
-            data['location'] = None
-            
+        
         return data
 
 class ProposalSerializer(serializers.ModelSerializer):
