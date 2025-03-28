@@ -49,6 +49,7 @@ persistence = PicklePersistence(
 app = Application.builder()\
     .token(TOKEN)\
     .persistence(persistence)\
+    .arbitrary_callback_data(True)\
     .build()
 
 # تعریف حالت‌ها
