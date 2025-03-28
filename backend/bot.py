@@ -119,6 +119,7 @@ conv_handler = ConversationHandler(
         ROLE: [
             MessageHandler(filters.Regex("^درخواست خدمات \| کارفرما 👔$"), handle_message),
             MessageHandler(filters.Regex("^پیشنهاد قیمت \| مجری 🦺$"), handle_message),
+            CommandHandler("start", start),  # اضافه کردن این خط
         ],
         
         EMPLOYER_MENU: [
@@ -173,7 +174,7 @@ conv_handler = ConversationHandler(
     fallbacks=[
         CommandHandler("cancel", cancel),
         CallbackQueryHandler(handle_callback),
-        MessageHandler(filters.ALL, lambda u, c: ROLE)  # برگشت به منوی اصلی در صورت ورودی نامعتبر
+        MessageHandler(filters.ALL, lambda u, c: start(u, c))  # تغییر این خط
     ],
     name="main_conversation",
     persistent=True,

@@ -20,39 +20,52 @@ message_lock = Lock()
 
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     text = update.message.text
+    current_state = context.user_data.get('state', ROLE)
     
     # بررسی ثبت‌نام
     if not await check_registration(update, context):
         return REGISTER
         
     if text == "درخواست خدمات | کارفرما 👔":
+        # پاک کردن context و تنظیم state جدید
         context.user_data.clear()
+        context.user_data['state'] = EMPLOYER_MENU
+        
+        # ارسال منوی کارفرما
         await update.message.reply_text(
             "🎉 عالیه، {}! می‌خوای خدمات جدید درخواست کنی یا پیشنهادات رو ببینی؟".format(
                 update.effective_user.full_name
             ),
             reply_markup=EMPLOYER_MENU_KEYBOARD
         )
+        logger.info(f"User {update.effective_user.id} entered employer menu")
         return EMPLOYER_MENU
-        
+
     elif text == "📋 درخواست خدمات جدید":
-        # دریافت دسته‌بندی‌ها و شروع فرآیند جدید
+        # پاک کردن context و تنظیم state جدید
+        context.user_data.clear()
+        context.user_data['state'] = CATEGORY
+        context.user_data['files'] = []
+        
+        # دریافت دسته‌بندی‌ها
         categories = await get_categories()
         if not categories:
             await update.message.reply_text("❌ خطا در دریافت دسته‌بندی‌ها")
             return EMPLOYER_MENU
             
         context.user_data['categories'] = categories
-        context.user_data['files'] = []
+        root_cats = [cat_id for cat_id, cat in categories.items() if cat['parent'] is None]
+        keyboard = [[KeyboardButton(categories[cat_id]['name'])] for cat_id in root_cats]
+        keyboard.append([KeyboardButton("⬅️ بازگشت")])
         
-        keyboard = create_categories_keyboard(categories)
         await update.message.reply_text(
             "🌟 دسته‌بندی خدماتت رو انتخاب کن:",
-            reply_markup=keyboard
+            reply_markup=ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
         )
+        logger.info(f"User {update.effective_user.id} started new request")
         return CATEGORY
-    
-    return ROLE
+
+    return current_state
 
 async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     context.user_data.clear()

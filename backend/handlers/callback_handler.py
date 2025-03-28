@@ -38,13 +38,26 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
     data = query.data
     
     if data == "restart":
-        context.user_data.clear()
-        await query.message.edit_text(
-            "🌟 چی می‌خوای امروز؟",
-            reply_markup=MAIN_MENU_KEYBOARD
-        )
-        return ROLE
-        
+        try:
+            # پاک کردن context کاربر
+            context.user_data.clear()
+            
+            # پاک کردن پیام آپدیت
+            await query.message.delete()
+            
+            # ارسال منوی اصلی با پیام جدید
+            await query.message.reply_text(
+                "🌟 چی می‌خوای امروز؟",
+                reply_markup=MAIN_MENU_KEYBOARD
+            )
+            
+            await query.answer("✅ راه‌اندازی مجدد انجام شد")
+            return ROLE
+            
+        except Exception as e:
+            logger.error(f"Error in restart handler: {e}")
+            return ROLE
+
     elif data == "new_request":
         # تنظیم context برای درخواست جدید
         context.user_data.clear()
