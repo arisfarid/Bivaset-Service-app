@@ -31,6 +31,43 @@ async def send_message_with_keyboard(context, chat_id, text, reply_markup):
 async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     query = update.callback_query
     data = query.data
+    
+    if data == "new_request":
+        # پاک کردن داده‌های قبلی
+        context.user_data.clear()
+        # دریافت دسته‌بندی‌ها
+        context.user_data['categories'] = await get_categories()
+        if not context.user_data['categories']:
+            await query.message.reply_text("❌ خطا: دسته‌بندی‌ها در دسترس نیست!")
+            return EMPLOYER_MENU
+            
+        # نمایش منوی دسته‌بندی‌ها
+        root_cats = [cat_id for cat_id, cat in context.user_data['categories'].items() if cat['parent'] is None]
+        keyboard = [[KeyboardButton(context.user_data['categories'][cat_id]['name'])] for cat_id in root_cats]
+        keyboard.append([KeyboardButton("⬅️ بازگشت")])
+        
+        await query.message.reply_text(
+            "🌟 دسته‌بندی خدماتت رو انتخاب کن:",
+            reply_markup=ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
+        )
+        return CATEGORY
+        
+    elif data == "main_menu":
+        # بازگشت به منوی اصلی
+        await query.message.reply_text(
+            "🌟 چی می‌خوای امروز؟", 
+            reply_markup=MAIN_MENU_KEYBOARD
+        )
+        return ROLE
+        
+    elif data.startswith("view_"):
+        # نمایش جزئیات درخواست
+        project_id = data.split("_")[1]
+        # ... کد نمایش جزئیات درخواست ...
+        return PROJECT_ACTIONS
+
+    query = update.callback_query
+    data = query.data
     logger.info(f"Received callback data: {data}")  # لاگ اولیه
 
     if data.startswith('view_photos_'):

@@ -97,24 +97,23 @@ async def submit_project(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
                     parse_mode='HTML'
                 )
 
-            # نمایش منوی کارفرما
+            # نمایش دکمه‌های اینلاین برای هدایت کاربر
+            navigation_keyboard = InlineKeyboardMarkup([
+                [InlineKeyboardButton("👀 مشاهده درخواست", callback_data=f"view_{project_id}")],
+                [InlineKeyboardButton("📋 ثبت درخواست جدید", callback_data="new_request"),
+                 InlineKeyboardButton("🏠 منوی اصلی", callback_data="main_menu")]
+            ])
+
             await update.message.reply_text(
-                text="لطفا انتخاب کنید:",
-                reply_markup=EMPLOYER_MENU_KEYBOARD
+                "✅ درخواست شما با موفقیت ثبت شد.\n"
+                "می‌توانید:",
+                reply_markup=navigation_keyboard
             )
 
-            # نگهداری اطلاعات مهم قبل از پاک کردن context
-            temp_data = {
-                'category_id': category_id,
-                'category_name': category_name,
-                'categories': context.user_data.get('categories', {})
-            }
-            
-            # پاک کردن context و بازیابی اطلاعات مهم
+            # پاک کردن داده‌های قبلی
             context.user_data.clear()
-            context.user_data.update(temp_data)
             
-            return EMPLOYER_MENU
+            return ConversationHandler.END
 
         else:
             logger.error(f"Error from API: {response.status_code} - {response.text}")
