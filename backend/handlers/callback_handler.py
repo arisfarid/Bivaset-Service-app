@@ -8,6 +8,7 @@ from handlers.view_handler import handle_view_callback
 from handlers.attachment_handler import show_photo_management, handle_photos_command
 from utils import log_chat,get_categories
 from keyboards import EMPLOYER_INLINE_MENU_KEYBOARD, FILE_MANAGEMENT_MENU_KEYBOARD, RESTART_INLINE_MENU_KEYBOARD, BACK_INLINE_MENU_KEYBOARD, MAIN_MENU_KEYBOARD
+import asyncio  # برای استفاده از sleep
 
 logger = logging.getLogger(__name__)
 
@@ -173,22 +174,43 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
             return DETAILS_FILES
 
         elif data == 'restart':
-            # پاک کردن context کاربر
-            context.user_data.clear()
-            
-            await query.message.edit_text(
-                "🔄 ربات در حال راه‌اندازی مجدد است...\n"
-                "لطفاً چند لحظه صبر کنید."
-            )
-            
-            # ارسال منوی اصلی با پیام جدید
-            await query.message.reply_text(
-                "✅ راه‌اندازی مجدد انجام شد.\n"
-                "🌟 از منوی زیر انتخاب کنید:",
-                reply_markup=MAIN_MENU_KEYBOARD
-            )
-            
-            return ROLE
+            try:
+                # پاک کردن context کاربر
+                context.user_data.clear()
+                
+                # ارسال پیام راه‌اندازی مجدد و ذخیره message_id
+                restart_msg = await query.message.edit_text(
+                    "🔄 ربات در حال راه‌اندازی مجدد است...\n"
+                    "لطفاً چند لحظه صبر کنید."
+                )
+                
+                # کمی تاخیر برای نمایش پیام راه‌اندازی
+                await asyncio.sleep(1)
+                
+                # پاک کردن پیام‌های قبلی
+                try:
+                    await restart_msg.delete()
+                    await query.message.delete()
+                except Exception as e:
+                    logger.error(f"Error deleting messages: {e}")
+
+                # ارسال منوی اصلی با پیام جدید
+                sent_message = await context.bot.send_message(
+                    chat_id=query.message.chat_id,
+                    text=("🌟 چی می‌خوای امروز؟"),
+                    reply_markup=MAIN_MENU_KEYBOARD
+                )
+                
+                # تنظیم state جدید
+                context.user_data['state'] = ROLE
+                await query.answer()
+                
+                return ROLE
+
+            except Exception as e:
+                logger.error(f"Error in restart handler: {e}")
+                await query.answer("❌ خطا در راه‌اندازی مجدد")
+                return ROLE
 
         elif data == 'back':
             current_state = context.user_data.get('state', ROLE)

@@ -15,17 +15,21 @@ logger = logging.getLogger(__name__)
 START, REGISTER, ROLE, EMPLOYER_MENU, CATEGORY, SUBCATEGORY, DESCRIPTION, LOCATION_TYPE, LOCATION_INPUT, DETAILS, DETAILS_FILES, DETAILS_DATE, DETAILS_DEADLINE, DETAILS_BUDGET, DETAILS_QUANTITY, SUBMIT, VIEW_PROJECTS, PROJECT_ACTIONS = range(18)
 
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    # اضافه کردن validation در ابتدای تابع
-    if 'state' not in context.user_data:
-        logger.warning(f"State not found for user {update.effective_user.id}. Resetting to ROLE.")
-        context.user_data.clear()
-        await update.message.reply_text(
-            "⚠️ وضعیت نامعتبر. لطفاً از منوی اصلی شروع کنید:",
-            reply_markup=MAIN_MENU_KEYBOARD
-        )
-        return ROLE
-
     text = update.message.text
+    
+    # حذف بررسی state در ابتدای تابع
+    if text == "درخواست خدمات | کارفرما 👔":
+        context.user_data.clear()  # پاک کردن داده‌های قبلی
+        context.user_data['state'] = EMPLOYER_MENU
+        await update.message.reply_text(
+            "🎉 عالیه، {}! می‌خوای خدمات جدید درخواست کنی یا پیشنهادات رو ببینی؟".format(update.effective_user.full_name),
+            reply_markup=EMPLOYER_MENU_KEYBOARD
+        )
+        return EMPLOYER_MENU
+    
+    # بررسی state برای سایر حالت‌ها
+    current_state = context.user_data.get('state', ROLE)
+    
     telegram_id = str(update.effective_user.id)
     
     # چک کردن ثبت‌نام کاربر
@@ -41,7 +45,6 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     await log_chat(update, context)
 
     # لاگ کردن state فعلی
-    current_state = context.user_data.get('state', ROLE)
     logger.info(f"Current state for {telegram_id} before processing: {current_state}")
 
     if current_state == ROLE:
