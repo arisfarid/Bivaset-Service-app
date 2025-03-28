@@ -88,31 +88,77 @@ def create_message_handler(callback, additional_filters=None):
 
 # تنظیم ConversationHandler
 conv_handler = ConversationHandler(
-    entry_points=[CommandHandler("start", start)],
+    entry_points=[
+        CommandHandler("start", start),
+        MessageHandler(filters.Regex("^درخواست خدمات \| کارفرما 👔$"), handle_message)
+    ],
     states={
-        START: [create_message_handler(start)],
-        REGISTER: [create_message_handler(handle_contact, filters.CONTACT)],
-        ROLE: [create_message_handler(handle_message)],
-        EMPLOYER_MENU: [create_message_handler(handle_message)],
-        CATEGORY: [create_message_handler(handle_category_selection)],
-        SUBCATEGORY: [create_message_handler(handle_category_selection)],
-        DESCRIPTION: [create_message_handler(handle_project_details)],
-        LOCATION_TYPE: [create_message_handler(handle_location, filters.LOCATION)],
-        LOCATION_INPUT: [
-            MessageHandler(filters.LOCATION, handle_location),
-            MessageHandler(filters.ALL & ~filters.LOCATION, handle_location),  # هر نوع ورودی غیرلوکیشن
+        START: [MessageHandler(filters.TEXT & ~filters.COMMAND, start)],
+        
+        REGISTER: [MessageHandler(filters.CONTACT, handle_contact)],
+        
+        ROLE: [
+            MessageHandler(filters.Regex("^درخواست خدمات \| کارفرما 👔$"), handle_message),
+            MessageHandler(filters.Regex("^پیشنهاد قیمت \| مجری 🦺$"), handle_message),
         ],
-        DETAILS: [create_message_handler(handle_project_details)],
-        DETAILS_FILES: [create_message_handler(handle_attachment, filters.PHOTO)],
-        DETAILS_DATE: [create_message_handler(handle_project_details)],
-        DETAILS_DEADLINE: [create_message_handler(handle_project_details)],
-        DETAILS_BUDGET: [create_message_handler(handle_project_details)],
-        DETAILS_QUANTITY: [create_message_handler(handle_project_details)],
-        SUBMIT: [create_message_handler(submit_project)],
-        VIEW_PROJECTS: [create_message_handler(handle_view_projects)],
-        PROJECT_ACTIONS: [create_message_handler(handle_project_states)],
+        
+        EMPLOYER_MENU: [
+            MessageHandler(filters.Regex("^📋 درخواست خدمات جدید$"), handle_message),
+            MessageHandler(filters.Regex("^📊 مشاهده درخواست‌ها$"), handle_view_projects),
+            MessageHandler(filters.Regex("^⬅️ بازگشت$"), lambda u, c: start(u, c)),
+        ],
+        
+        CATEGORY: [
+            MessageHandler(filters.TEXT & ~filters.COMMAND & ~filters.Regex("^⬅️ بازگشت$"), 
+                         handle_category_selection),
+            MessageHandler(filters.Regex("^⬅️ بازگشت$"), 
+                         lambda u, c: handle_message(u, c)),
+        ],
+        
+        SUBCATEGORY: [
+            MessageHandler(filters.TEXT & ~filters.COMMAND & ~filters.Regex("^⬅️ بازگشت$"), 
+                         handle_category_selection),
+            MessageHandler(filters.Regex("^⬅️ بازگشت$"), 
+                         lambda u, c: handle_category_selection(u, c)),
+        ],
+        
+        DESCRIPTION: [
+            MessageHandler(filters.TEXT & ~filters.COMMAND & ~filters.Regex("^⬅️ بازگشت$"), 
+                         handle_project_details),
+            MessageHandler(filters.Regex("^⬅️ بازگشت$"), 
+                         lambda u, c: handle_category_selection(u, c)),
+        ],
+        
+        LOCATION_TYPE: [
+            MessageHandler(filters.LOCATION, handle_location),
+            MessageHandler(filters.Regex("^(🏠 محل من|🔧 محل مجری|💻 غیرحضوری)$"), handle_location),
+            MessageHandler(filters.Regex("^⬅️ بازگشت$"), 
+                         lambda u, c: handle_project_details(u, c)),
+        ],
+        
+        DETAILS: [
+            MessageHandler(filters.Regex("^✅ ثبت درخواست$"), submit_project),
+            MessageHandler(filters.Regex("^(📸|📅|⏳|💰|📏)"), handle_project_details),
+            MessageHandler(filters.Regex("^⬅️ بازگشت$"), 
+                         lambda u, c: handle_location(u, c)),
+        ],
+        
+        DETAILS_FILES: [
+            MessageHandler(filters.PHOTO, handle_attachment),
+            MessageHandler(filters.Regex("^🏁 اتمام ارسال تصاویر$"), 
+                         lambda u, c: handle_project_details(u, c)),
+            MessageHandler(filters.Regex("^⬅️ بازگشت$"), 
+                         lambda u, c: handle_project_details(u, c)),
+        ],
     },
-    fallbacks=[CommandHandler("cancel", cancel)],
+    fallbacks=[
+        CommandHandler("cancel", cancel),
+        CallbackQueryHandler(handle_callback),
+        MessageHandler(filters.ALL, lambda u, c: ROLE)  # برگشت به منوی اصلی در صورت ورودی نامعتبر
+    ],
+    name="main_conversation",
+    persistent=True,
+    allow_reentry=True
 )
 
 # اضافه کردن handlerها

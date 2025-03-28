@@ -34,51 +34,32 @@ async def send_message_with_keyboard(context, chat_id, text, reply_markup):
     )
 
 async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    async with button_lock:        
-        try:
-            # Get the callback query and data
-            query = update.callback_query
-            data = query.data
-            logger.info(f"Processing callback: {data}")
-            
-            # Process the callback data
-            if data == "new_request":
-                # Handle new request logic
-                return await handle_new_request(update, context)
-            elif data == "main_menu":
-                # Handle main menu logic
-                return await handle_main_menu(update, context)
-            elif data == "restart":
-                try:
-                    # پاک کردن پیام آپدیت
-                    await query.message.delete()
-                    
-                    # پاک کردن context کاربر
-                    context.user_data.clear()
-                    
-                    # ارسال منوی اصلی
-                    await query.message.reply_text(
-                        "🌟 چطور میتونم کمکت کنم؟",
-                        reply_markup=MAIN_MENU_KEYBOARD
-                    )
-                    
-                    return ROLE
-                    
-                except Exception as e:
-                    logger.error(f"Error in restart handler: {e}")
-                    return ROLE
-            # Add other callback handlers
-            
-            await query.answer()
-            return context.user_data.get('state', ROLE)
-            
-        except Exception as e:
-            logger.error(f"Error in callback handler: {e}")
-            await update.callback_query.message.reply_text(
-                "❌ خطایی رخ داد. لطفاً دوباره تلاش کنید.",
-                reply_markup=MAIN_MENU_KEYBOARD
-            )
-            return ROLE
+    query = update.callback_query
+    data = query.data
+    
+    if data == "restart":
+        context.user_data.clear()
+        await query.message.edit_text(
+            "🌟 چی می‌خوای امروز؟",
+            reply_markup=MAIN_MENU_KEYBOARD
+        )
+        return ROLE
+        
+    elif data == "new_request":
+        # تنظیم context برای درخواست جدید
+        context.user_data.clear()
+        context.user_data['categories'] = await get_categories()
+        keyboard = create_categories_keyboard(context.user_data['categories'])
+        
+        await query.message.edit_text(
+            "🌟 دسته‌بندی خدماتت رو انتخاب کن:",
+            reply_markup=keyboard
+        )
+        return CATEGORY
+    
+    # ... سایر callback ها
+
+    return ROLE
 
 async def handle_new_request(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     query = update.callback_query
