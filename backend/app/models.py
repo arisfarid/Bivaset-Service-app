@@ -28,7 +28,7 @@ class Project(models.Model):
     service_location = models.CharField(max_length=20, choices=[("client_site", "محل کارفرما"), ("contractor_site", "محل مجری"), ("remote", "غیرحضوری")])
     location = gis_models.PointField(null=True, blank=True, srid=4326)  # اضافه کردن srid=4326
     address = models.CharField(max_length=200, blank=True)
-    budget = models.IntegerField(null=True, blank=True)
+    budget = models.BigIntegerField(null=True, blank=True)  # تغییر به BigIntegerField
     description = models.TextField(max_length=500, blank=True)
     status = models.CharField(max_length=20, default="open", choices=[("open", "باز"), ("in_progress", "در حال اجرا"), ("completed", "تکمیل‌شده")])
     expiry_date = models.DateTimeField(null=True, blank=True)

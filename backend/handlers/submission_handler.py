@@ -116,13 +116,33 @@ async def submit_project(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
             return ConversationHandler.END
 
         else:
-            logger.error(f"Error from API: {response.status_code} - {response.text}")
-            await update.message.reply_text("❌ خطا در ثبت درخواست.")
+            error_msg = "❌ خطا در ثبت درخواست\n"
+            if response.status_code == 400:
+                try:
+                    errors = response.json()
+                    if 'budget' in errors:
+                        error_msg = "❌ مبلغ وارد شده خیلی بزرگ است. لطفاً مبلغ کمتری وارد کنید."
+                        context.user_data['state'] = DETAILS_BUDGET
+                        await update.message.reply_text(
+                            error_msg,
+                            reply_markup=create_dynamic_keyboard(context)
+                        )
+                        return DETAILS_BUDGET
+                except:
+                    pass
+            
+            await update.message.reply_text(
+                error_msg,
+                reply_markup=create_dynamic_keyboard(context)
+            )
             return DETAILS
 
     except Exception as e:
         logger.error(f"Error in submit_project: {e}")
-        await update.message.reply_text("❌ خطا در ثبت درخواست.")
+        await update.message.reply_text(
+            "❌ خطا در ثبت درخواست. لطفاً دوباره تلاش کنید.",
+            reply_markup=create_dynamic_keyboard(context)
+        )
         return DETAILS
 
 def prepare_final_message(context, project_id):

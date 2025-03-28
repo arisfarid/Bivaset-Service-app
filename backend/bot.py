@@ -126,15 +126,69 @@ logger.info("Photos command handler registered successfully.")
 
 # اضافه کردن هندلر خطا
 async def error_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    logger.error(f"Exception occurred: {context.error}")
-    if update and update.message:
-        await update.message.reply_text("❌ یه خطا پیش اومد! لطفاً دوباره امتحان کن یا با پشتیبانی تماس بگیر.")
+    """Handle errors globally"""
+    logger.error(f"Exception while handling an update: {context.error}")
+    
+    try:
+        # ارسال پیام خطا به کاربر
+        if update and update.effective_message:
+            await update.effective_message.reply_text(
+                "❌ متأسفانه خطایی رخ داد. لطفاً دوباره تلاش کنید یا از /start شروع کنید."
+            )
+        
+        # پاک کردن context کاربر برای شروع مجدد تمیز
+        if update and context and context.user_data:
+            context.user_data.clear()
+        
+        # ذخیره لاگ خطا
+        logger.error("Exception while handling an update:", exc_info=context.error)
+        
+    except Exception as e:
+        logger.error(f"Error in error handler: {e}")
+        
+    finally:
+        # در هر صورت به ROLE برگرد تا کاربر بتواند ادامه دهد
+        return ROLE
 
 app.add_error_handler(error_handler)  # اضافه کردن هندلر خطا
 
 # اضافه کردن jobهای تکراری
 app.job_queue.run_repeating(test_job, interval=5, first=0, data=app)
 app.job_queue.run_repeating(check_and_notify, interval=10, first=0, data=app)
+
+# در bot.py
+async def watchdog_job(context: ContextTypes.DEFAULT_TYPE):
+    """چک کردن سلامت ربات و ریستارت در صورت نیاز"""
+    try:
+        # چک کردن وضعیت اتصال به API
+        response = requests.get(f"{BASE_URL}health/")
+        if response.status_code != 200:
+            logger.error("API health check failed. Restarting bot...")
+            await restart_bot(context)
+    except Exception as e:
+        logger.error(f"Watchdog error: {e}")
+        await restart_bot(context)
+
+async def restart_bot(context: ContextTypes.DEFAULT_TYPE):
+    """ریستارت ربات"""
+    try:
+        # اطلاع‌رسانی به کاربران فعال
+        for chat_id in context.bot_data.get('active_chats', []):
+            try:
+                await context.bot.send_message(
+                    chat_id=chat_id,
+                    text="🔄 ربات در حال راه‌اندازی مجدد است. لطفاً چند لحظه صبر کنید..."
+                )
+            except:
+                continue
+        
+        # ریستارت اپلیکیشن
+        os.execv(sys.executable, ['python'] + sys.argv)
+    except Exception as e:
+        logger.error(f"Error in restart_bot: {e}")
+
+# اضافه کردن watchdog job
+app.job_queue.run_repeating(watchdog_job, interval=300)  # هر 5 دقیقه
 
 logger.info("Bot is starting polling...")
 app.run_polling()
