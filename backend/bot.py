@@ -6,7 +6,7 @@ import json  # Add this for json.dump()
 from datetime import datetime  # Add this import
 from utils import save_timestamp, check_for_updates, BASE_URL
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update, InputMediaPhoto
-from telegram.ext import Application, CommandHandler, MessageHandler, filters, CallbackQueryHandler, ContextTypes, ConversationHandler
+from telegram.ext import Application, CommandHandler, MessageHandler, filters, CallbackQueryHandler, ContextTypes, ConversationHandler, PicklePersistence
 from handlers.start_handler import start, handle_contact, handle_role, cancel
 from handlers.message_handler import handle_message
 from handlers.category_handler import handle_category_selection
@@ -29,6 +29,21 @@ logging.getLogger('httpx').setLevel(logging.WARNING)
 logging.getLogger('apscheduler').setLevel(logging.WARNING)
 
 TOKEN = os.getenv('TELEGRAM_BOT_TOKEN')
+
+# تنظیم مسیر ذخیره‌سازی persistence
+PERSISTENCE_PATH = os.path.join(os.path.dirname(__file__), 'conversation_data')
+
+# ایجاد persistence handler
+persistence = PicklePersistence(
+    filepath=PERSISTENCE_PATH,
+    store_data={"user_data": True, "chat_data": True, "bot_data": True, "callback_data": False}
+)
+
+# ایجاد application با persistence
+app = Application.builder()\
+    .token(TOKEN)\
+    .persistence(persistence)\
+    .build()
 
 # تعریف حالت‌ها
 START, REGISTER, ROLE, EMPLOYER_MENU, CATEGORY, SUBCATEGORY, DESCRIPTION, LOCATION_TYPE, LOCATION_INPUT, DETAILS, DETAILS_FILES, DETAILS_DATE, DETAILS_DEADLINE, DETAILS_BUDGET, DETAILS_QUANTITY, SUBMIT, VIEW_PROJECTS, PROJECT_ACTIONS = range(18)
@@ -70,8 +85,6 @@ if not TOKEN:
     sys.exit(1)
 
 logger.info(f"Using Telegram Bot Token: {TOKEN[:10]}...")
-
-app = Application.builder().token(TOKEN).build()
 
 # تابع کمکی برای لاگ کردن state
 async def log_state(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -182,10 +195,12 @@ async def error_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
         # پاک کردن context کاربر
         if context and context.user_data:
             context.user_data.clear()
+            await context.application.persistence.update_user_data(user_id=update.effective_user.id, data=context.user_data)
         
         # دریافت مجدد دسته‌بندی‌ها
         if str(context.error) == "'categories'":
             context.user_data['categories'] = await get_categories()
+            await context.application.persistence.update_user_data(user_id=update.effective_user.id, data=context.user_data)
             
         # ارسال پیام خطا و منوی اصلی
         if update and update.effective_message:
