@@ -5,7 +5,8 @@ import requests
 import logging
 from handlers.start_handler import start
 from handlers.attachment_handler import upload_attachments
-from keyboards import EMPLOYER_MENU_KEYBOARD, MAIN_MENU_KEYBOARD  # اضافه کردن import
+from keyboards import MAIN_MENU_KEYBOARD  # اضافه کردن import
+import asyncio  # برای sleep
 
 logger = logging.getLogger(__name__)
 
@@ -68,62 +69,53 @@ async def submit_project(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
                 context.user_data['uploaded_files'] = uploaded_files
                 logger.info(f"Uploaded files: {uploaded_files}")
             
-            # آماده‌سازی پیام نهایی و دکمه‌ها
-            message = prepare_final_message(context, project_id)
-            keyboard = prepare_inline_keyboard(project_id, bool(files))
+            # ارسال ایموجی متحرک
+            try:
+                animation_message = await context.bot.send_animation(
+                    chat_id=update.effective_chat.id,
+                    animation="CgACAgQAAxkBAAMmZWcJ4M7DAAEn2Wv3H8QE3qwWxjcAAgsAA0d1_FNjwrcbKHUhHjAE",
+                )
+                
+                # صبر کردن یک ثانیه
+                await asyncio.sleep(1)
+                
+                # پاک کردن ایموجی متحرک
+                await animation_message.delete()
+            except Exception as e:
+                logger.error(f"Error handling animation: {e}")
 
-            # ارسال پیام نهایی با عکس اول (اگر وجود داشته باشد)
+            # آماده‌سازی و ارسال پیام نهایی
+            message = prepare_final_message(context, project_id)
+            
             if files:
                 try:
-                    # ارسال عکس اول با کپشن و دکمه‌ها
                     await update.message.reply_photo(
-                        photo=files[0],  # استفاده از اولین عکس
+                        photo=files[0],
                         caption=message,
-                        reply_markup=InlineKeyboardMarkup(keyboard),
                         parse_mode='HTML'
                     )
                 except Exception as e:
                     logger.error(f"Error sending photo message: {e}")
-                    # اگر ارسال عکس با خطا مواجه شد، پیام متنی ارسال می‌کنیم
                     await update.message.reply_text(
                         text=message,
-                        reply_markup=InlineKeyboardMarkup(keyboard),
                         parse_mode='HTML'
                     )
             else:
                 await update.message.reply_text(
                     text=message,
-                    reply_markup=InlineKeyboardMarkup(keyboard),
                     parse_mode='HTML'
                 )
 
-            # نمایش دکمه‌های اینلاین برای هدایت کاربر
-            navigation_keyboard = InlineKeyboardMarkup([
-                [InlineKeyboardButton("👀 مشاهده درخواست", callback_data=f"view_{project_id}")],
-                [InlineKeyboardButton("📋 ثبت درخواست جدید", callback_data="new_request"),
-                 InlineKeyboardButton("🏠 منوی اصلی", callback_data="main_menu")]
-            ])
-
+            # ارسال منوی اصلی به صورت کیبورد ساده
             await update.message.reply_text(
-                "✅ درخواست شما با موفقیت ثبت شد.\n"
-                "می‌توانید:",
-                reply_markup=navigation_keyboard
+                "🌟 از منوی زیر انتخاب کنید:",
+                reply_markup=MAIN_MENU_KEYBOARD
             )
-            
-            # ارسال ایموجی متحرک برای گیمیفیکیشن
-            try:
-                await context.bot.send_animation(
-                    chat_id=update.effective_chat.id,
-                    animation="CgACAgQAAxkBAAMmZWcJ4M7DAAEn2Wv3H8QE3qwWxjcAAgsAA0d1_FNjwrcbKHUhHjAE",
-                    caption="🎊 درخواست با موفقیت ثبت شد!"
-                )
-            except Exception as e:
-                logger.error(f"Error sending animation: {e}")
 
             # پاک کردن داده‌های قبلی
             context.user_data.clear()
             
-            return ConversationHandler.END
+            return ROLE
 
         else:
             error_msg = "❌ خطا در ثبت درخواست\n"
