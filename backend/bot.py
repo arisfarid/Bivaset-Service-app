@@ -30,10 +30,12 @@ logging.getLogger('apscheduler').setLevel(logging.WARNING)
 
 TOKEN = os.getenv('TELEGRAM_BOT_TOKEN')
 
-# تنظیم مسیر ذخیره‌سازی persistence
-PERSISTENCE_PATH = os.path.join(os.path.dirname(__file__), 'conversation_data')
+# تغییر تنظیمات persistence
+PERSISTENCE_PATH = os.path.join(os.path.dirname(__file__), 'conversation_data', 'persistence.pickle')
 
-# ایجاد persistence handler
+# اطمینان از وجود دایرکتوری
+os.makedirs(os.path.dirname(PERSISTENCE_PATH), exist_ok=True)
+
 persistence = PicklePersistence(
     filepath=PERSISTENCE_PATH,
     store_data=PersistenceInput(
@@ -108,26 +110,22 @@ def create_message_handler(callback, additional_filters=None):
 
 # تنظیم ConversationHandler
 conv_handler = ConversationHandler(
-    entry_points=[
-        CommandHandler("start", start),
-        MessageHandler(filters.Regex("^درخواست خدمات \| کارفرما 👔$"), handle_message)
-    ],
+    entry_points=[CommandHandler("start", start)],
     states={
         START: [MessageHandler(filters.TEXT & ~filters.COMMAND, start)],
-        
+
         REGISTER: [MessageHandler(filters.CONTACT, handle_contact)],
         
         ROLE: [
-            MessageHandler(filters.Regex("^درخواست خدمات \| کارفرما 👔$"), handle_message),
-            MessageHandler(filters.Regex("^پیشنهاد قیمت \| مجری 🦺$"), handle_message),
-            CommandHandler("start", start),  # اضافه کردن این خط
+            MessageHandler(filters.Regex("^درخواست خدمات \| کارفرما 👔$"), handle_role),
+            MessageHandler(filters.Regex("^پیشنهاد قیمت \| مجری 🦺$"), handle_role)
         ],
-        
         EMPLOYER_MENU: [
             MessageHandler(filters.Regex("^📋 درخواست خدمات جدید$"), handle_message),
             MessageHandler(filters.Regex("^📊 مشاهده درخواست‌ها$"), handle_view_projects),
-            MessageHandler(filters.Regex("^⬅️ بازگشت$"), lambda u, c: start(u, c)),
+            MessageHandler(filters.Regex("^⬅️ بازگشت$"), start)
         ],
+        REGISTER: [MessageHandler(filters.CONTACT, handle_contact)],
         
         CATEGORY: [
             MessageHandler(filters.TEXT & ~filters.COMMAND & ~filters.Regex("^⬅️ بازگشت$"), 
@@ -176,10 +174,7 @@ conv_handler = ConversationHandler(
                          lambda u, c: handle_project_details(u, c)),
         ],
     },
-    fallbacks=[
-        CommandHandler("cancel", cancel),
-        CallbackQueryHandler(handle_callback),
-    ],
+    fallbacks=[CommandHandler("cancel", cancel)],
     name="main_conversation",
     persistent=True,
     allow_reentry=True,
