@@ -7,12 +7,16 @@ from handlers.edit_handler import handle_edit_callback
 from handlers.view_handler import handle_view_callback
 from handlers.attachment_handler import show_photo_management, handle_photos_command
 from utils import log_chat,get_categories
-from keyboards import EMPLOYER_INLINE_MENU_KEYBOARD, FILE_MANAGEMENT_MENU_KEYBOARD, RESTART_INLINE_MENU_KEYBOARD, BACK_INLINE_MENU_KEYBOARD, MAIN_MENU_KEYBOARD
+from keyboards import EMPLOYER_MENU_KEYBOARD, FILE_MANAGEMENT_MENU_KEYBOARD, RESTART_INLINE_MENU_KEYBOARD, BACK_INLINE_MENU_KEYBOARD, MAIN_MENU_KEYBOARD
 import asyncio  # برای استفاده از sleep
+from asyncio import Lock
 
 logger = logging.getLogger(__name__)
 
 START, REGISTER, ROLE, EMPLOYER_MENU, CATEGORY, SUBCATEGORY, DESCRIPTION, LOCATION_TYPE, LOCATION_INPUT, DETAILS, DETAILS_FILES, DETAILS_DATE, DETAILS_DEADLINE, DETAILS_BUDGET, DETAILS_QUANTITY, SUBMIT, VIEW_PROJECTS, PROJECT_ACTIONS = range(18)
+
+# ایجاد قفل سراسری
+button_lock = Lock()
 
 async def send_photo_with_caption(context, chat_id, photo, caption, reply_markup=None):
     await context.bot.send_photo(
@@ -30,65 +34,86 @@ async def send_message_with_keyboard(context, chat_id, text, reply_markup):
     )
 
 async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    query = update.callback_query
-    data = query.data
-    
-    if data == "new_request":
+    async with button_lock:        
         try:
-            # پاک کردن context کاربر
-            context.user_data.clear()
+            # Get the callback query and data
+            query = update.callback_query
+            data = query.data
+            logger.info(f"Processing callback: {data}")
             
-            # تنظیم state جدید
-            context.user_data['state'] = CATEGORY
-            context.user_data['files'] = []
-            
-            # دریافت دسته‌بندی‌ها
-            categories = await get_categories()
-            if not categories:
-                await query.message.reply_text("❌ خطا: دسته‌بندی‌ها در دسترس نیست!")
-                return EMPLOYER_MENU
-                
-            context.user_data['categories'] = categories
-            
-            # نمایش منوی دسته‌بندی‌ها
-            root_cats = [cat_id for cat_id, cat in categories.items() if cat['parent'] is None]
-            keyboard = [[KeyboardButton(categories[cat_id]['name'])] for cat_id in root_cats]
-            keyboard.append([KeyboardButton("⬅️ بازگشت")])
-            
-            # حذف پیام‌های قبلی
-            await query.message.delete()
-            
-            # ارسال منوی جدید
-            await query.message.reply_text(
-                "🌟 دسته‌بندی خدماتت رو انتخاب کن:",
-                reply_markup=ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
-            )
+            # Process the callback data
+            if data == "new_request":
+                # Handle new request logic
+                return await handle_new_request(update, context)
+            elif data == "main_menu":
+                # Handle main menu logic
+                return await handle_main_menu(update, context)
+            # Add other callback handlers
             
             await query.answer()
-            return CATEGORY
+            return context.user_data.get('state', ROLE)
             
         except Exception as e:
-            logger.error(f"Error in new_request handler: {e}")
-            await query.message.reply_text(
-                "❌ خطا در شروع درخواست جدید. لطفاً دوباره تلاش کنید.",
-                reply_markup=EMPLOYER_MENU_KEYBOARD
+            logger.error(f"Error in callback handler: {e}")
+            await update.callback_query.message.reply_text(
+                "❌ خطایی رخ داد. لطفاً دوباره تلاش کنید.",
+                reply_markup=MAIN_MENU_KEYBOARD
             )
-            return EMPLOYER_MENU
-        
-    elif data == "main_menu":
-        # بازگشت به منوی اصلی
-        await query.message.reply_text(
-            "🌟 چی می‌خوای امروز؟", 
-            reply_markup=MAIN_MENU_KEYBOARD
-        )
-        return ROLE
-        
-    elif data.startswith("view_"):
-        # نمایش جزئیات درخواست
-        project_id = data.split("_")[1]
-        # ... کد نمایش جزئیات درخواست ...
-        return PROJECT_ACTIONS
+            return ROLE
 
+async def handle_new_request(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    query = update.callback_query
+    try:
+        # پاک کردن context کاربر
+        context.user_data.clear()
+        
+        # تنظیم state جدید
+        context.user_data['state'] = CATEGORY
+        context.user_data['files'] = []
+        
+        # دریافت دسته‌بندی‌ها
+        categories = await get_categories()
+        if not categories:
+            await query.message.reply_text("❌ خطا: دسته‌بندی‌ها در دسترس نیست!")
+            return EMPLOYER_MENU
+            
+        context.user_data['categories'] = categories
+        
+        # نمایش منوی دسته‌بندی‌ها
+        root_cats = [cat_id for cat_id, cat in categories.items() if cat['parent'] is None]
+        keyboard = [[KeyboardButton(categories[cat_id]['name'])] for cat_id in root_cats]
+        keyboard.append([KeyboardButton("⬅️ بازگشت")])
+        
+        # حذف پیام‌های قبلی
+        await query.message.delete()
+        
+        # ارسال منوی جدید
+        await query.message.reply_text(
+            "🌟 دسته‌بندی خدماتت رو انتخاب کن:",
+            reply_markup=ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
+        )
+        
+        await query.answer()
+        return CATEGORY
+        
+    except Exception as e:
+        logger.error(f"Error in new_request handler: {e}")
+        await query.message.reply_text(
+            "❌ خطا در شروع درخواست جدید. لطفاً دوباره تلاش کنید.",
+            reply_markup=EMPLOYER_MENU_KEYBOARD
+        )
+        return EMPLOYER_MENU
+
+async def handle_main_menu(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    query = update.callback_query
+    # بازگشت به منوی اصلی
+    await query.message.reply_text(
+        "🌟 چی می‌خوای امروز؟", 
+        reply_markup=MAIN_MENU_KEYBOARD
+    )
+    return ROLE
+
+async def handle_photos_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     query = update.callback_query
     data = query.data
     logger.info(f"Received callback data: {data}")  # لاگ اولیه
@@ -159,150 +184,9 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
                 await context.bot.send_message(
                     chat_id=chat_id,
                     text="🗑 عکس حذف شد! دوباره مدیریت کن یا ادامه بده.",
-                    reply_markup=FILE_MANAGEMENT_MENU_KEYBOARD
-                )
-                await show_photo_management(update, context)
-            else:
-                logger.warning(f"Attempted to delete non-existent photo at index {index}")
-                await context.bot.send_message(
-                    chat_id=chat_id,
-                    text="❌ عکس مورد نظر پیدا نشد!",
-                    reply_markup=FILE_MANAGEMENT_MENU_KEYBOARD
                 )
             return DETAILS_FILES
-
-        elif data.startswith('replace_photo_'):
-            index = int(data.split('_')[2])
-            context.user_data['replace_index'] = index
-            await context.bot.send_message(
-                chat_id=chat_id,
-                text="📸 لطفاً عکس جدید رو بفرست تا جایگزین بشه:",
-                reply_markup=None
-            )
-            context.user_data['state'] = 'replacing_photo'
-            return DETAILS_FILES
-
-        elif data == 'back_to_management':
-            await show_photo_management(update, context)
-            return DETAILS_FILES
-
-        elif data == 'back_to_upload':
-            await context.bot.send_message(
-                chat_id=chat_id,
-                text="📸 عکس دیگه‌ای داری؟",
-                reply_markup=FILE_MANAGEMENT_MENU_KEYBOARD
-            )
-            context.user_data['state'] = DETAILS_FILES
-            return DETAILS_FILES
-
-        elif data == 'restart':
-            try:
-                # پاک کردن context کاربر
-                context.user_data.clear()
-                
-                # ارسال پیام راه‌اندازی مجدد و ذخیره message_id
-                restart_msg = await query.message.edit_text(
-                    "🔄 ربات در حال راه‌اندازی مجدد است...\n"
-                    "لطفاً چند لحظه صبر کنید."
-                )
-                
-                # کمی تاخیر برای نمایش پیام راه‌اندازی
-                await asyncio.sleep(1)
-                
-                # پاک کردن پیام‌های قبلی
-                try:
-                    await restart_msg.delete()
-                    await query.message.delete()
-                except Exception as e:
-                    logger.error(f"Error deleting messages: {e}")
-
-                # ارسال منوی اصلی با پیام جدید
-                sent_message = await context.bot.send_message(
-                    chat_id=query.message.chat_id,
-                    text=("🌟 چی می‌خوای امروز؟"),
-                    reply_markup=MAIN_MENU_KEYBOARD
-                )
-                
-                # تنظیم state جدید
-                context.user_data['state'] = ROLE
-                await query.answer()
-                
-                return ROLE
-
-            except Exception as e:
-                logger.error(f"Error in restart handler: {e}")
-                await query.answer("❌ خطا در راه‌اندازی مجدد")
-                return ROLE
-
-        elif data == 'back':
-            current_state = context.user_data.get('state', ROLE)
-            if current_state == CATEGORY:
-                context.user_data['state'] = ROLE
-                await start(update, context)
-                return ROLE
-            elif current_state == SUBCATEGORY:
-                context.user_data['state'] = CATEGORY
-                categories = context.user_data.get('categories', {})
-                root_cats = [cat_id for cat_id, cat in categories.items() if cat['parent'] is None]
-                keyboard = [[KeyboardButton(categories[cat_id]['name'])] for cat_id in root_cats] + [[KeyboardButton("⬅️ بازگشت")]]
-                await query.message.edit_text(
-                    "🌟 دسته‌بندی خدماتت رو انتخاب کن:",
-                    reply_markup=ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
-                )
-                return CATEGORY
-            elif current_state in [DESCRIPTION, LOCATION_TYPE, LOCATION_INPUT, DETAILS]:
-                await show_employer_menu(update, context)
-                return EMPLOYER_MENU
-            else:
-                await start(update, context)
-                return ROLE
-
-        elif data.isdigit():
-            await handle_category_callback(update, context)
-            return SUBMIT
-
-        elif data in ['new_project', 'view_projects']:
-            logger.info(f"Redirecting {data} to message_handler")
-            return EMPLOYER_MENU
-
-        elif data.startswith(('edit_', 'delete_', 'close_', 'extend_', 'offers_')):
-            await handle_edit_callback(update, context)
-            return PROJECT_ACTIONS
-
-        elif data == 'select_location':
-            await query.message.edit_text(
-                "📍 لطفاً لوکیشن رو با استفاده از دکمه پیوست تلگرام (📎) بفرستید:\n"
-                "1. روی 📎 بزنید.\n2. گزینه 'Location' رو انتخاب کنید.\n3. لوکیشن رو بفرستید."
-            )
-            context.user_data['state'] = LOCATION_INPUT
-            return LOCATION_INPUT
-
-        elif data == "main_menu":
-            await query.message.reply_text(
-                "📋 چه کاری می‌تونم برات انجام بدم؟",
-                reply_markup=MAIN_MENU_KEYBOARD
-            )
-            await query.answer()
-            return ROLE
-
-        else:
-            await handle_view_callback(update, context)
-            return PROJECT_ACTIONS
-
     except Exception as e:
-        logger.error(f"Unexpected error in callback handler: {e}")
-        await context.bot.send_message(
-            chat_id=chat_id,
-            text="❌ یه مشکل پیش اومد! لطفاً دوباره تلاش کن.",
-            reply_markup=FILE_MANAGEMENT_MENU_KEYBOARD
-        )
-        await show_photo_management(update, context)
+        logger.error(f"Error processing photo management callback: {e}")
+        await query.answer("خطا در مدیریت عکس‌ها")
         return DETAILS_FILES
-
-async def show_employer_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await context.bot.send_message(
-        chat_id=update.effective_chat.id,
-        text="🎉 عالیه! می‌خوای خدمات جدید درخواست کنی یا پیشنهادات رو ببینی؟",
-        reply_markup=EMPLOYER_INLINE_MENU_KEYBOARD
-    )
-    context.user_data['state'] = EMPLOYER_MENU

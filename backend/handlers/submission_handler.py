@@ -71,16 +71,20 @@ async def submit_project(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
             
             # ارسال ایموجی متحرک
             try:
-                animation_message = await context.bot.send_animation(
+                await context.bot.send_message(
                     chat_id=update.effective_chat.id,
-                    animation="CAACAgQAAxkBAAEDl2RkZ4ngzsAAARvbZ_cfxATerBbHCQACCwADR3X8U2PC9xsodSEeMAQ",
+                    text="🎉",  # ایموجی متحرک
+                    parse_mode='HTML'
                 )
                 
                 # صبر کردن یک ثانیه
                 await asyncio.sleep(1)
                 
-                # پاک کردن ایموجی متحرک
-                await animation_message.delete()
+                # پاک کردن پیام ایموجی
+                await context.bot.delete_message(
+                    chat_id=update.effective_chat.id,
+                    message_id=update.message.message_id + 1
+                )
             except Exception as e:
                 logger.error(f"Error handling animation: {e}")
 
@@ -112,7 +116,7 @@ async def submit_project(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
 
             # ارسال منوی اصلی به صورت کیبورد ساده
             await update.message.reply_text(
-                "🌟 از منوی زیر انتخاب کنید:",
+                "🌟 برای ادامه از منوی زیر انتخاب کنید:",
                 reply_markup=MAIN_MENU_KEYBOARD
             )
 
