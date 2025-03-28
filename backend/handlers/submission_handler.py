@@ -73,7 +73,7 @@ async def submit_project(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
             try:
                 animation_message = await context.bot.send_animation(
                     chat_id=update.effective_chat.id,
-                    animation="CgACAgQAAxkBAAMmZWcJ4M7DAAEn2Wv3H8QE3qwWxjcAAgsAA0d1_FNjwrcbKHUhHjAE",
+                    animation="CAACAgQAAxkBAAEDl2RkZ4ngzsAAARvbZ_cfxATerBbHCQACCwADR3X8U2PC9xsodSEeMAQ",
                 )
                 
                 # صبر کردن یک ثانیه
@@ -86,24 +86,28 @@ async def submit_project(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
 
             # آماده‌سازی و ارسال پیام نهایی
             message = prepare_final_message(context, project_id)
+            keyboard = prepare_inline_keyboard(project_id, bool(files))
             
             if files:
                 try:
                     await update.message.reply_photo(
                         photo=files[0],
                         caption=message,
+                        reply_markup=InlineKeyboardMarkup(keyboard),
                         parse_mode='HTML'
                     )
                 except Exception as e:
                     logger.error(f"Error sending photo message: {e}")
                     await update.message.reply_text(
                         text=message,
-                        parse_mode='HTML'
+                        parse_mode='HTML',
+                        reply_markup=InlineKeyboardMarkup(keyboard)
                     )
             else:
                 await update.message.reply_text(
                     text=message,
-                    parse_mode='HTML'
+                    parse_mode='HTML',
+                    reply_markup=InlineKeyboardMarkup(keyboard)
                 )
 
             # ارسال منوی اصلی به صورت کیبورد ساده

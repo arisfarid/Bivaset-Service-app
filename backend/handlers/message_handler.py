@@ -17,7 +17,6 @@ START, REGISTER, ROLE, EMPLOYER_MENU, CATEGORY, SUBCATEGORY, DESCRIPTION, LOCATI
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     text = update.message.text
     
-    # حذف بررسی state در ابتدای تابع
     if text == "درخواست خدمات | کارفرما 👔":
         context.user_data.clear()  # پاک کردن داده‌های قبلی
         context.user_data['state'] = EMPLOYER_MENU
