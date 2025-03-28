@@ -2,7 +2,7 @@ django==4.2.11
 djangorestframework==3.15.1
 django-cors-headers==4.4.0
 psycopg2-binary==2.9.9
-python-telegram-bot[job-queue,callback-data]==20.8  # تغییر این خط
+python-telegram-bot[job-queue,callback-data]==20.8
 gunicorn==23.0.0
 requests==2.32.3
 khayyam==3.0.17

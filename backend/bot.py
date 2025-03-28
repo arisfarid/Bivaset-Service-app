@@ -180,7 +180,7 @@ conv_handler = ConversationHandler(
     name="main_conversation",
     persistent=True,
     allow_reentry=True,
-    per_message=True,  # اضافه کردن این پارامتر
+    per_message=False,  # تغییر به False
     per_chat=True     # اضافه کردن این پارامتر
 )
 
@@ -286,5 +286,28 @@ def save_bot_state(context: ContextTypes.DEFAULT_TYPE):
 # اضافه کردن watchdog job
 app.job_queue.run_repeating(watchdog_job, interval=300)  # هر 5 دقیقه
 
-logger.info("Bot is starting polling...")
-app.run_polling()
+def main():
+    try:
+        logger.info("Starting bot...")
+        
+        # اطمینان از وجود توکن
+        if not TOKEN:
+            logger.error("TELEGRAM_BOT_TOKEN not set!")
+            sys.exit(1)
+            
+        # تنظیم و اجرای ربات
+        app.add_handler(conv_handler)
+        app.add_error_handler(error_handler)
+        
+        # راه‌اندازی job‌ها
+        app.job_queue.run_repeating(check_and_notify, interval=10)
+        
+        # اجرای ربات
+        app.run_polling(allowed_updates=Update.ALL_TYPES)
+        
+    except Exception as e:
+        logger.error(f"Critical error: {e}")
+        sys.exit(1)
+
+if __name__ == '__main__':
+    main()
