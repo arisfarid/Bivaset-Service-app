@@ -1,7 +1,7 @@
 from telegram import Update, KeyboardButton, ReplyKeyboardMarkup
 from telegram.ext import ContextTypes, ConversationHandler
 from utils import get_user_phone, BASE_URL, log_chat
-from keyboards import MAIN_MENU_KEYBOARD, REGISTER_MENU_KEYBOARD  # اضافه شده
+from keyboards import MAIN_MENU_KEYBOARD, REGISTER_MENU_KEYBOARD, EMPLOYER_MENU_KEYBOARD  # اضافه شده
 import requests
 import logging
 
@@ -76,6 +76,9 @@ async def handle_contact(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         return REGISTER
 
 async def handle_role(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    # Get text from the update
+    text = update.message.text if update.message else None
+
     if text == "درخواست خدمات | کارفرما 👔":
         # پاک کردن کامل context و تنظیم state جدید
         context.user_data.clear()
@@ -86,6 +89,8 @@ async def handle_role(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int
             reply_markup=EMPLOYER_MENU_KEYBOARD
         )
         return EMPLOYER_MENU
+    # Add handling for other role options if needed
+    return ROLE
 
 async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     context.user_data.clear()

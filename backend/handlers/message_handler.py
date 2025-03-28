@@ -7,6 +7,7 @@ from handlers.location_handler import handle_location
 from handlers.attachment_handler import handle_attachment
 from handlers.project_details_handler import handle_project_details
 from handlers.state_handler import handle_project_states
+from handlers.start_handler import check_phone
 from handlers.view_handler import handle_view_projects
 from keyboards import REGISTER_MENU_KEYBOARD, EMPLOYER_MENU_KEYBOARD, CONTRACTOR_MENU_KEYBOARD, MAIN_MENU_KEYBOARD
 from asyncio import Lock
@@ -23,7 +24,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     current_state = context.user_data.get('state', ROLE)
     
     # بررسی ثبت‌نام
-    if not await check_registration(update, context):
+    if not await check_phone(update, context):
         return REGISTER
         
     if text == "درخواست خدمات | کارفرما 👔":

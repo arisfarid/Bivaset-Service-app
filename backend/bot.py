@@ -4,7 +4,7 @@ import logging
 import requests
 import json  # Add this for json.dump()
 from datetime import datetime  # Add this import
-from utils import save_timestamp, check_for_updates, BASE_URL
+from utils import save_timestamp, check_for_updates, get_categories, BASE_URL
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update, InputMediaPhoto
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, CallbackQueryHandler, ContextTypes, ConversationHandler, PicklePersistence, PersistenceInput
 from handlers.start_handler import start, handle_contact, handle_role, cancel
@@ -178,7 +178,9 @@ conv_handler = ConversationHandler(
     ],
     name="main_conversation",
     persistent=True,
-    allow_reentry=True
+    allow_reentry=True,
+    per_message=True,  # اضافه کردن این پارامتر
+    per_chat=True     # اضافه کردن این پارامتر
 )
 
 # اضافه کردن handlerها
