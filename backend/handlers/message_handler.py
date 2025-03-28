@@ -23,6 +23,10 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     text = update.message.text
     current_state = context.user_data.get('state', ROLE)
     
+    # اگر location ارسال شده
+    if update.message.location:
+        return await handle_location(update, context)
+        
     # بررسی ثبت‌نام
     if not await check_phone(update, context):
         return REGISTER

@@ -29,10 +29,15 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     context.user_data['phone'] = phone
     await log_chat(update, context)
 
-    message = (
-        f"👋 سلام {name}! به ربات خدمات بی‌واسط خوش اومدی.\n"
-        "من رایگان کمکت می‌کنم برای خدمات مورد نیازت، مجری کاربلد پیدا کنی یا کار مرتبط با تخصصت پیدا کنی. چی می‌خوای امروز؟ 🌟"
-    )
+    # پیام welcome فقط یک بار نمایش داده شود
+    if not context.user_data.get('welcomed'):
+        welcome_message = (
+            f"👋 سلام {name}! به ربات خدمات بی‌واسط خوش اومدی.\n"
+            "من رایگان کمکت می‌کنم برای خدمات مورد نیازت، مجری کاربلد پیدا کنی یا کار مرتبط با تخصصت پیدا کنی. چی می‌خوای امروز؟ 🌟"
+        )
+        await update.message.reply_text(welcome_message, reply_markup=MAIN_MENU_KEYBOARD)
+        context.user_data['welcomed'] = True
+
     if update.message:
         await update.message.reply_text(message, reply_markup=MAIN_MENU_KEYBOARD)  # استفاده از MAIN_MENU_KEYBOARD
     elif update.callback_query:

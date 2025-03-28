@@ -156,7 +156,11 @@ conv_handler = ConversationHandler(
             MessageHandler(filters.Regex("^⬅️ بازگشت$"), 
                          lambda u, c: handle_project_details(u, c)),
         ],
-        
+        LOCATION_INPUT: [
+            MessageHandler(filters.LOCATION, handle_location),
+            MessageHandler(filters.Regex("^⬅️ بازگشت$"), 
+                         lambda u, c: handle_location(u, c)),
+        ],
         DETAILS: [
             MessageHandler(filters.Regex("^✅ ثبت درخواست$"), submit_project),
             MessageHandler(filters.Regex("^(📸|📅|⏳|💰|📏)"), handle_project_details),
@@ -175,7 +179,6 @@ conv_handler = ConversationHandler(
     fallbacks=[
         CommandHandler("cancel", cancel),
         CallbackQueryHandler(handle_callback),
-        MessageHandler(filters.ALL, lambda u, c: start(u, c))  # تغییر این خط
     ],
     name="main_conversation",
     persistent=True,

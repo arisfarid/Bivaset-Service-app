@@ -14,20 +14,25 @@ async def handle_location(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
     text = update.message.text if update.message and update.message.text else None
     location = update.message.location if update.message and update.message.location else None
 
-    # پردازش لوکیشن
+    # اگر location دریافت شد
     if location:
-        context.user_data['location'] = {'longitude': location.longitude, 'latitude': location.latitude}
-        await log_chat(update, context)
-        if current_state in [LOCATION_TYPE, LOCATION_INPUT]:
+        try:
+            context.user_data['location'] = {
+                'longitude': location.longitude,
+                'latitude': location.latitude
+            }
             context.user_data['state'] = DETAILS
+            
+            # ارسال منوی جزئیات
             await update.message.reply_text(
-                "📋 جزئیات درخواست\n"
+                "📋 جزئیات درخواست:\n"
                 "اگه بخوای می‌تونی برای راهنمایی بهتر مجری‌ها این اطلاعات رو هم وارد کنی:",
                 reply_markup=create_dynamic_keyboard(context)
             )
             return DETAILS
-        await update.message.reply_text("📍 لوکیشن دریافت شد، لطفاً ادامه بده.")
-        return current_state
+        except Exception as e:
+            logger.error(f"Error handling location: {e}")
+            return current_state
 
     # حالت انتخاب نوع مکان
     if current_state == LOCATION_TYPE:
