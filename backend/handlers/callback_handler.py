@@ -48,6 +48,25 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
             elif data == "main_menu":
                 # Handle main menu logic
                 return await handle_main_menu(update, context)
+            elif data == "restart":
+                try:
+                    # پاک کردن پیام آپدیت
+                    await query.message.delete()
+                    
+                    # پاک کردن context کاربر
+                    context.user_data.clear()
+                    
+                    # ارسال منوی اصلی
+                    await query.message.reply_text(
+                        "🌟 چطور میتونم کمکت کنم؟",
+                        reply_markup=MAIN_MENU_KEYBOARD
+                    )
+                    
+                    return ROLE
+                    
+                except Exception as e:
+                    logger.error(f"Error in restart handler: {e}")
+                    return ROLE
             # Add other callback handlers
             
             await query.answer()

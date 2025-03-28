@@ -137,10 +137,14 @@ async def error_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
         if context and context.user_data:
             context.user_data.clear()
         
+        # دریافت مجدد دسته‌بندی‌ها
+        if str(context.error) == "'categories'":
+            context.user_data['categories'] = await get_categories()
+            
         # ارسال پیام خطا و منوی اصلی
         if update and update.effective_message:
             await update.effective_message.reply_text(
-                "❌ خطایی رخ داد. لطفاً دوباره از منوی اصلی شروع کنید:",
+                "🌟 چطور میتونم کمکت کنم؟",
                 reply_markup=MAIN_MENU_KEYBOARD
             )
             

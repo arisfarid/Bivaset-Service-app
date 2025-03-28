@@ -19,6 +19,20 @@ START, REGISTER, ROLE, EMPLOYER_MENU, CATEGORY, SUBCATEGORY, DESCRIPTION, LOCATI
 message_lock = Lock()
 
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    text = update.message.text
+    
+    if text == "درخواست خدمات | کارفرما 👔":
+        # پاک کردن کامل context و تنظیم state جدید
+        context.user_data.clear()
+        context.user_data['state'] = EMPLOYER_MENU
+        
+        # ارسال منوی کارفرما
+        await update.message.reply_text(
+            "🎉 عالیه، {}! می‌خوای خدمات جدید درخواست کنی یا پیشنهادات رو ببینی؟".format(update.effective_user.full_name),
+            reply_markup=EMPLOYER_MENU_KEYBOARD
+        )
+        return EMPLOYER_MENU
+
     async with message_lock:  # استفاده از قفل
         text = update.message.text
         

@@ -76,26 +76,16 @@ async def handle_contact(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         return REGISTER
 
 async def handle_role(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    choice = update.message.text
-    await log_chat(update, context)
-    if choice == "درخواست خدمات | کارفرما 👔":
-        context.user_data['role'] = 'client'
-        keyboard = [
-            [KeyboardButton("📋 درخواست خدمات جدید"), KeyboardButton("📊 مشاهده درخواست‌ها")],
-            [KeyboardButton("⬅️ بازگشت")]
-        ]
+    if text == "درخواست خدمات | کارفرما 👔":
+        # پاک کردن کامل context و تنظیم state جدید
+        context.user_data.clear()
+        context.user_data['state'] = EMPLOYER_MENU
+        
         await update.message.reply_text(
-            "عالیه! 😊 می‌خوای پروژه‌ت رو تعریف کنی یا درخواست‌ها رو ببینی؟",
-            reply_markup=ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
+            "🎉 عالیه، {}! می‌خوای خدمات جدید درخواست کنی یا پیشنهادات رو ببینی؟".format(update.effective_user.full_name),
+            reply_markup=EMPLOYER_MENU_KEYBOARD
         )
         return EMPLOYER_MENU
-    elif choice == "پیشنهاد قیمت | مجری 🦺":
-        context.user_data['role'] = 'contractor'
-        await update.message.reply_text("خوبه! 😊 حالا می‌تونی پروژه‌ها رو ببینی و پیشنهاد بدی.")
-        return ROLE  # TODO: بعداً برای مجری‌ها گسترش داده بشه
-    else:
-        await update.message.reply_text("❌ گزینه نامعتبر! لطفاً از منو انتخاب کن.")
-        return ROLE
 
 async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     context.user_data.clear()
