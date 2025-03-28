@@ -1,11 +1,11 @@
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ContextTypes, ConversationHandler
-from utils import generate_title, convert_deadline_to_date, log_chat, BASE_URL
+from utils import generate_title, convert_deadline_to_date, log_chat, BASE_URL, create_dynamic_keyboard  # اضافه کردن import
 import requests
 import logging
 from handlers.start_handler import start
 from handlers.attachment_handler import upload_attachments
-from keyboards import EMPLOYER_MENU_KEYBOARD  # اضافه کردن import در بالای فایل
+from keyboards import EMPLOYER_MENU_KEYBOARD, MAIN_MENU_KEYBOARD  # اضافه کردن import
 
 logger = logging.getLogger(__name__)
 
@@ -111,10 +111,14 @@ async def submit_project(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
             )
             
             # ارسال ایموجی متحرک برای گیمیفیکیشن
-            await update.message.reply_animation(
-                animation="CgACAgQAAxkBAAMmZWcJ4M7DAAEn2Wv3H8QE3qwWxjcAAgsAA0d1_FNjwrcbKHUhHjAE",  # ایموجی متحرک مناسب
-                caption="🎊 درخواست شما با موفقیت ثبت شد!"
-            )
+            try:
+                await context.bot.send_animation(
+                    chat_id=update.effective_chat.id,
+                    animation="CgACAgQAAxkBAAMmZWcJ4M7DAAEn2Wv3H8QE3qwWxjcAAgsAA0d1_FNjwrcbKHUhHjAE",
+                    caption="🎊 درخواست با موفقیت ثبت شد!"
+                )
+            except Exception as e:
+                logger.error(f"Error sending animation: {e}")
 
             # پاک کردن داده‌های قبلی
             context.user_data.clear()
@@ -139,17 +143,17 @@ async def submit_project(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
             
             await update.message.reply_text(
                 error_msg,
-                reply_markup=create_dynamic_keyboard(context)
+                reply_markup=MAIN_MENU_KEYBOARD  # استفاده از MAIN_MENU_KEYBOARD به جای create_dynamic_keyboard
             )
-            return DETAILS
+            return ROLE
 
     except Exception as e:
         logger.error(f"Error in submit_project: {e}")
         await update.message.reply_text(
             "❌ خطا در ثبت درخواست. لطفاً دوباره تلاش کنید.",
-            reply_markup=create_dynamic_keyboard(context)
+            reply_markup=MAIN_MENU_KEYBOARD  # استفاده از MAIN_MENU_KEYBOARD به جای create_dynamic_keyboard
         )
-        return DETAILS
+        return ROLE
 
 def prepare_final_message(context, project_id):
     """آماده‌سازی پیام نهایی"""
