@@ -16,32 +16,48 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     telegram_id = str(update.effective_user.id)
     chat_id = update.effective_chat.id
 
+    # مدیریت active_chats
     if 'active_chats' not in context.bot_data:
         context.bot_data['active_chats'] = []
     if chat_id not in context.bot_data['active_chats']:
         context.bot_data['active_chats'].append(chat_id)
         logger.info(f"Updated active_chats: {context.bot_data['active_chats']}")
 
+    # چک کردن ثبت نام
     phone = await get_user_phone(telegram_id)
     logger.info(f"Phone for telegram_id {telegram_id}: {phone}")
     if not phone or phone == f"tg_{telegram_id}":
         return await check_phone(update, context)
+    
     context.user_data['phone'] = phone
     await log_chat(update, context)
 
-    # پیام welcome فقط یک بار نمایش داده شود
+    welcome_message = None
+    # فقط اگر کاربر جدید است یا welcomed نیست، پیام خوشامد نمایش داده شود
     if not context.user_data.get('welcomed'):
         welcome_message = (
             f"👋 سلام {name}! به ربات خدمات بی‌واسط خوش اومدی.\n"
-            "من رایگان کمکت می‌کنم برای خدمات مورد نیازت، مجری کاربلد پیدا کنی یا کار مرتبط با تخصصت پیدا کنی. چی می‌خوای امروز؟ 🌟"
+            "من رایگان کمکت می‌کنم برای خدمات مورد نیازت، مجری کاربلد پیدا کنی "
+            "یا کار مرتبط با تخصصت پیدا کنی. چی می‌خوای امروز؟ 🌟"
         )
-        await update.message.reply_text(welcome_message, reply_markup=MAIN_MENU_KEYBOARD)
         context.user_data['welcomed'] = True
+        if update.message:
+            await update.message.reply_text(welcome_message, reply_markup=MAIN_MENU_KEYBOARD)
+        elif update.callback_query:
+            await update.callback_query.message.reply_text(welcome_message, reply_markup=MAIN_MENU_KEYBOARD)
 
+    # همیشه به منوی اصلی برگردد
     if update.message:
-        await update.message.reply_text(message, reply_markup=MAIN_MENU_KEYBOARD)  # استفاده از MAIN_MENU_KEYBOARD
+        await update.message.reply_text(
+            "🌟 چی می‌خوای امروز؟",
+            reply_markup=MAIN_MENU_KEYBOARD
+        )
     elif update.callback_query:
-        await context.bot.send_message(chat_id=chat_id, text=message, reply_markup=MAIN_MENU_KEYBOARD)
+        await update.callback_query.message.reply_text(
+            "🌟 چی می‌خوای امروز؟",
+            reply_markup=MAIN_MENU_KEYBOARD
+        )
+    
     return ROLE
 
 async def check_phone(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
@@ -81,20 +97,21 @@ async def handle_contact(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         return REGISTER
 
 async def handle_role(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    # Get text from the update
     text = update.message.text if update.message else None
-
     if text == "درخواست خدمات | کارفرما 👔":
-        # پاک کردن کامل context و تنظیم state جدید
+        # پاک کردن context و تنظیم state جدید
         context.user_data.clear()
         context.user_data['state'] = EMPLOYER_MENU
         
+        # ارسال منوی کارفرما
         await update.message.reply_text(
-            "🎉 عالیه، {}! می‌خوای خدمات جدید درخواست کنی یا پیشنهادات رو ببینی؟".format(update.effective_user.full_name),
+            "🎉 عالیه، {}! می‌خوای خدمات جدید درخواست کنی یا پیشنهادات رو ببینی؟".format(
+                update.effective_user.full_name
+            ),
             reply_markup=EMPLOYER_MENU_KEYBOARD
         )
         return EMPLOYER_MENU
-    # Add handling for other role options if needed
+    
     return ROLE
 
 async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
