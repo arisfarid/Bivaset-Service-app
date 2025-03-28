@@ -1,9 +1,12 @@
 import os
 import sys
 import logging
+import requests
+import json  # Add this for json.dump()
+from datetime import datetime  # Add this import
+from utils import save_timestamp, check_for_updates, BASE_URL
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update, InputMediaPhoto
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, CallbackQueryHandler, ContextTypes, ConversationHandler
-from utils import save_timestamp, check_for_updates
 from handlers.start_handler import start, handle_contact, handle_role, cancel
 from handlers.message_handler import handle_message
 from handlers.category_handler import handle_category_selection
@@ -14,7 +17,7 @@ from handlers.submission_handler import submit_project
 from handlers.state_handler import handle_project_states
 from handlers.view_handler import handle_view_projects
 from handlers.callback_handler import handle_callback
-from keyboards import RESTART_INLINE_MENU_KEYBOARD  # اضافه شده
+from keyboards import RESTART_INLINE_MENU_KEYBOARD,MAIN_MENU_KEYBOARD # اضافه شده
 
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -130,25 +133,22 @@ async def error_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
     logger.error(f"Exception while handling an update: {context.error}")
     
     try:
-        # ارسال پیام خطا به کاربر
-        if update and update.effective_message:
-            await update.effective_message.reply_text(
-                "❌ متأسفانه خطایی رخ داد. لطفاً دوباره تلاش کنید یا از /start شروع کنید."
-            )
-        
-        # پاک کردن context کاربر برای شروع مجدد تمیز
-        if update and context and context.user_data:
+        # پاک کردن context کاربر
+        if context and context.user_data:
             context.user_data.clear()
         
-        # ذخیره لاگ خطا
-        logger.error("Exception while handling an update:", exc_info=context.error)
+        # ارسال پیام خطا و منوی اصلی
+        if update and update.effective_message:
+            await update.effective_message.reply_text(
+                "❌ خطایی رخ داد. لطفاً دوباره از منوی اصلی شروع کنید:",
+                reply_markup=MAIN_MENU_KEYBOARD
+            )
+            
+        return ROLE
         
     except Exception as e:
         logger.error(f"Error in error handler: {e}")
-        
-    finally:
-        # در هر صورت به ROLE برگرد تا کاربر بتواند ادامه دهد
-        return ROLE
+        return ConversationHandler.END
 
 app.add_error_handler(error_handler)  # اضافه کردن هندلر خطا
 
@@ -175,17 +175,38 @@ async def restart_bot(context: ContextTypes.DEFAULT_TYPE):
         # اطلاع‌رسانی به کاربران فعال
         for chat_id in context.bot_data.get('active_chats', []):
             try:
+                # پاک کردن context کاربر قبل از ریستارت
+                context.user_data.clear()
+                
                 await context.bot.send_message(
                     chat_id=chat_id,
-                    text="🔄 ربات در حال راه‌اندازی مجدد است. لطفاً چند لحظه صبر کنید..."
+                    text="🔄 ربات در حال راه‌اندازی مجدد است.\n"
+                         "لطفاً پس از راه‌اندازی مجدد، از منوی اصلی شروع کنید.",
+                    reply_markup=MAIN_MENU_KEYBOARD
                 )
-            except:
+            except Exception as e:
+                logger.error(f"Error notifying user {chat_id}: {e}")
                 continue
+
+        # ذخیره وضعیت ربات
+        save_bot_state(context)
         
         # ریستارت اپلیکیشن
         os.execv(sys.executable, ['python'] + sys.argv)
     except Exception as e:
         logger.error(f"Error in restart_bot: {e}")
+
+def save_bot_state(context: ContextTypes.DEFAULT_TYPE):
+    """ذخیره وضعیت ربات"""
+    try:
+        with open('bot_state.json', 'w') as f:
+            state = {
+                'active_chats': context.bot_data.get('active_chats', []),
+                'timestamp': datetime.now().timestamp()
+            }
+            json.dump(state, f)
+    except Exception as e:
+        logger.error(f"Error saving bot state: {e}")
 
 # اضافه کردن watchdog job
 app.job_queue.run_repeating(watchdog_job, interval=300)  # هر 5 دقیقه

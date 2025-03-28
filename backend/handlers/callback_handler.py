@@ -6,7 +6,7 @@ from handlers.category_handler import handle_category_callback
 from handlers.edit_handler import handle_edit_callback
 from handlers.view_handler import handle_view_callback
 from handlers.attachment_handler import show_photo_management, handle_photos_command
-from utils import log_chat
+from utils import log_chat,get_categories
 from keyboards import EMPLOYER_INLINE_MENU_KEYBOARD, FILE_MANAGEMENT_MENU_KEYBOARD, RESTART_INLINE_MENU_KEYBOARD, BACK_INLINE_MENU_KEYBOARD, MAIN_MENU_KEYBOARD
 
 logger = logging.getLogger(__name__)
@@ -173,9 +173,21 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
             return DETAILS_FILES
 
         elif data == 'restart':
+            # پاک کردن context کاربر
             context.user_data.clear()
-            await query.message.delete()
-            await start(update, context)
+            
+            await query.message.edit_text(
+                "🔄 ربات در حال راه‌اندازی مجدد است...\n"
+                "لطفاً چند لحظه صبر کنید."
+            )
+            
+            # ارسال منوی اصلی با پیام جدید
+            await query.message.reply_text(
+                "✅ راه‌اندازی مجدد انجام شد.\n"
+                "🌟 از منوی زیر انتخاب کنید:",
+                reply_markup=MAIN_MENU_KEYBOARD
+            )
+            
             return ROLE
 
         elif data == 'back':

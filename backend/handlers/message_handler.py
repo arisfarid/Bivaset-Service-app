@@ -15,6 +15,16 @@ logger = logging.getLogger(__name__)
 START, REGISTER, ROLE, EMPLOYER_MENU, CATEGORY, SUBCATEGORY, DESCRIPTION, LOCATION_TYPE, LOCATION_INPUT, DETAILS, DETAILS_FILES, DETAILS_DATE, DETAILS_DEADLINE, DETAILS_BUDGET, DETAILS_QUANTITY, SUBMIT, VIEW_PROJECTS, PROJECT_ACTIONS = range(18)
 
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    # اضافه کردن validation در ابتدای تابع
+    if 'state' not in context.user_data:
+        logger.warning(f"State not found for user {update.effective_user.id}. Resetting to ROLE.")
+        context.user_data.clear()
+        await update.message.reply_text(
+            "⚠️ وضعیت نامعتبر. لطفاً از منوی اصلی شروع کنید:",
+            reply_markup=MAIN_MENU_KEYBOARD
+        )
+        return ROLE
+
     text = update.message.text
     telegram_id = str(update.effective_user.id)
     
