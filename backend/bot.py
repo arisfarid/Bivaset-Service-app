@@ -6,7 +6,7 @@ import json  # Add this for json.dump()
 from datetime import datetime  # Add this import
 from utils import save_timestamp, check_for_updates, BASE_URL
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update, InputMediaPhoto
-from telegram.ext import Application, CommandHandler, MessageHandler, filters, CallbackQueryHandler, ContextTypes, ConversationHandler, PicklePersistence
+from telegram.ext import Application, CommandHandler, MessageHandler, filters, CallbackQueryHandler, ContextTypes, ConversationHandler, PicklePersistence, PersistenceInput
 from handlers.start_handler import start, handle_contact, handle_role, cancel
 from handlers.message_handler import handle_message
 from handlers.category_handler import handle_category_selection
@@ -36,7 +36,13 @@ PERSISTENCE_PATH = os.path.join(os.path.dirname(__file__), 'conversation_data')
 # ایجاد persistence handler
 persistence = PicklePersistence(
     filepath=PERSISTENCE_PATH,
-    store_data={"user_data": True, "chat_data": True, "bot_data": True, "callback_data": False}
+    store_data=PersistenceInput(
+        bot_data=True,
+        chat_data=True,
+        user_data=True,
+        callback_data=False
+    ),
+    update_interval=60  # ذخیره هر 60 ثانیه
 )
 
 # ایجاد application با persistence
