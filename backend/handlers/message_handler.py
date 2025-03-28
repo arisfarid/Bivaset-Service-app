@@ -69,6 +69,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
             return ROLE
     elif current_state == EMPLOYER_MENU:
         logger.info(f"Processing EMPLOYER_MENU input: {text}")
+        # تنظیم state صحیح برای شروع درخواست جدید
         if text == "📋 درخواست خدمات جدید":
             context.user_data.clear()
             context.user_data['state'] = CATEGORY

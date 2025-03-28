@@ -109,6 +109,12 @@ async def submit_project(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
                 "می‌توانید:",
                 reply_markup=navigation_keyboard
             )
+            
+            # ارسال ایموجی متحرک برای گیمیفیکیشن
+            await update.message.reply_animation(
+                animation="CgACAgQAAxkBAAMmZWcJ4M7DAAEn2Wv3H8QE3qwWxjcAAgsAA0d1_FNjwrcbKHUhHjAE",  # ایموجی متحرک مناسب
+                caption="🎊 درخواست شما با موفقیت ثبت شد!"
+            )
 
             # پاک کردن داده‌های قبلی
             context.user_data.clear()

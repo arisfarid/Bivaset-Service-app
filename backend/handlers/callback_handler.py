@@ -34,24 +34,46 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
     data = query.data
     
     if data == "new_request":
-        # پاک کردن داده‌های قبلی
-        context.user_data.clear()
-        # دریافت دسته‌بندی‌ها
-        context.user_data['categories'] = await get_categories()
-        if not context.user_data['categories']:
-            await query.message.reply_text("❌ خطا: دسته‌بندی‌ها در دسترس نیست!")
-            return EMPLOYER_MENU
+        try:
+            # پاک کردن context کاربر
+            context.user_data.clear()
             
-        # نمایش منوی دسته‌بندی‌ها
-        root_cats = [cat_id for cat_id, cat in context.user_data['categories'].items() if cat['parent'] is None]
-        keyboard = [[KeyboardButton(context.user_data['categories'][cat_id]['name'])] for cat_id in root_cats]
-        keyboard.append([KeyboardButton("⬅️ بازگشت")])
-        
-        await query.message.reply_text(
-            "🌟 دسته‌بندی خدماتت رو انتخاب کن:",
-            reply_markup=ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
-        )
-        return CATEGORY
+            # تنظیم state جدید
+            context.user_data['state'] = CATEGORY
+            context.user_data['files'] = []
+            
+            # دریافت دسته‌بندی‌ها
+            categories = await get_categories()
+            if not categories:
+                await query.message.reply_text("❌ خطا: دسته‌بندی‌ها در دسترس نیست!")
+                return EMPLOYER_MENU
+                
+            context.user_data['categories'] = categories
+            
+            # نمایش منوی دسته‌بندی‌ها
+            root_cats = [cat_id for cat_id, cat in categories.items() if cat['parent'] is None]
+            keyboard = [[KeyboardButton(categories[cat_id]['name'])] for cat_id in root_cats]
+            keyboard.append([KeyboardButton("⬅️ بازگشت")])
+            
+            # حذف پیام‌های قبلی
+            await query.message.delete()
+            
+            # ارسال منوی جدید
+            await query.message.reply_text(
+                "🌟 دسته‌بندی خدماتت رو انتخاب کن:",
+                reply_markup=ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
+            )
+            
+            await query.answer()
+            return CATEGORY
+            
+        except Exception as e:
+            logger.error(f"Error in new_request handler: {e}")
+            await query.message.reply_text(
+                "❌ خطا در شروع درخواست جدید. لطفاً دوباره تلاش کنید.",
+                reply_markup=EMPLOYER_MENU_KEYBOARD
+            )
+            return EMPLOYER_MENU
         
     elif data == "main_menu":
         # بازگشت به منوی اصلی
