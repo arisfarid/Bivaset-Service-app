@@ -42,27 +42,22 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         return EMPLOYER_MENU
 
     elif text == "📋 درخواست خدمات جدید":
-        # پاک کردن context و تنظیم state جدید
         context.user_data.clear()
         context.user_data['state'] = CATEGORY
-        context.user_data['files'] = []
-        
-        # دریافت دسته‌بندی‌ها
         categories = await get_categories()
+        
         if not categories:
             await update.message.reply_text("❌ خطا در دریافت دسته‌بندی‌ها")
             return EMPLOYER_MENU
             
         context.user_data['categories'] = categories
-        root_cats = [cat_id for cat_id, cat in categories.items() if cat['parent'] is None]
-        keyboard = [[KeyboardButton(categories[cat_id]['name'])] for cat_id in root_cats]
-        keyboard.append([KeyboardButton("⬅️ بازگشت")])
+        keyboard = create_category_keyboard(categories)
         
+        # مستقیماً به انتخاب دسته‌بندی برود بدون پیام اضافی
         await update.message.reply_text(
             "🌟 دسته‌بندی خدماتت رو انتخاب کن:",
-            reply_markup=ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
+            reply_markup=keyboard
         )
-        logger.info(f"User {update.effective_user.id} started new request")
         return CATEGORY
 
     return current_state

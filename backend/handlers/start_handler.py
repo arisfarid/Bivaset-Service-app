@@ -12,15 +12,17 @@ START, REGISTER, ROLE, EMPLOYER_MENU, CATEGORY, SUBCATEGORY, DESCRIPTION, LOCATI
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Handle the start command."""
-    user = update.effective_user
-    if not context.user_data.get('welcomed'):
+    # پاک کردن داده‌های قبلی
+    context.user_data.clear()
+    
+    # فقط در اولین اجرا یا با دستور start پیام خوش‌آمد نمایش داده شود
+    if update.message and update.message.text == '/start':
         welcome_message = (
-            f"👋 سلام {user.first_name}! به ربات خدمات بی‌واسط خوش اومدی.\n"
+            f"👋 سلام {update.effective_user.first_name}! به ربات خدمات بی‌واسط خوش اومدی.\n"
             "من رایگان کمکت می‌کنم برای خدمات مورد نیازت، مجری کاربلد پیدا کنی "
             "یا کار مرتبط با تخصصت پیدا کنی. چی می‌خوای امروز؟ 🌟"
         )
         await update.message.reply_text(welcome_message, reply_markup=MAIN_MENU_KEYBOARD)
-        context.user_data['welcomed'] = True
     else:
         await update.message.reply_text(
             "🌟 چی می‌خوای امروز؟",
