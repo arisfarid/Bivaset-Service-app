@@ -1,10 +1,10 @@
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ContextTypes, ConversationHandler
-from utils import generate_title, convert_deadline_to_date, log_chat, BASE_URL, create_dynamic_keyboard, upload_files # اضافه کردن import
+from utils import generate_title, convert_deadline_to_date, log_chat, BASE_URL, upload_files # اضافه کردن import
 import requests
 import logging
 from handlers.start_handler import start
-from keyboards import MAIN_MENU_KEYBOARD  # اضافه کردن import
+from keyboards import create_dynamic_keyboard, MAIN_MENU_KEYBOARD  # اضافه کردن import
 import asyncio  # برای sleep
 
 logger = logging.getLogger(__name__)

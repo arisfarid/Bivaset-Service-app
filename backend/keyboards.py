@@ -70,3 +70,26 @@ CONTRACTOR_INLINE_MENU_KEYBOARD = InlineKeyboardMarkup([
 RESTART_INLINE_MENU_KEYBOARD = InlineKeyboardMarkup([
     [InlineKeyboardButton("🔄 راه‌اندازی مجدد", callback_data='restart')]
 ])
+
+def create_dynamic_keyboard(context):
+    buttons = []
+    # همیشه دکمه تصاویر رو نشون بده
+    buttons.append([KeyboardButton("📸 تصاویر یا فایل")])
+    
+    if 'need_date' not in context.user_data:
+        buttons.append([KeyboardButton("📅 تاریخ نیاز")])
+    if 'deadline' not in context.user_data:
+        buttons.append([KeyboardButton("⏳ مهلت انجام")])
+    if 'budget' not in context.user_data:
+        buttons.append([KeyboardButton("💰 بودجه")])
+    if 'quantity' not in context.user_data:
+        buttons.append([KeyboardButton("📏 مقدار و واحد")])
+    buttons.append([KeyboardButton("⬅️ بازگشت"), KeyboardButton("✅ ثبت درخواست")])
+    return ReplyKeyboardMarkup(buttons, resize_keyboard=True)
+
+def create_category_keyboard(categories):
+    """ساخت کیبورد دسته‌بندی‌ها"""
+    root_cats = [cat_id for cat_id, cat in categories.items() if cat['parent'] is None]
+    keyboard = [[KeyboardButton(categories[cat_id]['name'])] for cat_id in root_cats]
+    keyboard.append([KeyboardButton("⬅️ بازگشت")])
+    return ReplyKeyboardMarkup(keyboard, resize_keyboard=True)

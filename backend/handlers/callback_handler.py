@@ -7,7 +7,7 @@ from handlers.edit_handler import handle_edit_callback
 from handlers.view_handler import handle_view_callback
 from handlers.attachment_handler import show_photo_management, handle_photos_command
 from utils import log_chat,get_categories
-from keyboards import EMPLOYER_MENU_KEYBOARD, FILE_MANAGEMENT_MENU_KEYBOARD, RESTART_INLINE_MENU_KEYBOARD, BACK_INLINE_MENU_KEYBOARD, MAIN_MENU_KEYBOARD
+from keyboards import create_category_keyboard, EMPLOYER_MENU_KEYBOARD, FILE_MANAGEMENT_MENU_KEYBOARD, RESTART_INLINE_MENU_KEYBOARD, BACK_INLINE_MENU_KEYBOARD, MAIN_MENU_KEYBOARD
 import asyncio  # برای استفاده از sleep
 from asyncio import Lock
 
@@ -62,7 +62,7 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         # تنظیم context برای درخواست جدید
         context.user_data.clear()
         context.user_data['categories'] = await get_categories()
-        keyboard = create_categories_keyboard(context.user_data['categories'])
+        keyboard = create_category_keyboard(context.user_data['categories'])
         
         await query.message.edit_text(
             "🌟 دسته‌بندی خدماتت رو انتخاب کن:",

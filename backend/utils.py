@@ -150,22 +150,6 @@ def generate_title(context):
         title += f" ({quantity})"
     return title.strip()
 
-def create_dynamic_keyboard(context):
-    buttons = []
-    # همیشه دکمه تصاویر رو نشون بده
-    buttons.append([KeyboardButton("📸 تصاویر یا فایل")])
-    
-    if 'need_date' not in context.user_data:
-        buttons.append([KeyboardButton("📅 تاریخ نیاز")])
-    if 'deadline' not in context.user_data:
-        buttons.append([KeyboardButton("⏳ مهلت انجام")])
-    if 'budget' not in context.user_data:
-        buttons.append([KeyboardButton("💰 بودجه")])
-    if 'quantity' not in context.user_data:
-        buttons.append([KeyboardButton("📏 مقدار و واحد")])
-    buttons.append([KeyboardButton("⬅️ بازگشت"), KeyboardButton("✅ ثبت درخواست")])
-    return ReplyKeyboardMarkup(buttons, resize_keyboard=True)
-
 async def log_chat(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     if update.message:  # برای پیام‌های معمولی

@@ -4,7 +4,7 @@ from utils import get_categories, get_user_phone, log_chat
 import logging
 from handlers.location_handler import handle_location
 from handlers.start_handler import check_phone
-from keyboards import REGISTER_MENU_KEYBOARD, EMPLOYER_MENU_KEYBOARD, CONTRACTOR_MENU_KEYBOARD, MAIN_MENU_KEYBOARD
+from keyboards import create_category_keyboard, EMPLOYER_MENU_KEYBOARD, CONTRACTOR_MENU_KEYBOARD, MAIN_MENU_KEYBOARD
 from asyncio import Lock
 
 logger = logging.getLogger(__name__)

@@ -1,9 +1,8 @@
 from telegram import Update, KeyboardButton, ReplyKeyboardMarkup
 from telegram.ext import ContextTypes, ConversationHandler
-from handlers.project_details_handler import create_dynamic_keyboard
 from utils import log_chat
 import logging
-from keyboards import LOCATION_TYPE_MENU_KEYBOARD, LOCATION_INPUT_MENU_KEYBOARD
+from keyboards import create_dynamic_keyboard, LOCATION_TYPE_MENU_KEYBOARD, LOCATION_INPUT_MENU_KEYBOARD
 
 logger = logging.getLogger(__name__)
 

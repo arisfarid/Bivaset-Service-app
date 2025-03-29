@@ -3,8 +3,7 @@ from telegram import Update, KeyboardButton, ReplyKeyboardMarkup, InlineKeyboard
 from telegram.ext import ContextTypes, ConversationHandler
 from utils import upload_files, log_chat, BASE_URL
 import logging
-from handlers.project_details_handler import create_dynamic_keyboard
-from keyboards import FILE_MANAGEMENT_MENU_KEYBOARD
+from keyboards import create_dynamic_keyboard, FILE_MANAGEMENT_MENU_KEYBOARD
 from django.conf import settings  # اضافه کردن ایمپورت
 import os  # اضافه کردن ایمپورت
 
