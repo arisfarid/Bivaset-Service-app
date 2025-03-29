@@ -5,23 +5,17 @@ import requests
 import json  # Add this for json.dump()
 from datetime import datetime  # Add this import
 from utils import save_timestamp, check_for_updates, get_categories, BASE_URL
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update, InputMediaPhoto
-from telegram.ext import Application, CommandHandler, MessageHandler, filters, CallbackQueryHandler, ContextTypes, ConversationHandler, PicklePersistence, PersistenceInput
-from handlers.start_handler import start, handle_contact, handle_role, cancel
-from handlers.message_handler import handle_message
-from handlers.category_handler import handle_category_selection
-from handlers.location_handler import handle_location
-from handlers.attachment_handler import handle_attachment, handle_photos_command
-from handlers.project_details_handler import handle_project_details
-from handlers.submission_handler import submit_project
-from handlers.state_handler import handle_project_states
-from handlers.view_handler import handle_view_projects
+from telegram import Update
+from telegram.ext import Application, MessageHandler, filters, CallbackQueryHandler, ContextTypes, PicklePersistence, PersistenceInput
+from handlers.attachment_handler import handle_photos_command
+from handlers.state_handler import get_conversation_handler, handle_error
+
 from handlers.callback_handler import handle_callback
-from keyboards import RESTART_INLINE_MENU_KEYBOARD,MAIN_MENU_KEYBOARD # اضافه شده
+from keyboards import RESTART_INLINE_MENU_KEYBOARD, MAIN_MENU_KEYBOARD  # اضافه شده
 
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    level=logging.INFO,
+    level=logging.DEBUG,
     handlers=[logging.FileHandler("bot.log"), logging.StreamHandler()]
 )
 logger = logging.getLogger(__name__)
@@ -31,7 +25,7 @@ logging.getLogger('apscheduler').setLevel(logging.WARNING)
 TOKEN = os.getenv('TELEGRAM_BOT_TOKEN')
 
 # تغییر تنظیمات persistence
-PERSISTENCE_PATH = os.path.join(os.path.dirname(__file__), 'conversation_data', 'persistence.pickle')
+PERSISTENCE_PATH = os.path.join(os.path.dirname(__file__), 'data', 'persistence.pickle')
 
 # اطمینان از وجود دایرکتوری
 os.makedirs(os.path.dirname(PERSISTENCE_PATH), exist_ok=True)
@@ -109,78 +103,7 @@ def create_message_handler(callback, additional_filters=None):
     return MessageHandler(filters_combined, callback)
 
 # تنظیم ConversationHandler
-conv_handler = ConversationHandler(
-    entry_points=[CommandHandler("start", start)],
-    states={
-        START: [MessageHandler(filters.TEXT & ~filters.COMMAND, start)],
-
-        REGISTER: [MessageHandler(filters.CONTACT, handle_contact)],
-        
-        ROLE: [
-            MessageHandler(filters.Regex("^درخواست خدمات \| کارفرما 👔$"), handle_role),
-            MessageHandler(filters.Regex("^پیشنهاد قیمت \| مجری 🦺$"), handle_role)
-        ],
-        EMPLOYER_MENU: [
-            MessageHandler(filters.Regex("^📋 درخواست خدمات جدید$"), handle_message),
-            MessageHandler(filters.Regex("^📊 مشاهده درخواست‌ها$"), handle_view_projects),
-            MessageHandler(filters.Regex("^⬅️ بازگشت$"), start)
-        ],
-        REGISTER: [MessageHandler(filters.CONTACT, handle_contact)],
-        
-        CATEGORY: [
-            MessageHandler(filters.TEXT & ~filters.COMMAND & ~filters.Regex("^⬅️ بازگشت$"), 
-                         handle_category_selection),
-            MessageHandler(filters.Regex("^⬅️ بازگشت$"), 
-                         lambda u, c: handle_message(u, c)),
-        ],
-        
-        SUBCATEGORY: [
-            MessageHandler(filters.TEXT & ~filters.COMMAND & ~filters.Regex("^⬅️ بازگشت$"), 
-                         handle_category_selection),
-            MessageHandler(filters.Regex("^⬅️ بازگشت$"), 
-                         lambda u, c: handle_category_selection(u, c)),
-        ],
-        
-        DESCRIPTION: [
-            MessageHandler(filters.TEXT & ~filters.COMMAND & ~filters.Regex("^⬅️ بازگشت$"), 
-                         handle_project_details),
-            MessageHandler(filters.Regex("^⬅️ بازگشت$"), 
-                         lambda u, c: handle_category_selection(u, c)),
-        ],
-        
-        LOCATION_TYPE: [
-            MessageHandler(filters.LOCATION, handle_location),
-            MessageHandler(filters.Regex("^(🏠 محل من|🔧 محل مجری|💻 غیرحضوری)$"), handle_location),
-            MessageHandler(filters.Regex("^⬅️ بازگشت$"), 
-                         lambda u, c: handle_project_details(u, c)),
-        ],
-        LOCATION_INPUT: [
-            MessageHandler(filters.LOCATION, handle_location),
-            MessageHandler(filters.Regex("^⬅️ بازگشت$"), 
-                         lambda u, c: handle_location(u, c)),
-        ],
-        DETAILS: [
-            MessageHandler(filters.Regex("^✅ ثبت درخواست$"), submit_project),
-            MessageHandler(filters.Regex("^(📸|📅|⏳|💰|📏)"), handle_project_details),
-            MessageHandler(filters.Regex("^⬅️ بازگشت$"), 
-                         lambda u, c: handle_location(u, c)),
-        ],
-        
-        DETAILS_FILES: [
-            MessageHandler(filters.PHOTO, handle_attachment),
-            MessageHandler(filters.Regex("^🏁 اتمام ارسال تصاویر$"), 
-                         lambda u, c: handle_project_details(u, c)),
-            MessageHandler(filters.Regex("^⬅️ بازگشت$"), 
-                         lambda u, c: handle_project_details(u, c)),
-        ],
-    },
-    fallbacks=[CommandHandler("cancel", cancel)],
-    name="main_conversation",
-    persistent=True,
-    allow_reentry=True,
-    per_message=False,  # تغییر به False
-    per_chat=True     # اضافه کردن این پارامتر
-)
+conv_handler = get_conversation_handler()
 
 # اضافه کردن handlerها
 app.add_handler(conv_handler)
@@ -195,35 +118,7 @@ app.add_handler(photos_command_handler)
 logger.info("Photos command handler registered successfully.")
 
 # اضافه کردن هندلر خطا
-async def error_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Handle errors globally"""
-    logger.error(f"Exception while handling an update: {context.error}")
-    
-    try:
-        # پاک کردن context کاربر
-        if context and context.user_data:
-            context.user_data.clear()
-            await context.application.persistence.update_user_data(user_id=update.effective_user.id, data=context.user_data)
-        
-        # دریافت مجدد دسته‌بندی‌ها
-        if str(context.error) == "'categories'":
-            context.user_data['categories'] = await get_categories()
-            await context.application.persistence.update_user_data(user_id=update.effective_user.id, data=context.user_data)
-            
-        # ارسال پیام خطا و منوی اصلی
-        if update and update.effective_message:
-            await update.effective_message.reply_text(
-                "🌟 چطور میتونم کمکت کنم؟",
-                reply_markup=MAIN_MENU_KEYBOARD
-            )
-            
-        return ROLE
-        
-    except Exception as e:
-        logger.error(f"Error in error handler: {e}")
-        return ConversationHandler.END
-
-app.add_error_handler(error_handler)  # اضافه کردن هندلر خطا
+app.add_error_handler(handle_error)  # اضافه کردن هندلر خطا
 
 # اضافه کردن jobهای تکراری
 app.job_queue.run_repeating(test_job, interval=5, first=0, data=app)
@@ -295,7 +190,7 @@ def main():
             
         # تنظیم و اجرای ربات
         app.add_handler(conv_handler)
-        app.add_error_handler(error_handler)
+        app.add_error_handler(handle_error)
         
         # راه‌اندازی job‌ها
         app.job_queue.run_repeating(check_and_notify, interval=10)

@@ -1,71 +1,131 @@
-from telegram import Update, KeyboardButton, ReplyKeyboardMarkup, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import ContextTypes, ConversationHandler
-from utils import BASE_URL, log_chat
-import requests
+from telegram import Update
+from telegram.ext import (
+    CommandHandler, MessageHandler, CallbackQueryHandler, 
+    ConversationHandler, filters, ContextTypes
+)
 import logging
-from handlers.start_handler import start
-from keyboards import VIEW_PROJECTS_MENU_KEYBOARD, MAIN_MENU_KEYBOARD  # اضافه شده
+from handlers.start_handler import start, handle_contact, handle_role, cancel
+from handlers.message_handler import handle_message
+from handlers.category_handler import handle_category_selection
+from handlers.location_handler import handle_location
+from handlers.attachment_handler import handle_attachment, handle_photos_command
+from handlers.project_details_handler import handle_project_details
+from handlers.submission_handler import submit_project
+from handlers.view_handler import handle_view_projects
+from handlers.callback_handler import handle_callback
 
 logger = logging.getLogger(__name__)
 
-START, REGISTER, ROLE, EMPLOYER_MENU, CATEGORY, SUBCATEGORY, DESCRIPTION, LOCATION_TYPE, LOCATION_INPUT, DETAILS, DETAILS_FILES, DETAILS_DATE, DETAILS_DEADLINE, DETAILS_BUDGET, DETAILS_QUANTITY, SUBMIT, VIEW_PROJECTS, PROJECT_ACTIONS = range(18)
+# تعریف state ها
+START, REGISTER, ROLE, EMPLOYER_MENU, CATEGORY, SUBCATEGORY, DESCRIPTION, \
+LOCATION_TYPE, LOCATION_INPUT, DETAILS, DETAILS_FILES, DETAILS_DATE, \
+DETAILS_DEADLINE, DETAILS_BUDGET, DETAILS_QUANTITY, SUBMIT, VIEW_PROJECTS, \
+PROJECT_ACTIONS = range(18)
 
-async def handle_project_states(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    text = update.message.text
-    current_state = context.user_data.get('state', VIEW_PROJECTS)
-    telegram_id = str(update.effective_user.id)
+def get_conversation_handler() -> ConversationHandler:
+    """تنظیم و برگرداندن ConversationHandler اصلی"""
+    return ConversationHandler(
+        entry_points=[CommandHandler("start", start)],
+        states={
+            START: [MessageHandler(filters.TEXT & ~filters.COMMAND, start)],
+            
+            REGISTER: [MessageHandler(filters.CONTACT, handle_contact)],
+            
+            ROLE: [
+                MessageHandler(filters.Regex("^درخواست خدمات \| کارفرما 👔$"), handle_role),
+                MessageHandler(filters.Regex("^پیشنهاد قیمت \| مجری 🦺$"), handle_role)
+            ],
+            
+            EMPLOYER_MENU: [
+                MessageHandler(filters.Regex("^📋 درخواست خدمات جدید$"), handle_message),
+                MessageHandler(filters.Regex("^📊 مشاهده درخواست‌ها$"), handle_view_projects),
+                MessageHandler(filters.Regex("^⬅️ بازگشت$"), start)
+            ],
+            
+            CATEGORY: [
+                MessageHandler(filters.TEXT & ~filters.COMMAND & ~filters.Regex("^⬅️ بازگشت$"), 
+                             handle_category_selection),
+                MessageHandler(filters.Regex("^⬅️ بازگشت$"), 
+                             lambda u, c: handle_message(u, c)),
+            ],
+            
+            SUBCATEGORY: [
+                MessageHandler(filters.TEXT & ~filters.COMMAND & ~filters.Regex("^⬅️ بازگشت$"), 
+                             handle_category_selection),
+                MessageHandler(filters.Regex("^⬅️ بازگشت$"), 
+                             lambda u, c: handle_category_selection(u, c)),
+            ],
+            
+            DESCRIPTION: [
+                MessageHandler(filters.TEXT & ~filters.COMMAND & ~filters.Regex("^⬅️ بازگشت$"), 
+                             handle_project_details),
+                MessageHandler(filters.Regex("^⬅️ بازگشت$"), 
+                             lambda u, c: handle_category_selection(u, c)),
+            ],
+            
+            LOCATION_TYPE: [
+                MessageHandler(filters.LOCATION, handle_location),
+                MessageHandler(filters.Regex("^(🏠 محل من|🔧 محل مجری|💻 غیرحضوری)$"), 
+                             handle_location),
+                MessageHandler(filters.Regex("^⬅️ بازگشت$"), 
+                             lambda u, c: handle_project_details(u, c)),
+            ],
+            
+            LOCATION_INPUT: [
+                MessageHandler(filters.LOCATION, handle_location),
+                MessageHandler(filters.Regex("^⬅️ بازگشت$"), 
+                             lambda u, c: handle_location(u, c)),
+            ],
+            
+            DETAILS: [
+                MessageHandler(filters.Regex("^✅ ثبت درخواست$"), submit_project),
+                MessageHandler(filters.Regex("^(📸|📅|⏳|💰|📏)"), handle_project_details),
+                MessageHandler(filters.Regex("^⬅️ بازگشت$"), 
+                             lambda u, c: handle_location(u, c)),
+            ],
+            
+            DETAILS_FILES: [
+                MessageHandler(filters.PHOTO, handle_attachment),
+                MessageHandler(filters.Regex("^🏁 اتمام ارسال تصاویر$"), 
+                             lambda u, c: handle_project_details(u, c)),
+                MessageHandler(filters.Regex("^⬅️ بازگشت$"), 
+                             lambda u, c: handle_project_details(u, c)),
+            ],
+        },
+        fallbacks=[
+            CommandHandler("cancel", cancel),
+            CallbackQueryHandler(handle_callback)
+        ],
+        name="main_conversation",
+        persistent=True,
+        allow_reentry=True,
+        per_message=False,
+        per_chat=True
+    )
 
-    await log_chat(update, context)
-
-    if current_state in [VIEW_PROJECTS, PROJECT_ACTIONS]:
-        if text == "⬅️ بازگشت":
-            context.user_data['state'] = ROLE
-            await start(update, context)
-            return ROLE
-        if text in ["درخواست‌های باز", "درخواست‌های بسته"]:
-            context.user_data['state'] = PROJECT_ACTIONS
-            status = 'open' if text == "درخواست‌های باز" else 'closed'
-            offset = context.user_data.get('project_offset', 0)
-            try:
-                response = requests.get(f"{BASE_URL}projects/?user_telegram_id={telegram_id}&status={status}&ordering=-id&limit=10&offset={offset}")
-                if response.status_code == 200:
-                    projects = response.json()
-                    if not projects:
-                        await update.message.reply_text(f"📭 هیچ درخواست {text} پیدا نشد!")
-                        await update.message.reply_text(
-                            "📊 ادامه بده یا برگرد:",
-                            reply_markup=VIEW_PROJECTS_MENU_KEYBOARD  # استفاده از VIEW_PROJECTS_MENU_KEYBOARD
-                        )
-                        return PROJECT_ACTIONS
-                    message = f"📋 برای مشاهده جزئیات و مدیریت هر کدام از {text} روی دکمه مربوطه ضربه بزنید:\n"
-                    inline_keyboard = [
-                        [InlineKeyboardButton(f"{project['title']} (کد: {project['id']})", callback_data=f"{project['id']}")]
-                        for project in projects[:10]
-                    ]
-                    if len(projects) > 10:
-                        context.user_data['project_offset'] = offset + 10
-                        message += f"\nبرای دیدن ادامه، دوباره '{text}' رو بزن."
-                    else:
-                        context.user_data['project_offset'] = 0
-                    await update.message.reply_text(message, reply_markup=InlineKeyboardMarkup(inline_keyboard))
-                    await update.message.reply_text(
-                        "📊 ادامه بده یا برگرد:",
-                        reply_markup=VIEW_PROJECTS_MENU_KEYBOARD  # استفاده از VIEW_PROJECTS_MENU_KEYBOARD
-                    )
-                else:
-                    await update.message.reply_text(f"❌ خطا در دریافت درخواست‌ها: {response.status_code}")
-                    await update.message.reply_text(
-                        "📊 ادامه بده یا برگرد:",
-                        reply_markup=VIEW_PROJECTS_MENU_KEYBOARD  # استفاده از VIEW_PROJECTS_MENU_KEYBOARD
-                    )
-            except requests.exceptions.ConnectionError:
-                await update.message.reply_text("❌ خطا: سرور بک‌اند در دسترس نیست.")
-                await update.message.reply_text(
-                    "📊 ادامه بده یا برگرد:",
-                    reply_markup=VIEW_PROJECTS_MENU_KEYBOARD  # استفاده از VIEW_PROJECTS_MENU_KEYBOARD
-                )
-            return PROJECT_ACTIONS
-        else:
-            await update.message.reply_text("❌ گزینه نامعتبر! لطفاً یکی از دکمه‌ها رو انتخاب کن.", reply_markup=VIEW_PROJECTS_MENU_KEYBOARD)
-            return PROJECT_ACTIONS
+async def log_state(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """لاگ کردن state فعلی"""
+    current_state = context.user_data.get('state', START)
+    logger.info(f"Processing message for user {update.effective_user.id}, current state: {current_state}")
     return current_state
+
+async def handle_error(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """مدیریت خطاهای کلی"""
+    logger.error(f"Exception while handling an update: {context.error}")
+    
+    try:
+        if context and context.user_data:
+            context.user_data.clear()
+            if update.effective_user:
+                await context.application.persistence.update_user_data(
+                    user_id=update.effective_user.id, 
+                    data=context.user_data
+                )
+        
+        if update and update.effective_message:
+            await update.effective_message.reply_text(
+                "❌ خطایی رخ داد. لطفاً دوباره شروع کنید با /start"
+            )
+            
+    except Exception as e:
+        logger.error(f"Error in error handler: {e}")
