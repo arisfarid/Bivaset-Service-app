@@ -1,6 +1,6 @@
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ContextTypes, ConversationHandler
-from utils import generate_title, convert_deadline_to_date, log_chat, BASE_URL, create_dynamic_keyboard  # اضافه کردن import
+from utils import generate_title, convert_deadline_to_date, log_chat, BASE_URL, create_dynamic_keyboard, upload_files # اضافه کردن import
 import requests
 import logging
 from handlers.start_handler import start
@@ -65,7 +65,7 @@ async def submit_project(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
             # آپلود فایل‌ها
             files = context.user_data.get('files', [])
             if files:
-                uploaded_files = await upload_attachments(files, context)
+                uploaded_files = await upload_files(files, context)
                 context.user_data['uploaded_files'] = uploaded_files
                 logger.info(f"Uploaded files: {uploaded_files}")
             
@@ -78,7 +78,7 @@ async def submit_project(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
                 )
                 
                 # صبر کردن یک ثانیه
-                await asyncio.sleep(1)
+                await asyncio.sleep(2)
                 
                 # پاک کردن پیام ایموجی
                 await context.bot.delete_message(

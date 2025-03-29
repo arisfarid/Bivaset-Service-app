@@ -113,9 +113,6 @@ async def show_photo_management(update: Update, context: ContextTypes.DEFAULT_TY
     context.user_data['state'] = DETAILS_FILES
     await log_chat(update, context)
 
-async def upload_attachments(files, context):
-    return await upload_files(files, context)
-
 async def handle_photos_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     logger.info("Starting handle_photos_command")  # لاگ شروع
     
@@ -200,30 +197,3 @@ async def handle_photos_command(update: Update, context: ContextTypes.DEFAULT_TY
             await update.callback_query.message.reply_text(message)
         else:
             await update.message.reply_text(message)
-
-async def upload_files(file_ids, context):
-    uploaded_urls = []
-    project_id = context.user_data.get('project_id')  # دریافت project_id از context
-    if not project_id:
-        logger.error("Project ID is missing. Cannot upload files.")
-        return []
-
-    for file_id in file_ids:
-        try:
-            logger.info(f"Downloading file with ID: {file_id}")
-            file = await context.bot.get_file(file_id)
-            file_data = await file.download_as_bytearray()
-            files = {'file': ('image.jpg', file_data, 'image/jpeg')}
-            data = {'project_id': project_id}  # ارسال project_id
-            response = requests.post(f"{BASE_URL.rstrip('/api/')}/upload/", files=files, data=data)
-            logger.info(f"Upload response: {response.status_code}, {response.text}")
-            if response.status_code == 201:
-                file_url = response.json().get('file_url')
-                uploaded_urls.append(file_url)
-            else:
-                logger.error(f"Failed to upload file. Response: {response.text}")
-                uploaded_urls.append(None)
-        except Exception as e:
-            logger.error(f"Error uploading file: {e}")
-            uploaded_urls.append(None)
-    return uploaded_urls
