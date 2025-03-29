@@ -4,12 +4,14 @@ from keyboards import FILE_MANAGEMENT_MENU_KEYBOARD
 from utils import clean_budget, validate_date, validate_deadline, create_dynamic_keyboard, log_chat, format_price
 from khayyam import JalaliDatetime
 from datetime import datetime, timedelta
-from handlers.submission_handler import submit_project
 import logging
 
 logger = logging.getLogger(__name__)
 
 START, REGISTER, ROLE, EMPLOYER_MENU, CATEGORY, SUBCATEGORY, DESCRIPTION, LOCATION_TYPE, LOCATION_INPUT, DETAILS, DETAILS_FILES, DETAILS_DATE, DETAILS_DEADLINE, DETAILS_BUDGET, DETAILS_QUANTITY, SUBMIT, VIEW_PROJECTS, PROJECT_ACTIONS = range(18)
+
+from handlers.submission_handler import submit_project
+
 
 async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     await log_chat(update, context)

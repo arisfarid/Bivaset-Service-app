@@ -54,6 +54,15 @@ async def upload_files(file_ids, context):
             uploaded_urls.append(None)
     return uploaded_urls
 
+async def upload_attachments(files, context):
+    """آپلود فایل‌ها به سرور"""
+    try:
+        # استفاده از upload_files موجود
+        return await upload_files(files, context)
+    except Exception as e:
+        logger.error(f"Error in upload_attachments: {e}")
+        return []
+
 def get_last_mod_time():
     return os.path.getmtime(BOT_FILE)
 

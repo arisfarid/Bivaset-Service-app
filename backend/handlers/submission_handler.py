@@ -4,7 +4,6 @@ from utils import generate_title, convert_deadline_to_date, log_chat, BASE_URL, 
 import requests
 import logging
 from handlers.start_handler import start
-from handlers.attachment_handler import upload_attachments
 from keyboards import MAIN_MENU_KEYBOARD  # اضافه کردن import
 import asyncio  # برای sleep
 

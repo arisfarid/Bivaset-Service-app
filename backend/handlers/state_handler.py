@@ -10,7 +10,6 @@ from handlers.category_handler import handle_category_selection
 from handlers.location_handler import handle_location
 from handlers.attachment_handler import handle_attachment, handle_photos_command
 from handlers.project_details_handler import handle_project_details
-from handlers.submission_handler import submit_project
 from handlers.view_handler import handle_view_projects
 from handlers.callback_handler import handle_callback
 
@@ -21,6 +20,8 @@ START, REGISTER, ROLE, EMPLOYER_MENU, CATEGORY, SUBCATEGORY, DESCRIPTION, \
 LOCATION_TYPE, LOCATION_INPUT, DETAILS, DETAILS_FILES, DETAILS_DATE, \
 DETAILS_DEADLINE, DETAILS_BUDGET, DETAILS_QUANTITY, SUBMIT, VIEW_PROJECTS, \
 PROJECT_ACTIONS = range(18)
+
+from handlers.submission_handler import submit_project
 
 def get_conversation_handler() -> ConversationHandler:
     """تنظیم و برگرداندن ConversationHandler اصلی"""
