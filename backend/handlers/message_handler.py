@@ -2,13 +2,8 @@ from telegram import Update, KeyboardButton, ReplyKeyboardMarkup
 from telegram.ext import ContextTypes, ConversationHandler
 from utils import get_categories, get_user_phone, log_chat
 import logging
-from handlers.category_handler import handle_category_selection
 from handlers.location_handler import handle_location
-from handlers.attachment_handler import handle_attachment
-from handlers.project_details_handler import handle_project_details
-from handlers.state_handler import handle_project_states
 from handlers.start_handler import check_phone
-from handlers.view_handler import handle_view_projects
 from keyboards import REGISTER_MENU_KEYBOARD, EMPLOYER_MENU_KEYBOARD, CONTRACTOR_MENU_KEYBOARD, MAIN_MENU_KEYBOARD
 from asyncio import Lock
 

@@ -181,15 +181,13 @@ app.job_queue.run_repeating(watchdog_job, interval=300)  # هر 5 دقیقه
 
 def main():
     try:
-        logger.info("Starting bot...")
-        
         # اطمینان از وجود توکن
         if not TOKEN:
             logger.error("TELEGRAM_BOT_TOKEN not set!")
             sys.exit(1)
             
         # تنظیم و اجرای ربات
-        app.add_handler(conv_handler)
+        app.add_handler(get_conversation_handler())
         app.add_error_handler(handle_error)
         
         # راه‌اندازی job‌ها

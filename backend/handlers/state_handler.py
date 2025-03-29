@@ -29,41 +29,34 @@ def get_conversation_handler() -> ConversationHandler:
         entry_points=[CommandHandler("start", start)],
         states={
             START: [MessageHandler(filters.TEXT & ~filters.COMMAND, start)],
-            
             REGISTER: [MessageHandler(filters.CONTACT, handle_contact)],
-            
             ROLE: [
                 MessageHandler(filters.Regex("^درخواست خدمات \| کارفرما 👔$"), handle_role),
                 MessageHandler(filters.Regex("^پیشنهاد قیمت \| مجری 🦺$"), handle_role)
             ],
-            
             EMPLOYER_MENU: [
                 MessageHandler(filters.Regex("^📋 درخواست خدمات جدید$"), handle_message),
                 MessageHandler(filters.Regex("^📊 مشاهده درخواست‌ها$"), handle_view_projects),
                 MessageHandler(filters.Regex("^⬅️ بازگشت$"), start)
             ],
-            
             CATEGORY: [
                 MessageHandler(filters.TEXT & ~filters.COMMAND & ~filters.Regex("^⬅️ بازگشت$"), 
                              handle_category_selection),
                 MessageHandler(filters.Regex("^⬅️ بازگشت$"), 
                              lambda u, c: handle_message(u, c)),
             ],
-            
             SUBCATEGORY: [
                 MessageHandler(filters.TEXT & ~filters.COMMAND & ~filters.Regex("^⬅️ بازگشت$"), 
                              handle_category_selection),
                 MessageHandler(filters.Regex("^⬅️ بازگشت$"), 
                              lambda u, c: handle_category_selection(u, c)),
             ],
-            
             DESCRIPTION: [
                 MessageHandler(filters.TEXT & ~filters.COMMAND & ~filters.Regex("^⬅️ بازگشت$"), 
                              handle_project_details),
                 MessageHandler(filters.Regex("^⬅️ بازگشت$"), 
                              lambda u, c: handle_category_selection(u, c)),
             ],
-            
             LOCATION_TYPE: [
                 MessageHandler(filters.LOCATION, handle_location),
                 MessageHandler(filters.Regex("^(🏠 محل من|🔧 محل مجری|💻 غیرحضوری)$"), 
@@ -71,20 +64,17 @@ def get_conversation_handler() -> ConversationHandler:
                 MessageHandler(filters.Regex("^⬅️ بازگشت$"), 
                              lambda u, c: handle_project_details(u, c)),
             ],
-            
             LOCATION_INPUT: [
                 MessageHandler(filters.LOCATION, handle_location),
                 MessageHandler(filters.Regex("^⬅️ بازگشت$"), 
                              lambda u, c: handle_location(u, c)),
             ],
-            
             DETAILS: [
                 MessageHandler(filters.Regex("^✅ ثبت درخواست$"), submit_project),
                 MessageHandler(filters.Regex("^(📸|📅|⏳|💰|📏)"), handle_project_details),
                 MessageHandler(filters.Regex("^⬅️ بازگشت$"), 
                              lambda u, c: handle_location(u, c)),
             ],
-            
             DETAILS_FILES: [
                 MessageHandler(filters.PHOTO, handle_attachment),
                 MessageHandler(filters.Regex("^🏁 اتمام ارسال تصاویر$"), 
