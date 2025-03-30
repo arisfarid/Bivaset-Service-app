@@ -90,7 +90,7 @@ def get_conversation_handler() -> ConversationHandler:
         name="main_conversation",
         persistent=True,
         allow_reentry=True,
-        per_message=True,  # تغییر به True
+        per_message=False,  # تغییر به false
         per_chat=True,     # اضافه کردن این گزینه
         per_user=True      # اضافه کردن این گزینه
     )

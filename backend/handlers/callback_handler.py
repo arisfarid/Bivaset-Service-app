@@ -34,54 +34,30 @@ async def send_message_with_keyboard(context, chat_id, text, reply_markup):
     )
 
 async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    await ensure_active_chat(update, context)
-    chat_id = update.effective_chat.id
+    """Handle all callback queries"""
     query = update.callback_query
     data = query.data
     
-    # اضافه کردن به لیست چت‌های فعال
-    if 'active_chats' not in context.bot_data:
-        context.bot_data['active_chats'] = []
-    if chat_id not in context.bot_data['active_chats']:
-        context.bot_data['active_chats'].append(chat_id)
-        logger.info(f"Added {chat_id} to active chats")
-    
+    # Existing callback handling
     if data == "restart":
-        try:
-            # پاک کردن context کاربر
-            context.user_data.clear()
-            
-            # پاک کردن پیام آپدیت
-            await query.message.delete()
-            
-            # ارسال منوی اصلی با پیام جدید
-            await query.message.reply_text(
-                "🌟 چی می‌خوای امروز؟",
-                reply_markup=MAIN_MENU_KEYBOARD
-            )
-            
-            await query.answer("✅ راه‌اندازی مجدد انجام شد")
-            return ROLE
-            
-        except Exception as e:
-            logger.error(f"Error in restart handler: {e}")
-            return ROLE
-
+        return await handle_restart(update, context)
     elif data == "new_request":
-        # تنظیم context برای درخواست جدید
-        context.user_data.clear()
-        context.user_data['categories'] = await get_categories()
-        keyboard = create_category_keyboard(context.user_data['categories'])
+        return await handle_new_request(update, context)
+    elif data.startswith('view_photos_'):
+        return await handle_photos_callback(update, context)
+    elif data.startswith('edit_'):
+        return await handle_edit_callback(update, context)
+    elif data.startswith('delete_'):
+        return await handle_delete_callback(update, context)
+    elif data.startswith('close_'):
+        return await handle_close_callback(update, context)
+    elif data.startswith('extend_'):
+        return await handle_extend_callback(update, context)
+    elif data.startswith('offers_'):
+        return await handle_offers_callback(update, context)
         
-        await query.message.edit_text(
-            "🌟 دسته‌بندی خدماتت رو انتخاب کن:",
-            reply_markup=keyboard
-        )
-        return CATEGORY
-    
-    # ... سایر callback ها
-
-    return ROLE
+    await query.answer()
+    return context.user_data.get('state', ROLE)
 
 async def handle_new_request(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     query = update.callback_query
