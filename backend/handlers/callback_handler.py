@@ -33,31 +33,36 @@ async def send_message_with_keyboard(context, chat_id, text, reply_markup):
         reply_markup=reply_markup
     )
 
-async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    """Handle all callback queries"""
+async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """هندلر اصلی برای تمام callback‌ها"""
     query = update.callback_query
     data = query.data
     
-    # Existing callback handling
-    if data == "restart":
-        return await handle_restart(update, context)
-    elif data == "new_request":
-        return await handle_new_request(update, context)
-    elif data.startswith('view_photos_'):
-        return await handle_photos_callback(update, context)
-    elif data.startswith('edit_'):
-        return await handle_edit_callback(update, context)
-    elif data.startswith('delete_'):
-        return await handle_delete_callback(update, context)
-    elif data.startswith('close_'):
-        return await handle_close_callback(update, context)
-    elif data.startswith('extend_'):
-        return await handle_extend_callback(update, context)
-    elif data.startswith('offers_'):
-        return await handle_offers_callback(update, context)
+    try:
+        # منوی اصلی
+        if data == "employer":
+            await query.edit_message_text(
+                "🎉 عالیه! چه کاری برات انجام بدم؟",
+                reply_markup=EMPLOYER_MENU_KEYBOARD
+            )
+            
+        elif data == "new_request":
+            categories = await get_categories()
+            keyboard = create_category_keyboard(categories)
+            await query.edit_message_text(
+                "🌟 دسته‌بندی خدماتت رو انتخاب کن:",
+                reply_markup=keyboard
+            )
+            
+        # سایر callback ها...
+            
+        await query.answer()
         
-    await query.answer()
-    return context.user_data.get('state', ROLE)
+    except Exception as e:
+        logger.error(f"Error in callback handler: {e}")
+        await query.answer("❌ خطایی رخ داد!")
+    
+    return context.user_data.get('state')
 
 async def handle_new_request(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     query = update.callback_query
@@ -88,7 +93,7 @@ async def handle_new_request(update: Update, context: ContextTypes.DEFAULT_TYPE)
         # ارسال منوی جدید
         await query.message.reply_text(
             "🌟 دسته‌بندی خدماتت رو انتخاب کن:",
-            reply_markup=InlineKeyboardMarkup(keyboard, resize_keyboard=True)
+            reply_markup=InlineKeyboardMarkup(keyboard)
         )
         
         await query.answer()

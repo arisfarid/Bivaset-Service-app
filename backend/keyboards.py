@@ -1,53 +1,59 @@
 # keyboards.py
 from telegram import InlineKeyboardMarkup, InlineKeyboardButton
 
-# منوی اصلی
+# منوی اصلی 
 MAIN_MENU_KEYBOARD = InlineKeyboardMarkup([
-    [InlineKeyboardButton("درخواست خدمات | کارفرما 👔")],
-    [InlineKeyboardButton("پیشنهاد قیمت | مجری 🦺")]
-], resize_keyboard=True, one_time_keyboard=True)
+    [InlineKeyboardButton("درخواست خدمات | کارفرما 👔", callback_data="employer")],
+    [InlineKeyboardButton("پیشنهاد قیمت | مجری 🦺", callback_data="contractor")],
+])
 
 # منوی کارفرما
 EMPLOYER_MENU_KEYBOARD = InlineKeyboardMarkup([
-    [InlineKeyboardButton("📋 درخواست خدمات جدید"), InlineKeyboardButton("📊 مشاهده درخواست‌ها")],
-    [InlineKeyboardButton("⬅️ بازگشت")]
-], resize_keyboard=True)
+    [InlineKeyboardButton("📋 درخواست خدمات جدید", callback_data="new_request")],
+    [InlineKeyboardButton("📊 مشاهده درخواست‌ها", callback_data="view_projects")],
+    [InlineKeyboardButton("⬅️ بازگشت", callback_data="main_menu")]
+])
 
 # منوی مجری
 CONTRACTOR_MENU_KEYBOARD = InlineKeyboardMarkup([
-    [InlineKeyboardButton("📋 مشاهده درخواست‌ها"), InlineKeyboardButton("💡 پیشنهاد کار")],
-    [InlineKeyboardButton("⬅️ بازگشت")]
-], resize_keyboard=True)
+    [InlineKeyboardButton("📋 مشاهده درخواست‌ها", callback_data="view_requests")],
+    [InlineKeyboardButton("💡 پیشنهاد کار", callback_data="offer_work")],
+    [InlineKeyboardButton("⬅️ بازگشت", callback_data="main_menu")]
+])
 
 # منوی انتخاب محل خدمات
 LOCATION_TYPE_MENU_KEYBOARD = InlineKeyboardMarkup([
-    [InlineKeyboardButton("🏠 محل من"), InlineKeyboardButton("🔧 محل مجری")],
-    [InlineKeyboardButton("💻 غیرحضوری"), InlineKeyboardButton("⬅️ بازگشت")],
-    [InlineKeyboardButton("➡️ ادامه")]
-], resize_keyboard=True)
+    [InlineKeyboardButton("🏠 محل من", callback_data="loc_client")],
+    [InlineKeyboardButton("🔧 محل مجری", callback_data="loc_contractor")],
+    [InlineKeyboardButton("💻 غیرحضوری", callback_data="loc_remote")],
+    [InlineKeyboardButton("⬅️ بازگشت", callback_data="back_to_desc")]
+])
 
 # منوی ارسال لوکیشن
 LOCATION_INPUT_MENU_KEYBOARD = InlineKeyboardMarkup([
-    [InlineKeyboardButton("📍 انتخاب از نقشه", request_location=True), InlineKeyboardButton("📲 ارسال موقعیت فعلی", request_location=True)],
-    [InlineKeyboardButton("⬅️ بازگشت"), InlineKeyboardButton("➡️ ادامه")]
-], resize_keyboard=True)
+    [InlineKeyboardButton("📍 انتخاب از نقشه", callback_data="send_location")],
+    [InlineKeyboardButton("📲 ارسال موقعیت فعلی", request_location=True)],
+    [InlineKeyboardButton("⬅️ بازگشت", callback_data="back_to_location_type")]
+])
 
 # منوی مدیریت فایل‌ها
 FILE_MANAGEMENT_MENU_KEYBOARD = InlineKeyboardMarkup([
-    [InlineKeyboardButton("🏁 اتمام ارسال تصاویر"), InlineKeyboardButton("📋 مدیریت عکس‌ها")],
-    [InlineKeyboardButton("⬅️ بازگشت")]
-], resize_keyboard=True)
+    [InlineKeyboardButton("🏁 اتمام ارسال تصاویر", callback_data="finish_files")],
+    [InlineKeyboardButton("📋 مدیریت عکس‌ها", callback_data="manage_photos")],
+    [InlineKeyboardButton("⬅️ بازگشت", callback_data="back_to_details")]
+])
 
 # منوی مشاهده پروژه‌ها
 VIEW_PROJECTS_MENU_KEYBOARD = InlineKeyboardMarkup([
-    [InlineKeyboardButton("درخواست‌های باز"), InlineKeyboardButton("درخواست‌های بسته")],
-    [InlineKeyboardButton("⬅️ بازگشت")]
-], resize_keyboard=True)
+    [InlineKeyboardButton("درخواست‌های باز", callback_data="open_projects")],
+    [InlineKeyboardButton("درخواست‌های بسته", callback_data="closed_projects")],
+    [InlineKeyboardButton("⬅️ بازگشت", callback_data="back_to_employer_menu")]
+])
 
 # منوی ثبت‌نام
 REGISTER_MENU_KEYBOARD = InlineKeyboardMarkup([
-    [InlineKeyboardButton("ثبت شماره تلفن", request_contact=True)]
-], resize_keyboard=True, one_time_keyboard=True)
+    [InlineKeyboardButton("ثبت شماره تلفن", callback_data="register_phone", request_contact=True)]
+])
 
 # منوی اینلاین کارفرما
 EMPLOYER_INLINE_MENU_KEYBOARD = InlineKeyboardMarkup([
@@ -88,8 +94,12 @@ def create_dynamic_keyboard(context):
     return InlineKeyboardMarkup(buttons, resize_keyboard=True)
 
 def create_category_keyboard(categories):
-    """ساخت کیبورد دسته‌بندی‌ها"""
-    root_cats = [cat_id for cat_id, cat in categories.items() if cat['parent'] is None]
-    keyboard = [[InlineKeyboardButton(categories[cat_id]['name'])] for cat_id in root_cats]
-    keyboard.append([InlineKeyboardButton("⬅️ بازگشت")])
-    return InlineKeyboardMarkup(keyboard, resize_keyboard=True)
+    """ساخت کیبورد دسته‌بندی‌ها با callback_data"""
+    buttons = []
+    for cat_id, cat in categories.items():
+        if not cat['parent']:  # فقط دسته‌های اصلی
+            buttons.append([
+                InlineKeyboardButton(cat['name'], callback_data=f"cat_{cat_id}")
+            ])
+    buttons.append([InlineKeyboardButton("⬅️ بازگشت", callback_data="back_to_menu")])
+    return InlineKeyboardMarkup(buttons)

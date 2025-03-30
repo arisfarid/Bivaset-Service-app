@@ -178,7 +178,17 @@ async def run_bot():
             await shutdown()
 
 def main():
-    """Main function"""
+    application = Application.builder().token(TOKEN).build()
+    
+    # اضافه کردن CallbackQueryHandler اصلی
+    application.add_handler(CallbackQueryHandler(handle_callback))
+    
+    # سایر هندلرها
+    application.add_handler(MessageHandler(
+        filters.TEXT & ~filters.COMMAND, 
+        handle_message
+    ))
+    
     if not TOKEN:
         logger.error("TELEGRAM_BOT_TOKEN not set!")
         sys.exit(1)
