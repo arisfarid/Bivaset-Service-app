@@ -4,7 +4,7 @@ import signal
 import asyncio
 import logging
 import requests
-from utils import BASE_URL
+from utils import BASE_URL, restart_chat
 from telegram import Update
 from telegram.ext import (
     Application, MessageHandler, filters, CallbackQueryHandler, 
@@ -40,69 +40,46 @@ async def post_init(application: Application):
     logger.info("Bot started, initializing...")
     
     try:
-        # بازیابی داده‌ها از persistence
-        if application.persistence and os.path.exists(PERSISTENCE_PATH):
-            try:
-                bot_data = await application.persistence.get_bot_data()
-                if bot_data:
-                    application.bot_data.update(bot_data)
-                    logger.info(f"Loaded persistence data: {bot_data}")
-            except Exception as e:
-                logger.error(f"Error loading persistence data: {e}")
-                application.bot_data.clear()
-        
-        # اطمینان از وجود لیست active_chats
-        if 'active_chats' not in application.bot_data:
-            application.bot_data['active_chats'] = []
-            logger.info("Created new active_chats list")
-        
-        active_chats = application.bot_data.get('active_chats', [])
-        logger.info(f"Found {len(active_chats)} active chats: {active_chats}")
-        
-        # ارسال پیام به چت‌های فعال
-        for chat_id in active_chats[:]:  # استفاده از کپی برای حذف ایمن
-            try:
-                # ارسال پیام راه‌اندازی مجدد
-                message = await application.bot.send_message(
-                    chat_id=chat_id,
-                    text="🔄 ربات در حال راه‌اندازی مجدد است...",
-                    disable_notification=True
-                )
-                
-                # صبر کوتاه
-                await asyncio.sleep(1)
-                
-                # پاک کردن پیام قبلی و ارسال /start
-                try:
-                    await message.delete()
-                    await application.bot.send_message(
-                        chat_id=chat_id,
-                        text="/start",
-                        disable_notification=True
-                    )
-                    logger.info(f"Successfully restarted chat {chat_id}")
-                    
-                except Exception as e:
-                    logger.error(f"Error in message handling for chat {chat_id}: {e}")
-                    
-            except telegram.error.Unauthorized:
-                logger.info(f"Removing blocked chat {chat_id}")
-                active_chats.remove(chat_id)
-            except telegram.error.BadRequest as e:
-                if "chat not found" in str(e).lower():
-                    logger.info(f"Removing invalid chat {chat_id}")
-                    active_chats.remove(chat_id)
-                else:
-                    logger.error(f"BadRequest for chat {chat_id}: {e}")
-            except Exception as e:
-                logger.error(f"Unexpected error for chat {chat_id}: {e}")
-        
-        # ذخیره تغییرات در bot_data
-        application.bot_data['active_chats'] = active_chats
+        # بازیابی لیست چت‌های فعال
         if application.persistence:
-            await application.persistence.update_bot_data(application.bot_data)
-            logger.info("Updated persistence data with current active chats")
+            bot_data = await application.persistence.get_bot_data()
+            active_chats = bot_data.get('active_chats', [])
             
+            if active_chats:
+                logger.info(f"Found {len(active_chats)} active chats")
+                
+                # راه‌اندازی مجدد همه چت‌های فعال
+                success_count = 0
+                for chat_id in active_chats[:]:  # استفاده از کپی برای حذف ایمن
+                    try:
+                        # نوتیفیکیشن راه‌اندازی مجدد
+                        temp_msg = await application.bot.send_message(
+                            chat_id=chat_id,
+                            text="🔄 در حال راه‌اندازی مجدد...",
+                            disable_notification=True
+                        )
+                        
+                        # راه‌اندازی مجدد چت
+                        if await restart_chat(application, chat_id):
+                            success_count += 1
+                            logger.info(f"Successfully restarted chat {chat_id}")
+                        else:
+                            logger.warning(f"Failed to restart chat {chat_id}")
+                            
+                        # پاک کردن پیام موقت
+                        await temp_msg.delete()
+                        
+                    except Exception as e:
+                        logger.error(f"Error restarting chat {chat_id}: {e}")
+                        # حذف چت‌های غیرفعال از لیست
+                        active_chats.remove(chat_id)
+                
+                logger.info(f"Successfully restarted {success_count} out of {len(active_chats)} chats")
+                
+                # ذخیره لیست به‌روز شده
+                bot_data['active_chats'] = active_chats
+                await application.persistence.update_bot_data(bot_data)
+                
     except Exception as e:
         logger.error(f"Error in post_init: {e}", exc_info=True)
         raise

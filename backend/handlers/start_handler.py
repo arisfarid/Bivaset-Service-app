@@ -20,6 +20,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
         context.bot_data['active_chats'] = []
     if chat_id not in context.bot_data['active_chats']:
         context.bot_data['active_chats'].append(chat_id)
+        await context.application.persistence.update_bot_data(context.bot_data)
         logger.info(f"Added {chat_id} to active chats")
     
     # پاک کردن داده‌های قبلی کاربر

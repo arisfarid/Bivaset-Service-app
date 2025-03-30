@@ -147,17 +147,26 @@ async def ensure_active_chat(update: Update, context: ContextTypes.DEFAULT_TYPE)
     """اطمینان از ثبت چت در لیست چت‌های فعال"""
     chat_id = update.effective_chat.id
     
-    if 'active_chats' not in context.bot_data:
-        context.bot_data['active_chats'] = []
-        
-    if chat_id not in context.bot_data['active_chats']:
-        context.bot_data['active_chats'].append(chat_id)
-        logger.info(f"Added {chat_id} to active chats. Current chats: {context.bot_data['active_chats']}")
-        
-        # ذخیره فوری تغییرات
-        if context.application.persistence:
-            await context.application.persistence.update_bot_data(context.bot_data)
-            logger.info("Persisted active_chats update")
+    try:
+        # اطمینان از وجود لیست active_chats
+        if 'active_chats' not in context.bot_data:
+            context.bot_data['active_chats'] = []
+            
+        # اضافه کردن چت جدید
+        if chat_id not in context.bot_data['active_chats']:
+            context.bot_data['active_chats'].append(chat_id)
+            logger.info(f"Added {chat_id} to active chats. Total active chats: {len(context.bot_data['active_chats'])}")
+            
+            # ذخیره فوری در persistence
+            if context.application and context.application.persistence:
+                await context.application.persistence.update_bot_data(context.bot_data)
+                logger.debug(f"Persisted active_chats update for chat {chat_id}")
+                
+        return True
+            
+    except Exception as e:
+        logger.error(f"Error in ensure_active_chat for {chat_id}: {e}")
+        return False
 
 def format_price(number):
     """تبدیل اعداد مبلغ به فرمت هزارگان با کاما"""
@@ -165,3 +174,25 @@ def format_price(number):
         return "{:,}".format(int(number))
     except (ValueError, TypeError):
         return number
+
+async def restart_chat(application, chat_id: int) -> bool:
+    """راه‌اندازی مجدد چت با شبیه‌سازی دستور /start"""
+    try:
+        # تمیز کردن داده‌های قبلی کاربر
+        if chat_id in application.user_data:
+            application.user_data[chat_id].clear()
+
+        # ارسال کامند start به صورت مخفیانه
+        message = await application.bot.send_message(
+            chat_id=chat_id,
+            text="/start",
+            disable_notification=True
+        )
+        
+        # پاک کردن پیام start
+        await message.delete()
+        
+        return True
+    except Exception as e:
+        logger.error(f"Failed to restart chat {chat_id}: {e}")
+        return False
