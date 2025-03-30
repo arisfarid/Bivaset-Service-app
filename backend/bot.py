@@ -19,7 +19,8 @@ from keyboards import MAIN_MENU_KEYBOARD
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     level=logging.DEBUG,
-    handlers=[logging.FileHandler("bot.log"), logging.StreamHandler()]
+    filename="bot.log",  # فقط به فایل لاگ بنویسد
+    filemode='w'  # هر بار فایل لاگ را خالی کند
 )
 logger = logging.getLogger(__name__)
 logging.getLogger('httpx').setLevel(logging.WARNING)
@@ -29,9 +30,10 @@ TOKEN = os.getenv('TELEGRAM_BOT_TOKEN')
 PERSISTENCE_PATH = os.path.join(os.path.dirname(__file__), 'data', 'persistence.pickle')
 os.makedirs(os.path.dirname(PERSISTENCE_PATH), exist_ok=True)
 
-# متغیر global در سطح ماژول
+# متغیرهای گلوبال
 application = None
 shutdown_event = asyncio.Event()
+is_shutting_down = False
 
 async def post_init(application: Application):
     """اجرا شدن بعد از راه‌اندازی"""
@@ -41,12 +43,11 @@ async def post_init(application: Application):
     
     for chat_id in active_chats:
         try:
-# ارسال پیام به صورت بی‌صدا
             message = await application.bot.send_message(
                 chat_id=chat_id,
                 text="🔄 ربات مجدداً راه‌اندازی شد!\nلطفاً از منوی زیر ادامه دهید:",
                 reply_markup=MAIN_MENU_KEYBOARD,
-                disable_notification=True  # بی‌صدا
+                disable_notification=True
             )
             await asyncio.sleep(3)
             try:
@@ -56,29 +57,39 @@ async def post_init(application: Application):
         except Exception as e:
             logger.error(f"Failed to notify chat {chat_id}: {e}")
 
-def signal_handler(signum, frame):
-    """Handler for system signals that runs in the main thread"""
-    logger.info(f"Received signal {signum}")
-    if application:
-        # Set shutdown event
+def handle_signals():
+    """تنظیم signal handlers"""
+    def signal_handler(signum, frame):
+        """Handler برای سیگنال‌های سیستمی"""
+        global is_shutting_down
+        if is_shutting_down:
+            return
+        is_shutting_down = True
+        logger.info(f"Received signal {signum}")
         shutdown_event.set()
-        # Stop the event loop
-        loop = asyncio.get_event_loop()
-        loop.stop()
-        
+
+    signal.signal(signal.SIGINT, signal_handler)
+    signal.signal(signal.SIGTERM, signal_handler)
+
 async def shutdown():
     """Cleanup and shutdown"""
-    global application
-    if application:
-        logger.info("Shutting down application...")
-        try:
+    global application, is_shutting_down
+    
+    if is_shutting_down:
+        return
+        
+    is_shutting_down = True
+    logger.info("Shutting down application...")
+    
+    try:
+        if application:
             await application.stop()
             await application.shutdown()
-        except Exception as e:
-            logger.error(f"Error during shutdown: {e}")
-        finally:
             application = None
-            sys.exit(0)
+    except Exception as e:
+        logger.error(f"Error during shutdown: {e}")
+    finally:
+        sys.exit(0)
 
 async def watchdog_job(context: ContextTypes.DEFAULT_TYPE):
     """چک کردن سلامت API"""
@@ -125,39 +136,36 @@ async def run_bot():
         
         await application.initialize()
         await application.start()
-        await application.run_polling(allowed_updates=Update.ALL_TYPES)
         
+        # اجرای polling تا زمان دریافت سیگنال shutdown
+        while not shutdown_event.is_set():
+            try:
+                await application.update_queue.get()
+            except asyncio.CancelledError:
+                break
+            
     except Exception as e:
         logger.error(f"Error in run_bot: {e}")
-        if application:
-            await shutdown()
-        sys.exit(1)
+        await shutdown()
 
 def main():
-    """Main function that sets up signal handlers and runs the bot"""
+    """Main function"""
     if not TOKEN:
         logger.error("TELEGRAM_BOT_TOKEN not set!")
         sys.exit(1)
 
-    # Register signal handlers
-    signal.signal(signal.SIGINT, signal_handler)
-    signal.signal(signal.SIGTERM, signal_handler)
-
-    # Get or create event loop
-    try:
-        loop = asyncio.get_event_loop()
-    except RuntimeError:
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
+    # تنظیم signal handlers
+    handle_signals()
 
     try:
-        loop.run_until_complete(run_bot())
+        # اجرای اصلی برنامه
+        asyncio.run(run_bot())
     except KeyboardInterrupt:
-        logger.info("Received KeyboardInterrupt in main")
-        if application:
-            loop.run_until_complete(shutdown())
+        logger.info("Received KeyboardInterrupt")
     finally:
-        loop.close()
+        # اطمینان از cleanup مناسب
+        if application:
+            asyncio.run(shutdown())
 
 if __name__ == '__main__':
     main()
