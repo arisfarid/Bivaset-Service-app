@@ -5,7 +5,7 @@ import asyncio
 import logging
 import requests
 import nest_asyncio
-from utils import BASE_URL
+from utils import BASE_URL, restart_chat
 from telegram import Update
 from telegram.ext import (
     Application, CallbackQueryHandler, 
@@ -54,33 +54,14 @@ async def post_init(application: Application):
             
             for chat_id in active_chats[:]:
                 try:
-                    # ارسال پیام آپدیت
-                    message = await application.bot.send_message(
-                        chat_id=chat_id,
-                        text="🔄 ربات در حال راه‌اندازی مجدد...",
-                        disable_notification=True
-                    )
-                    
-                    # صبر کوتاه
-                    await asyncio.sleep(1)
-                    
-                    # پاک کردن پیام آپدیت
-                    await message.delete()
-                    
-                    # ارسال کامند start
-                    await application.bot.send_message(
-                        chat_id=chat_id,
-                        text="/start",
-                        disable_notification=True
-                    )
-                    logger.info(f"Restarted chat {chat_id}")
-                    
+                    success = await restart_chat(application, chat_id)
+                    if success:
+                        logger.info(f"Chat {chat_id} restarted automatically.")
+                    else:
+                        logger.error(f"Chat {chat_id} failed to restart automatically.")
                 except Exception as e:
                     logger.error(f"Failed to restart chat {chat_id}: {e}")
-                    active_chats.remove(chat_id)
-                    continue
             
-            # ذخیره لیست به‌روز شده
             bot_data['active_chats'] = active_chats
             await application.persistence.update_bot_data(bot_data)
             logger.info("Updated persistence data")
@@ -199,4 +180,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-    
