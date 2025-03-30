@@ -25,13 +25,38 @@ os.makedirs(os.path.dirname(PERSISTENCE_PATH), exist_ok=True)
 
 async def post_init(application: Application):
     logger.info("Bot started, initializing...")
-    active_chats.append(123456789)  # یه chat_id تستی (مثلاً chat_id خودت)
     bot_data = await application.persistence.get_bot_data() or {}
-    active_chats = bot_data.get('active_chats', [])
+    active_chats = bot_data.get('active_chats', [])  # تعریف active_chats
     logger.info(f"Found {len(active_chats)} active chats")
-    await asyncio.sleep(2)  # صبر برای اطمینان از اتمام initialize
-    # کد ری‌استارت چت‌ها رو اینجا نگه می‌داریم (بدون تغییر)
-
+    # خط تستی
+    if 123456789 not in active_chats:  # فقط اگه وجود نداره اضافه کن
+        active_chats.append(123456789)
+        bot_data['active_chats'] = active_chats
+        await application.persistence.update_bot_data(bot_data)
+        logger.info("Added test chat_id 123456789 to active_chats")
+    await asyncio.sleep(2)
+    for chat_id in active_chats[:]:
+        try:
+            for attempt in range(3):
+                success = await restart_chat(application, chat_id)
+                if success:
+                    logger.info(f"Chat {chat_id} restarted successfully on attempt {attempt + 1}")
+                    break
+                else:
+                    logger.warning(f"Restart attempt {attempt + 1} failed for chat {chat_id}")
+                    await asyncio.sleep(1)
+            else:
+                logger.error(f"All restart attempts failed for chat {chat_id}")
+                active_chats.remove(chat_id)
+        except Exception as e:
+            logger.error(f"Failed to restart chat {chat_id}: {e}")
+            active_chats.remove(chat_id)
+            continue
+        await asyncio.sleep(0.5)
+    bot_data['active_chats'] = active_chats
+    await application.persistence.update_bot_data(bot_data)
+    logger.info("Updated persistence data")
+    
 async def shutdown(application: Application):
     logger.info("Shutting down application...")
     if application.running:
