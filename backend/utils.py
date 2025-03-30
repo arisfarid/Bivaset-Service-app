@@ -143,6 +143,15 @@ async def log_chat(update: Update, context: ContextTypes.DEFAULT_TYPE):
         timestamp = datetime.now().strftime('%d/%m/%Y %H:%M:%S')
         logger.info(f"{user.first_name}, [{timestamp}] - Callback: {update.callback_query.data}")
 
+async def ensure_active_chat(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """اطمینان از ثبت چت در لیست چت‌های فعال"""
+    chat_id = update.effective_chat.id
+    if 'active_chats' not in context.bot_data:
+        context.bot_data['active_chats'] = []
+    if chat_id not in context.bot_data['active_chats']:
+        context.bot_data['active_chats'].append(chat_id)
+        logger.info(f"Added {chat_id} to active chats")
+
 def format_price(number):
     """تبدیل اعداد مبلغ به فرمت هزارگان با کاما"""
     try:
