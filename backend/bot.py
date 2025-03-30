@@ -25,6 +25,7 @@ os.makedirs(os.path.dirname(PERSISTENCE_PATH), exist_ok=True)
 
 async def post_init(application: Application):
     logger.info("Bot started, initializing...")
+    active_chats.append(123456789)  # یه chat_id تستی (مثلاً chat_id خودت)
     bot_data = await application.persistence.get_bot_data() or {}
     active_chats = bot_data.get('active_chats', [])
     logger.info(f"Found {len(active_chats)} active chats")
