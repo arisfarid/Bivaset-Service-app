@@ -37,54 +37,67 @@ is_shutting_down = False
 
 async def post_init(application: Application):
     """اجرا شدن بعد از راه‌اندازی"""
-    logger.info("Bot started, sending restart notification to active chats...")
-    bot_data = application.bot_data
-    active_chats = bot_data.get('active_chats', [])
+    logger.info("Bot started, loading persistence data...")
     
-    for chat_id in active_chats:
-        try:
-            # ارسال پیام آپدیت بی‌صدا
-            message = await application.bot.send_message(
-                chat_id=chat_id,
-                text="🔄 ربات مجدداً راه‌اندازی شد!\nلطفاً منتظر بمانید...",
-                reply_markup=MAIN_MENU_KEYBOARD,
-                disable_notification=True
-            )
+    try:
+        # بازیابی داده‌های persistence
+        if application.persistence:
+            bot_data = await application.persistence.get_bot_data()
+            if not bot_data:
+                bot_data = {}
+            application.bot_data.update(bot_data)
+        
+        # اطمینان از وجود لیست active_chats
+        if 'active_chats' not in application.bot_data:
+            application.bot_data['active_chats'] = []
             
-            # صبر کردن 2 ثانیه
-            await asyncio.sleep(3)
-            
+        active_chats = application.bot_data['active_chats']
+        logger.info(f"Found {len(active_chats)} active chats")
+        
+        # ارسال پیام به چت‌های فعال
+        for chat_id in active_chats:
             try:
-                # پاک کردن پیام آپدیت
-                await message.delete()
-                
-                # ارسال کامند start به صورت خودکار
-                await application.bot.send_message(
+                # ارسال پیام آپدیت بی‌صدا
+                message = await application.bot.send_message(
                     chat_id=chat_id,
-                    text="/start",
+                    text="🔄 ربات مجدداً راه‌اندازی شد!\nلطفاً منتظر بمانید...",
+                    reply_markup=MAIN_MENU_KEYBOARD,
                     disable_notification=True
                 )
                 
-                logger.info(f"Sent restart notification and auto-start to {chat_id}")
+                # صبر کوتاه
+                await asyncio.sleep(2)
                 
+                try:
+                    # پاک کردن پیام آپدیت
+                    await message.delete()
+                    
+                    # ارسال کامند start به صورت خودکار
+                    await application.bot.send_message(
+                        chat_id=chat_id,
+                        text="/start",
+                        disable_notification=True
+                    )
+                    logger.info(f"Sent restart notification and auto-start to {chat_id}")
+                    
+                except Exception as e:
+                    logger.error(f"Failed to process restart for chat {chat_id}: {e}")
+                    continue
+                    
             except Exception as e:
-                logger.error(f"Failed to delete message or send start command: {e}")
-                
-        except Exception as e:
-            logger.error(f"Failed to notify chat {chat_id}: {e}")
-            continue
+                logger.error(f"Failed to notify chat {chat_id}: {e}")
+                # اگر چت غیرفعال است، از لیست حذف می‌کنیم
+                if "chat not found" in str(e).lower() or "blocked" in str(e).lower():
+                    active_chats.remove(chat_id)
+                    logger.info(f"Removed inactive chat {chat_id}")
+                continue
 
-    # پاک کردن context تمام کاربران
-    user_data = bot_data.get('user_data', {})
-    for user_id in user_data:
-        try:
-            user_data[user_id].clear()
-            await application.persistence.update_user_data(
-                user_id=user_id, 
-                data={}
-            )
-        except Exception as e:
-            logger.error(f"Failed to clear context for user {user_id}: {e}")
+        # ذخیره تغییرات
+        if application.persistence:
+            await application.persistence.update_bot_data(application.bot_data)
+            
+    except Exception as e:
+        logger.error(f"Error in post_init: {e}")
 
 def handle_signals():
     """تنظیم signal handlers"""
@@ -135,6 +148,7 @@ async def run_bot():
     global application
     
     try:
+        # ایجاد persistence
         persistence = PicklePersistence(
             filepath=PERSISTENCE_PATH,
             store_data=PersistenceInput(
@@ -145,7 +159,8 @@ async def run_bot():
             ),
             update_interval=60
         )
-            
+        
+        # ساخت application
         application = (
             Application.builder()
             .token(TOKEN)
@@ -154,6 +169,7 @@ async def run_bot():
             .build()
         )
 
+        # اضافه کردن هندلرها
         application.add_handler(get_conversation_handler())
         application.add_handler(CallbackQueryHandler(handle_callback))
         application.add_handler(MessageHandler(
