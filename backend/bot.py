@@ -4,11 +4,13 @@ import signal
 import asyncio
 import logging
 import requests
+import nest_asyncio
 from utils import BASE_URL
 from telegram import Update
 from telegram.ext import (
     Application, CallbackQueryHandler, 
-    ContextTypes, PicklePersistence, PersistenceInput
+    ContextTypes, PicklePersistence, PersistenceInput,
+    CommandHandler, ConversationHandler, Update
 )
 from handlers.state_handler import get_conversation_handler, handle_error
 from handlers.callback_handler import handle_callback
@@ -34,6 +36,8 @@ os.makedirs(os.path.dirname(PERSISTENCE_PATH), exist_ok=True)
 # متغیرهای گلوبال
 app = None
 is_shutting_down = False
+
+nest_asyncio.apply()
 
 async def post_init(application: Application):
     """اجرا شدن بعد از راه‌اندازی"""
@@ -133,6 +137,7 @@ async def run_bot():
         )
 
         # اضافه کردن هندلرها
+        app.add_handler(CommandHandler("start", reset_conversation))
         app.add_handler(get_conversation_handler())
         app.add_handler(CallbackQueryHandler(handle_callback))
         app.add_error_handler(handle_error)
@@ -156,6 +161,16 @@ async def run_bot():
             await shutdown()
         raise
 
+async def reset_conversation(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    # این هندلر کانورسیون قبلی را ریست می‌کند
+    context.user_data.clear()
+    # ارسال پیام خوش‌آمد مجدد
+    await update.message.reply_text(
+        "👋 سلام! دوباره خوش آمدید.\nلطفاً /start را برای شروع مجدد ارسال کنید.",
+        reply_markup=MAIN_MENU_KEYBOARD
+    )
+    return ConversationHandler.END
+
 def main():
     """Main function"""
     if not TOKEN:
@@ -176,15 +191,14 @@ def main():
 
     try:
         # اجرای ربات
-        asyncio.run(run_bot())
+        asyncio.get_event_loop().run_until_complete(run_bot())
     except KeyboardInterrupt:
         logger.info("Received KeyboardInterrupt")
     except Exception as e:
         logger.error(f"Error in main: {e}", exc_info=True)
     finally:
         if app:
-            loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(loop)
+            loop = asyncio.get_event_loop()
             loop.run_until_complete(shutdown())
             loop.close()
 

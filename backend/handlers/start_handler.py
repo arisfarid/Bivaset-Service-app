@@ -11,34 +11,24 @@ logger = logging.getLogger(__name__)
 START, REGISTER, ROLE, EMPLOYER_MENU, CATEGORY, SUBCATEGORY, DESCRIPTION, LOCATION_TYPE, LOCATION_INPUT, DETAILS, DETAILS_FILES, DETAILS_DATE, DETAILS_DEADLINE, DETAILS_BUDGET, DETAILS_QUANTITY, SUBMIT, VIEW_PROJECTS, PROJECT_ACTIONS = range(18)
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    """Handle the start command."""
     await ensure_active_chat(update, context)
+    # اگر پیام متنی موجود نباشد، از callback استفاده شود:
+    message_obj = update.message if update.message else update.callback_query.message
     chat_id = update.effective_chat.id
-    
-    # اضافه کردن به لیست چت‌های فعال
+
     if 'active_chats' not in context.bot_data:
         context.bot_data['active_chats'] = []
     if chat_id not in context.bot_data['active_chats']:
         context.bot_data['active_chats'].append(chat_id)
         await context.application.persistence.update_bot_data(context.bot_data)
         logger.info(f"Added {chat_id} to active chats")
-    
-    # پاک کردن داده‌های قبلی کاربر
+
     context.user_data.clear()
-    
-    # فقط در اولین اجرا یا با دستور start پیام خوش‌آمد نمایش داده شود
-    if update.message and update.message.text == '/start':
-        welcome_message = (
-            f"👋 سلام {update.effective_user.first_name}! به ربات خدمات بی‌واسط خوش اومدی.\n"
-            "من رایگان کمکت می‌کنم برای خدمات مورد نیازت، مجری کاربلد پیدا کنی "
-            "یا کار مرتبط با تخصصت پیدا کنی. چی می‌خوای امروز؟ 🌟"
-        )
-        await update.message.reply_text(welcome_message, reply_markup=MAIN_MENU_KEYBOARD)
-    else:
-        await update.message.reply_text(
-            "🌟 چی می‌خوای امروز؟",
-            reply_markup=MAIN_MENU_KEYBOARD
-        )
+    welcome_message = (
+        f"👋 سلام {update.effective_user.first_name}! به ربات خدمات بی‌واسط خوش آمدید.\n"
+        "لطفاً یکی از گزینه‌ها را انتخاب کنید."
+    )
+    await message_obj.reply_text(welcome_message, reply_markup=MAIN_MENU_KEYBOARD)
     return ROLE
 
 async def check_phone(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:

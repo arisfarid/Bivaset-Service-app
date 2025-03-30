@@ -6,3 +6,4 @@ python-telegram-bot[job-queue,callback-data]==20.8
 gunicorn==23.0.0
 requests==2.32.3
 khayyam==3.0.17
+nest_asyncio==1.6.0
