@@ -43,19 +43,48 @@ async def post_init(application: Application):
     
     for chat_id in active_chats:
         try:
+            # ارسال پیام آپدیت بی‌صدا
             message = await application.bot.send_message(
                 chat_id=chat_id,
-                text="🔄 ربات مجدداً راه‌اندازی شد!\nلطفاً از منوی زیر ادامه دهید:",
+                text="🔄 ربات مجدداً راه‌اندازی شد!\nلطفاً منتظر بمانید...",
                 reply_markup=MAIN_MENU_KEYBOARD,
                 disable_notification=True
             )
+            
+            # صبر کردن 2 ثانیه
             await asyncio.sleep(3)
+            
             try:
+                # پاک کردن پیام آپدیت
                 await message.delete()
+                
+                # ارسال کامند start به صورت خودکار
+                await application.bot.send_message(
+                    chat_id=chat_id,
+                    text="/start",
+                    disable_notification=True
+                )
+                
+                logger.info(f"Sent restart notification and auto-start to {chat_id}")
+                
             except Exception as e:
-                logger.error(f"Failed to delete restart message: {e}")
+                logger.error(f"Failed to delete message or send start command: {e}")
+                
         except Exception as e:
             logger.error(f"Failed to notify chat {chat_id}: {e}")
+            continue
+
+    # پاک کردن context تمام کاربران
+    user_data = bot_data.get('user_data', {})
+    for user_id in user_data:
+        try:
+            user_data[user_id].clear()
+            await application.persistence.update_user_data(
+                user_id=user_id, 
+                data={}
+            )
+        except Exception as e:
+            logger.error(f"Failed to clear context for user {user_id}: {e}")
 
 def handle_signals():
     """تنظیم signal handlers"""
