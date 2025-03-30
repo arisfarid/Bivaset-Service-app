@@ -175,24 +175,25 @@ def format_price(number):
     except (ValueError, TypeError):
         return number
 
-async def restart_chat(application, chat_id: int) -> bool:
-    """راه‌اندازی مجدد چت با شبیه‌سازی دستور /start"""
+async def restart_chat(application, chat_id):
+    """
+    راه‌اندازی مجدد چت کاربر
+    """
     try:
-        # تمیز کردن داده‌های قبلی کاربر
-        if chat_id in application.user_data:
-            application.user_data[chat_id].clear()
+        # پاک کردن داده‌های قبلی کاربر
+        user_data = await application.persistence.get_user_data()
+        if str(chat_id) in user_data:
+            user_data[str(chat_id)].clear()
+            await application.persistence.update_user_data(chat_id, user_data[str(chat_id)])
 
-        # ارسال کامند start به صورت مخفیانه
-        message = await application.bot.send_message(
+        # ارسال کامند start به صورت خودکار
+        await application.bot.send_message(
             chat_id=chat_id,
             text="/start",
             disable_notification=True
         )
-        
-        # پاک کردن پیام start
-        await message.delete()
-        
         return True
+
     except Exception as e:
-        logger.error(f"Failed to restart chat {chat_id}: {e}")
+        logger.error(f"Error restarting chat {chat_id}: {e}")
         return False

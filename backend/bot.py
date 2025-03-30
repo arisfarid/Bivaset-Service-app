@@ -53,15 +53,30 @@ async def post_init(application: Application):
             active_chats = bot_data.get('active_chats', [])
             logger.info(f"Found {len(active_chats)} active chats")
             
+            # اطمینان از اتمام initialize قبل از شروع ری‌استارت‌ها
+            await asyncio.sleep(2)
+            
             for chat_id in active_chats[:]:
                 try:
-                    success = await restart_chat(application, chat_id)
-                    if success:
-                        logger.info(f"Chat {chat_id} restarted automatically.")
+                    # تلاش مجدد در صورت شکست
+                    for attempt in range(3):
+                        success = await restart_chat(application, chat_id)
+                        if success:
+                            logger.info(f"Chat {chat_id} restarted successfully on attempt {attempt + 1}")
+                            break
+                        else:
+                            logger.warning(f"Restart attempt {attempt + 1} failed for chat {chat_id}")
+                            await asyncio.sleep(1)  # کمی صبر قبل از تلاش مجدد
                     else:
-                        logger.error(f"Chat {chat_id} failed to restart automatically.")
+                        logger.error(f"All restart attempts failed for chat {chat_id}")
+                        active_chats.remove(chat_id)
+                        
                 except Exception as e:
                     logger.error(f"Failed to restart chat {chat_id}: {e}")
+                    active_chats.remove(chat_id)
+                    continue
+                
+                await asyncio.sleep(0.5)  # فاصله بین هر ری‌استارت
             
             bot_data['active_chats'] = active_chats
             await application.persistence.update_bot_data(bot_data)
