@@ -1,4 +1,4 @@
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram import Update, InlineInlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ContextTypes, ConversationHandler
 from utils import generate_title, convert_deadline_to_date, log_chat, BASE_URL, upload_files # اضافه کردن import
 import requests
@@ -202,20 +202,20 @@ def prepare_final_message(context, project_id):
 def prepare_inline_keyboard(project_id, has_files):
     """آماده‌سازی دکمه‌های inline"""
     keyboard = [
-        [InlineKeyboardButton("✏️ ویرایش", callback_data=f"edit_{project_id}"),
-         InlineKeyboardButton("⛔ بستن", callback_data=f"close_{project_id}")],
-        [InlineKeyboardButton("🗑 حذف", callback_data=f"delete_{project_id}"),
-         InlineKeyboardButton("⏰ تمدید", callback_data=f"extend_{project_id}")]
+        [InlineInlineKeyboardButton("✏️ ویرایش", callback_data=f"edit_{project_id}"),
+         InlineInlineKeyboardButton("⛔ بستن", callback_data=f"close_{project_id}")],
+        [InlineInlineKeyboardButton("🗑 حذف", callback_data=f"delete_{project_id}"),
+         InlineInlineKeyboardButton("⏰ تمدید", callback_data=f"extend_{project_id}")]
     ]
     
     # فقط اگر عکس داشته باشیم، دکمه نمایش عکس‌ها را اضافه می‌کنیم
     if has_files:
         keyboard.append([
-            InlineKeyboardButton("📸 نمایش عکس‌ها", callback_data=f"view_photos_{project_id}")
+            InlineInlineKeyboardButton("📸 نمایش عکس‌ها", callback_data=f"view_photos_{project_id}")
         ])
     
     keyboard.append([
-        InlineKeyboardButton("💡 پیشنهادها", callback_data=f"offers_{project_id}")
+        InlineInlineKeyboardButton("💡 پیشنهادها", callback_data=f"offers_{project_id}")
     ])
     
     return keyboard

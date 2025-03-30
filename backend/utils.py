@@ -5,7 +5,7 @@ import sys
 import logging  # اضافه شده
 from datetime import datetime, timedelta
 from khayyam import JalaliDatetime
-from telegram import KeyboardButton, ReplyKeyboardMarkup
+from telegram import InlineInlineKeyboardButton, InlineKeyboardMarkup
 from telegram import Update
 from telegram.ext import ContextTypes
 

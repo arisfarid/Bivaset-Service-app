@@ -1,4 +1,4 @@
-from telegram import Update, KeyboardButton, ReplyKeyboardMarkup, ForceReply
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, ForceReply
 from telegram.ext import ContextTypes, ConversationHandler
 from keyboards import create_dynamic_keyboard, FILE_MANAGEMENT_MENU_KEYBOARD
 from utils import clean_budget, validate_date, validate_deadline, log_chat, format_price
@@ -22,22 +22,22 @@ async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_T
         if text == "⬅️ بازگشت":
             context.user_data['state'] = SUBCATEGORY
             sub_cats = context.user_data['categories'][context.user_data['category_group']]['children']
-            keyboard = [[KeyboardButton(context.user_data['categories'][cat_id]['name'])] for cat_id in sub_cats] + [[KeyboardButton("⬅️ بازگشت")]]
+            keyboard = [[InlineKeyboardButton(context.user_data['categories'][cat_id]['name'])] for cat_id in sub_cats] + [[InlineKeyboardButton("⬅️ بازگشت")]]
             await update.message.reply_text(
                 f"📌 زیرمجموعه '{context.user_data['categories'][context.user_data['category_group']]['name']}' رو انتخاب کن:",
-                reply_markup=ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
+                reply_markup=InlineKeyboardMarkup(keyboard, resize_keyboard=True)
             )
             return SUBCATEGORY
         context.user_data['description'] = text
         context.user_data['state'] = LOCATION_TYPE
         keyboard = [
-            [KeyboardButton("🏠 محل من"), KeyboardButton("🔧 محل مجری")],
-            [KeyboardButton("💻 غیرحضوری"), KeyboardButton("⬅️ بازگشت")],
-            [KeyboardButton("➡️ ادامه")]
+            [InlineKeyboardButton("🏠 محل من"), InlineKeyboardButton("🔧 محل مجری")],
+            [InlineKeyboardButton("💻 غیرحضوری"), InlineKeyboardButton("⬅️ بازگشت")],
+            [InlineKeyboardButton("➡️ ادامه")]
         ]
         await update.message.reply_text(
             f"🌟 محل انجام خدماتت رو انتخاب کن:",
-            reply_markup=ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
+            reply_markup=InlineKeyboardMarkup(keyboard, resize_keyboard=True)
         )
         return LOCATION_TYPE
 
@@ -45,13 +45,13 @@ async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_T
         if text == "⬅️ بازگشت":
             context.user_data['state'] = LOCATION_TYPE
             keyboard = [
-                [KeyboardButton("🏠 محل من"), KeyboardButton("🔧 محل مجری")],
-                [KeyboardButton("💻 غیرحضوری"), KeyboardButton("⬅️ بازگشت")],
-                [KeyboardButton("➡️ ادامه")]
+                [InlineKeyboardButton("🏠 محل من"), InlineKeyboardButton("🔧 محل مجری")],
+                [InlineKeyboardButton("💻 غیرحضوری"), InlineKeyboardButton("⬅️ بازگشت")],
+                [InlineKeyboardButton("➡️ ادامه")]
             ]
             await update.message.reply_text(
                 f"🌟 محل انجام خدماتت رو انتخاب کن:",
-                reply_markup=ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
+                reply_markup=InlineKeyboardMarkup(keyboard, resize_keyboard=True)
             )
             return LOCATION_TYPE
         elif text == "✅ ثبت درخواست":
@@ -77,15 +77,15 @@ async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_T
             tomorrow = JalaliDatetime(datetime.now() + timedelta(days=1)).strftime('%Y/%m/%d')
             day_after = JalaliDatetime(datetime.now() + timedelta(days=2)).strftime('%Y/%m/%d')
             keyboard = [
-                [KeyboardButton(f"📅 امروز ({today})")],
-                [KeyboardButton(f"📅 فردا ({tomorrow})")],
-                [KeyboardButton(f"📅 پس‌فردا ({day_after})")],
-                [KeyboardButton("✏️ تاریخ دلخواه")],
-                [KeyboardButton("⬅️ بازگشت")]
+                [InlineKeyboardButton(f"📅 امروز ({today})")],
+                [InlineKeyboardButton(f"📅 فردا ({tomorrow})")],
+                [InlineKeyboardButton(f"📅 پس‌فردا ({day_after})")],
+                [InlineKeyboardButton("✏️ تاریخ دلخواه")],
+                [InlineKeyboardButton("⬅️ بازگشت")]
             ]
             await update.message.reply_text(
                 "📅 تاریخ نیاز رو انتخاب کن یا دستی وارد کن (مثلاً 1403/10/15):",
-                reply_markup=ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
+                reply_markup=InlineKeyboardMarkup(keyboard, resize_keyboard=True)
             )
             return DETAILS_DATE
         elif text == "⏳ مهلت انجام":

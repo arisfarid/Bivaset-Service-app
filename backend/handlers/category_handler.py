@@ -1,4 +1,4 @@
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, KeyboardButton, ReplyKeyboardMarkup
+from telegram import Update, InlineInlineKeyboardButton, InlineKeyboardMarkup, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ContextTypes, ConversationHandler
 from utils import get_categories, log_chat
 import logging
@@ -26,10 +26,10 @@ async def handle_category_selection(update: Update, context: ContextTypes.DEFAUL
             sub_cats = categories[selected_cat]['children']
             if sub_cats:
                 context.user_data['state'] = SUBCATEGORY
-                keyboard = [[KeyboardButton(categories[cat_id]['name'])] for cat_id in sub_cats] + [[KeyboardButton("⬅️ بازگشت")]]
+                keyboard = [[InlineKeyboardButton(categories[cat_id]['name'])] for cat_id in sub_cats] + [[InlineKeyboardButton("⬅️ بازگشت")]]
                 await update.message.reply_text(
                     f"📌 زیرمجموعه '{text}' رو انتخاب کن:",
-                    reply_markup=ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
+                    reply_markup=InlineKeyboardMarkup(keyboard, resize_keyboard=True)
                 )
                 await log_chat(update, context)
                 return SUBCATEGORY
@@ -51,10 +51,10 @@ async def handle_category_selection(update: Update, context: ContextTypes.DEFAUL
         if text == "⬅️ بازگشت":
             context.user_data['state'] = CATEGORY
             root_cats = [cat_id for cat_id, cat in categories.items() if cat['parent'] is None]
-            keyboard = [[KeyboardButton(categories[cat_id]['name'])] for cat_id in root_cats] + [[KeyboardButton("⬅️ بازگشت")]]
+            keyboard = [[InlineKeyboardButton(categories[cat_id]['name'])] for cat_id in root_cats] + [[InlineKeyboardButton("⬅️ بازگشت")]]
             await update.message.reply_text(
                 f"🌟 دسته‌بندی خدماتت رو انتخاب کن:",
-                reply_markup=ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
+                reply_markup=InlineKeyboardMarkup(keyboard, resize_keyboard=True)
             )
             await log_chat(update, context)
             return CATEGORY
@@ -81,8 +81,8 @@ async def handle_category_callback(update: Update, context: ContextTypes.DEFAULT
     project = {'category': context.user_data['category_id']}
     cat_name = context.user_data.get('categories', {}).get(project['category'], {}).get('name', 'نامشخص')
     keyboard = [
-        [InlineKeyboardButton("✅ ثبت", callback_data="submit_project")],
-        [InlineKeyboardButton("⬅️ بازگشت", callback_data="back_to_categories")]
+        [InlineInlineKeyboardButton("✅ ثبت", callback_data="submit_project")],
+        [InlineInlineKeyboardButton("⬅️ بازگشت", callback_data="back_to_categories")]
     ]
     await query.edit_message_text(
         f"دسته‌بندی انتخاب‌شده: {cat_name}\nحالا می‌تونی ثبت کنی یا برگردی:",

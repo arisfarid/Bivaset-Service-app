@@ -1,52 +1,52 @@
 # keyboards.py
-from telegram import KeyboardButton, ReplyKeyboardMarkup, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram import InlineKeyboardMarkup, InlineKeyboardButton
 
 # منوی اصلی
-MAIN_MENU_KEYBOARD = ReplyKeyboardMarkup([
-    ["درخواست خدمات | کارفرما 👔"],
-    ["پیشنهاد قیمت | مجری 🦺"]
+MAIN_MENU_KEYBOARD = InlineKeyboardMarkup([
+    [InlineKeyboardButton("درخواست خدمات | کارفرما 👔")],
+    [InlineKeyboardButton("پیشنهاد قیمت | مجری 🦺")]
 ], resize_keyboard=True, one_time_keyboard=True)
 
 # منوی کارفرما
-EMPLOYER_MENU_KEYBOARD = ReplyKeyboardMarkup([
-    [KeyboardButton("📋 درخواست خدمات جدید"), KeyboardButton("📊 مشاهده درخواست‌ها")],
-    [KeyboardButton("⬅️ بازگشت")]
+EMPLOYER_MENU_KEYBOARD = InlineKeyboardMarkup([
+    [InlineKeyboardButton("📋 درخواست خدمات جدید"), InlineKeyboardButton("📊 مشاهده درخواست‌ها")],
+    [InlineKeyboardButton("⬅️ بازگشت")]
 ], resize_keyboard=True)
 
 # منوی مجری
-CONTRACTOR_MENU_KEYBOARD = ReplyKeyboardMarkup([
-    [KeyboardButton("📋 مشاهده درخواست‌ها"), KeyboardButton("💡 پیشنهاد کار")],
-    [KeyboardButton("⬅️ بازگشت")]
+CONTRACTOR_MENU_KEYBOARD = InlineKeyboardMarkup([
+    [InlineKeyboardButton("📋 مشاهده درخواست‌ها"), InlineKeyboardButton("💡 پیشنهاد کار")],
+    [InlineKeyboardButton("⬅️ بازگشت")]
 ], resize_keyboard=True)
 
 # منوی انتخاب محل خدمات
-LOCATION_TYPE_MENU_KEYBOARD = ReplyKeyboardMarkup([
-    [KeyboardButton("🏠 محل من"), KeyboardButton("🔧 محل مجری")],
-    [KeyboardButton("💻 غیرحضوری"), KeyboardButton("⬅️ بازگشت")],
-    [KeyboardButton("➡️ ادامه")]
+LOCATION_TYPE_MENU_KEYBOARD = InlineKeyboardMarkup([
+    [InlineKeyboardButton("🏠 محل من"), InlineKeyboardButton("🔧 محل مجری")],
+    [InlineKeyboardButton("💻 غیرحضوری"), InlineKeyboardButton("⬅️ بازگشت")],
+    [InlineKeyboardButton("➡️ ادامه")]
 ], resize_keyboard=True)
 
 # منوی ارسال لوکیشن
-LOCATION_INPUT_MENU_KEYBOARD = ReplyKeyboardMarkup([
-    [KeyboardButton("📍 انتخاب از نقشه", request_location=True), KeyboardButton("📲 ارسال موقعیت فعلی", request_location=True)],
-    [KeyboardButton("⬅️ بازگشت"), KeyboardButton("➡️ ادامه")]
+LOCATION_INPUT_MENU_KEYBOARD = InlineKeyboardMarkup([
+    [InlineKeyboardButton("📍 انتخاب از نقشه", request_location=True), InlineKeyboardButton("📲 ارسال موقعیت فعلی", request_location=True)],
+    [InlineKeyboardButton("⬅️ بازگشت"), InlineKeyboardButton("➡️ ادامه")]
 ], resize_keyboard=True)
 
 # منوی مدیریت فایل‌ها
-FILE_MANAGEMENT_MENU_KEYBOARD = ReplyKeyboardMarkup([
-    [KeyboardButton("🏁 اتمام ارسال تصاویر"), KeyboardButton("📋 مدیریت عکس‌ها")],
-    [KeyboardButton("⬅️ بازگشت")]
+FILE_MANAGEMENT_MENU_KEYBOARD = InlineKeyboardMarkup([
+    [InlineKeyboardButton("🏁 اتمام ارسال تصاویر"), InlineKeyboardButton("📋 مدیریت عکس‌ها")],
+    [InlineKeyboardButton("⬅️ بازگشت")]
 ], resize_keyboard=True)
 
 # منوی مشاهده پروژه‌ها
-VIEW_PROJECTS_MENU_KEYBOARD = ReplyKeyboardMarkup([
-    [KeyboardButton("درخواست‌های باز"), KeyboardButton("درخواست‌های بسته")],
-    [KeyboardButton("⬅️ بازگشت")]
+VIEW_PROJECTS_MENU_KEYBOARD = InlineKeyboardMarkup([
+    [InlineKeyboardButton("درخواست‌های باز"), InlineKeyboardButton("درخواست‌های بسته")],
+    [InlineKeyboardButton("⬅️ بازگشت")]
 ], resize_keyboard=True)
 
 # منوی ثبت‌نام
-REGISTER_MENU_KEYBOARD = ReplyKeyboardMarkup([
-    [KeyboardButton("ثبت شماره تلفن", request_contact=True)]
+REGISTER_MENU_KEYBOARD = InlineKeyboardMarkup([
+    [InlineKeyboardButton("ثبت شماره تلفن", request_contact=True)]
 ], resize_keyboard=True, one_time_keyboard=True)
 
 # منوی اینلاین کارفرما
@@ -74,22 +74,22 @@ RESTART_INLINE_MENU_KEYBOARD = InlineKeyboardMarkup([
 def create_dynamic_keyboard(context):
     buttons = []
     # همیشه دکمه تصاویر رو نشون بده
-    buttons.append([KeyboardButton("📸 تصاویر یا فایل")])
+    buttons.append([InlineKeyboardButton("📸 تصاویر یا فایل")])
     
     if 'need_date' not in context.user_data:
-        buttons.append([KeyboardButton("📅 تاریخ نیاز")])
+        buttons.append([InlineKeyboardButton("📅 تاریخ نیاز")])
     if 'deadline' not in context.user_data:
-        buttons.append([KeyboardButton("⏳ مهلت انجام")])
+        buttons.append([InlineKeyboardButton("⏳ مهلت انجام")])
     if 'budget' not in context.user_data:
-        buttons.append([KeyboardButton("💰 بودجه")])
+        buttons.append([InlineKeyboardButton("💰 بودجه")])
     if 'quantity' not in context.user_data:
-        buttons.append([KeyboardButton("📏 مقدار و واحد")])
-    buttons.append([KeyboardButton("⬅️ بازگشت"), KeyboardButton("✅ ثبت درخواست")])
-    return ReplyKeyboardMarkup(buttons, resize_keyboard=True)
+        buttons.append([InlineKeyboardButton("📏 مقدار و واحد")])
+    buttons.append([InlineKeyboardButton("⬅️ بازگشت"), InlineKeyboardButton("✅ ثبت درخواست")])
+    return InlineKeyboardMarkup(buttons, resize_keyboard=True)
 
 def create_category_keyboard(categories):
     """ساخت کیبورد دسته‌بندی‌ها"""
     root_cats = [cat_id for cat_id, cat in categories.items() if cat['parent'] is None]
-    keyboard = [[KeyboardButton(categories[cat_id]['name'])] for cat_id in root_cats]
-    keyboard.append([KeyboardButton("⬅️ بازگشت")])
-    return ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
+    keyboard = [[InlineKeyboardButton(categories[cat_id]['name'])] for cat_id in root_cats]
+    keyboard.append([InlineKeyboardButton("⬅️ بازگشت")])
+    return InlineKeyboardMarkup(keyboard, resize_keyboard=True)

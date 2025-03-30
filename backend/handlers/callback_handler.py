@@ -1,4 +1,4 @@
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, KeyboardButton, ReplyKeyboardMarkup
+from telegram import Update, InlineInlineKeyboardButton, InlineKeyboardMarkup, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ContextTypes, ConversationHandler
 import logging
 from handlers.start_handler import start
@@ -79,8 +79,8 @@ async def handle_new_request(update: Update, context: ContextTypes.DEFAULT_TYPE)
         
         # نمایش منوی دسته‌بندی‌ها
         root_cats = [cat_id for cat_id, cat in categories.items() if cat['parent'] is None]
-        keyboard = [[KeyboardButton(categories[cat_id]['name'])] for cat_id in root_cats]
-        keyboard.append([KeyboardButton("⬅️ بازگشت")])
+        keyboard = [[InlineKeyboardButton(categories[cat_id]['name'])] for cat_id in root_cats]
+        keyboard.append([InlineKeyboardButton("⬅️ بازگشت")])
         
         # حذف پیام‌های قبلی
         await query.message.delete()
@@ -88,7 +88,7 @@ async def handle_new_request(update: Update, context: ContextTypes.DEFAULT_TYPE)
         # ارسال منوی جدید
         await query.message.reply_text(
             "🌟 دسته‌بندی خدماتت رو انتخاب کن:",
-            reply_markup=ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
+            reply_markup=InlineKeyboardMarkup(keyboard, resize_keyboard=True)
         )
         
         await query.answer()
@@ -161,9 +161,9 @@ async def handle_photos_command(update: Update, context: ContextTypes.DEFAULT_TY
             files = context.user_data.get('files', [])
             if 0 <= index < len(files):
                 keyboard = [
-                    [InlineKeyboardButton("🗑 حذف", callback_data=f"delete_photo_{index}"),
-                     InlineKeyboardButton("🔄 جایگزینی", callback_data=f"replace_photo_{index}")],
-                    [InlineKeyboardButton("⬅️ بازگشت", callback_data="back_to_management")]
+                    [InlineInlineKeyboardButton("🗑 حذف", callback_data=f"delete_photo_{index}"),
+                     InlineInlineKeyboardButton("🔄 جایگزینی", callback_data=f"replace_photo_{index}")],
+                    [InlineInlineKeyboardButton("⬅️ بازگشت", callback_data="back_to_management")]
                 ]
                 await context.bot.send_photo(
                     chat_id=chat_id,
