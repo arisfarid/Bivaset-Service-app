@@ -89,9 +89,7 @@ def get_conversation_handler() -> ConversationHandler:
         ],
         name="main_conversation",
         persistent=True,
-        allow_reentry=True,
-        per_message=True,  # تغییر به True
-        per_chat=True
+        allow_reentry=True
     )
 
 async def log_state(update: Update, context: ContextTypes.DEFAULT_TYPE):

@@ -154,7 +154,7 @@ async def shutdown():
 async def run_bot():
     """Main async function to run the bot"""
     global application
-    
+
     try:
         # تنظیم persistence
         persistence = PicklePersistence(
@@ -165,18 +165,21 @@ async def run_bot():
                 user_data=True,
                 callback_data=False
             ),
-            update_interval=30  # کاهش فاصله به‌روزرسانی
+            update_interval=30
         )
-        
-        # ساخت application
-        application = (
+
+        # ساخت application با تنظیمات جدید
+        builder = (
             Application.builder()
             .token(TOKEN)
             .persistence(persistence)
             .post_init(post_init)
-            .concurrent_updates(True)  # فعال کردن پردازش همزمان
-            .build()
+            .concurrent_updates(True)
+            .get_updates_read_timeout(30)
+            .get_updates_write_timeout(30)
         )
+        
+        application = builder.build()
 
         # اضافه کردن هندلرها
         application.add_handler(get_conversation_handler())
@@ -186,18 +189,16 @@ async def run_bot():
             handle_photos_command
         ))
         application.add_error_handler(handle_error)
-        
-        # راه‌اندازی
+
+        # راه‌اندازی با await
         await application.initialize()
         await application.start()
         await application.run_polling(
             allowed_updates=Update.ALL_TYPES,
-            drop_pending_updates=True,  # نادیده گرفتن آپدیت‌های معلق
-            close_loop=False,
-            read_timeout=30,
-            write_timeout=30
+            drop_pending_updates=True,
+            close_loop=False
         )
-            
+
     except Exception as e:
         logger.error(f"Error in run_bot: {e}", exc_info=True)
         if application:
@@ -211,14 +212,19 @@ def main():
         sys.exit(1)
 
     try:
-        # استفاده از asyncio.run برای مدیریت درست event loop
+        # استفاده از asyncio.run برای مدیریت event loop
         asyncio.run(run_bot())
     except KeyboardInterrupt:
         logger.info("Received KeyboardInterrupt")
-        if application:
-            asyncio.run(shutdown())
     except Exception as e:
         logger.error(f"Error in main: {e}")
+    finally:
+        if application:
+            try:
+                asyncio.run(shutdown())
+            except RuntimeError:
+                # اگر event loop قبلاً بسته شده باشد
+                pass
 
 if __name__ == '__main__':
     main()
