@@ -112,7 +112,7 @@ async def shutdown():
 async def run_bot():
     """Main async function to run the bot"""
     global app
-    
+
     try:
         # تنظیم persistence
         persistence = PicklePersistence(
@@ -125,7 +125,7 @@ async def run_bot():
             ),
             update_interval=30
         )
-        
+
         # ساخت application
         app = (
             Application.builder()
@@ -141,20 +141,15 @@ async def run_bot():
         app.add_handler(get_conversation_handler())
         app.add_handler(CallbackQueryHandler(handle_callback))
         app.add_error_handler(handle_error)
-        
-        # راه‌اندازی ربات
-        await app.initialize()
-        await app.start()
-        
+
         logger.info("Bot started successfully!")
-        
-        # اجرای polling
+        # فراخوانی run_polling که خودش initialize و start را اجرا می‌کند
         await app.run_polling(
             allowed_updates=Update.ALL_TYPES,
             drop_pending_updates=True,
             close_loop=False
         )
-        
+
     except Exception as e:
         logger.error(f"Error in run_bot: {e}", exc_info=True)
         if app:
