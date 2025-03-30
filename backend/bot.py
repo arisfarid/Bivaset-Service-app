@@ -1,5 +1,7 @@
 import os
 import sys
+import signal
+import asyncio
 import logging
 import requests
 from utils import BASE_URL
@@ -66,19 +68,44 @@ async def post_init(application: Application):
         except Exception as e:
             logger.error(f"Failed to clear context for user {user_id}: {e}")
 
+async def signal_handler(signum, frame):
+    """Handle system signals"""
+    logger.info(f"Received signal {signum}")
+    # Clean shutdown
+    await shutdown()
+
+async def shutdown():
+    """Cleanup and shutdown"""
+    logger.info("Shutting down...")
+    try:
+        # Stop the application
+        await application.stop()
+        await application.shutdown()
+    except Exception as e:
+        logger.error(f"Error during shutdown: {e}")
+    finally:
+        # Force exit after 5 seconds
+        await asyncio.sleep(5)
+        sys.exit(0)
+
 async def watchdog_job(context: ContextTypes.DEFAULT_TYPE):
-    """چک کردن سلامت ربات و ریستارت در صورت نیاز"""
+    """چک کردن سلامت API"""
     try:
         response = requests.get(f"{BASE_URL}health/")
         if response.status_code != 200:
             logger.error("API health check failed")
-            os.execv(sys.executable, ['python'] + sys.argv)
+            # به جای ریستارت، فقط لاگ می‌کنیم
+            return
     except Exception as e:
         logger.error(f"Watchdog error: {e}")
-        os.execv(sys.executable, ['python'] + sys.argv)
+        return
 
 def main():
     try:
+        # Register signal handlers
+        signal.signal(signal.SIGINT, signal_handler)
+        signal.signal(signal.SIGTERM, signal_handler)
+
         if not TOKEN:
             logger.error("TELEGRAM_BOT_TOKEN not set!")
             sys.exit(1)
@@ -111,15 +138,25 @@ def main():
         ))
         app.add_error_handler(handle_error)
         
-        # اضافه کردن watchdog job
+        # Add watchdog job with longer interval
         app.job_queue.run_repeating(watchdog_job, interval=300)
+        
+        # Store application globally for shutdown
+        global application
+        application = app
         
         # اجرای ربات
         app.run_polling(allowed_updates=Update.ALL_TYPES)
         
     except Exception as e:
         logger.error(f"Error in main: {e}")
-        raise
+        sys.exit(1)
 
 if __name__ == '__main__':
-    main()
+    application = None  # Global variable for application instance
+    try:
+        main()
+    except KeyboardInterrupt:
+        logger.info("Received KeyboardInterrupt")
+        if application:
+            asyncio.run(shutdown())
