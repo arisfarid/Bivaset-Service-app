@@ -1,4 +1,4 @@
-from telegram import Update, InlineInlineKeyboardButton, InlineKeyboardMarkup, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ContextTypes, ConversationHandler
 import logging
 from handlers.start_handler import start
@@ -166,9 +166,9 @@ async def handle_photos_command(update: Update, context: ContextTypes.DEFAULT_TY
             files = context.user_data.get('files', [])
             if 0 <= index < len(files):
                 keyboard = [
-                    [InlineInlineKeyboardButton("🗑 حذف", callback_data=f"delete_photo_{index}"),
-                     InlineInlineKeyboardButton("🔄 جایگزینی", callback_data=f"replace_photo_{index}")],
-                    [InlineInlineKeyboardButton("⬅️ بازگشت", callback_data="back_to_management")]
+                    [InlineKeyboardButton("🗑 حذف", callback_data=f"delete_photo_{index}"),
+                     InlineKeyboardButton("🔄 جایگزینی", callback_data=f"replace_photo_{index}")],
+                    [InlineKeyboardButton("⬅️ بازگشت", callback_data="back_to_management")]
                 ]
                 await context.bot.send_photo(
                     chat_id=chat_id,

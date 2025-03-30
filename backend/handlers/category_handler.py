@@ -41,8 +41,8 @@ async def handle_category_callback(update: Update, context: ContextTypes.DEFAULT
     project = {'category': context.user_data['category_id']}
     cat_name = context.user_data.get('categories', {}).get(project['category'], {}).get('name', 'نامشخص')
     keyboard = [
-        [InlineInlineKeyboardButton("✅ ثبت", callback_data="submit_project")],
-        [InlineInlineKeyboardButton("⬅️ بازگشت", callback_data="back_to_categories")]
+        [InlineKeyboardButton("✅ ثبت", callback_data="submit_project")],
+        [InlineKeyboardButton("⬅️ بازگشت", callback_data="back_to_categories")]
     ]
     await query.edit_message_text(
         f"دسته‌بندی انتخاب‌شده: {cat_name}\nحالا می‌تونی ثبت کنی یا برگردی:",

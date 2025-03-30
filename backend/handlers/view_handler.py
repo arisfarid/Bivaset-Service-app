@@ -1,4 +1,4 @@
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update, InlineInlineKeyboardButton, InlineKeyboardMarkup
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ContextTypes, ConversationHandler
 import requests
 import logging
@@ -25,7 +25,7 @@ async def handle_view_projects(update: Update, context: ContextTypes.DEFAULT_TYP
                 return VIEW_PROJECTS
             message = "📋 برای مشاهده جزئیات و مدیریت هر کدام از درخواست‌ها روی دکمه مربوطه ضربه بزنید:\n"
             inline_keyboard = [
-                [InlineInlineKeyboardButton(f"{project['title']} (کد: {project['id']})", callback_data=f"{project['id']}")]
+                [InlineKeyboardButton(f"{project['title']} (کد: {project['id']})", callback_data=f"{project['id']}")]
                 for project in projects
             ]
             await update.message.reply_text(message, reply_markup=InlineKeyboardMarkup(inline_keyboard))
@@ -61,11 +61,11 @@ async def handle_view_callback(update: Update, context: ContextTypes.DEFAULT_TYP
             if project.get('files'):
                 summary += "📸 *تصاویر*:\n" + "\n".join([f"- [عکس]({f})" for f in project['files']])
             inline_keyboard = [
-                [InlineInlineKeyboardButton("✏️ ویرایش", callback_data=f"edit_{project_id}"),
-                 InlineInlineKeyboardButton("⏰ تمدید", callback_data=f"extend_{project_id}")],
-                [InlineInlineKeyboardButton("🗑 حذف", callback_data=f"delete_{project_id}"),
-                 InlineInlineKeyboardButton("✅ بستن", callback_data=f"close_{project_id}")],
-                [InlineInlineKeyboardButton("💬 پیشنهادها", callback_data=f"proposals_{project_id}")]
+                [InlineKeyboardButton("✏️ ویرایش", callback_data=f"edit_{project_id}"),
+                 InlineKeyboardButton("⏰ تمدید", callback_data=f"extend_{project_id}")],
+                [InlineKeyboardButton("🗑 حذف", callback_data=f"delete_{project_id}"),
+                 InlineKeyboardButton("✅ بستن", callback_data=f"close_{project_id}")],
+                [InlineKeyboardButton("💬 پیشنهادها", callback_data=f"proposals_{project_id}")]
             ]
             await query.edit_message_text(summary, parse_mode='Markdown', reply_markup=InlineKeyboardMarkup(inline_keyboard))
         else:
