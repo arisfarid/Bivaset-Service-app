@@ -44,7 +44,7 @@ def get_conversation_handler() -> ConversationHandler:
         name="main_conversation",
         persistent=True,
         allow_reentry=True,
-        per_message=False  # Changed to False to avoid the warning
+        per_message=True  # Changed to True to avoid the warning
     )
 
 async def log_state(update: Update, context: ContextTypes.DEFAULT_TYPE):
