@@ -129,17 +129,13 @@ async def shutdown():
     except Exception as e:
         logger.error(f"Error during shutdown: {e}")
     finally:
-        sys.exit(0)
-
-async def watchdog_job(context: ContextTypes.DEFAULT_TYPE):
-    """چک کردن سلامت API"""
-    if not shutdown_event.is_set():
-        try:
-            response = requests.get(f"{BASE_URL}health/")
-            if response.status_code != 200:
-                logger.error("API health check failed")
-        except Exception as e:
-            logger.error(f"Watchdog error: {e}")
+        # ذخیره آخرین وضعیت persistence
+        if application and application.persistence:
+            try:
+                await application.persistence.flush()
+                logger.info("Persistence data saved")
+            except Exception as e:
+                logger.error(f"Error saving persistence data: {e}")
 
 async def run_bot():
     """Main async function to run the bot"""
@@ -152,7 +148,7 @@ async def run_bot():
                 bot_data=True,
                 chat_data=True,
                 user_data=True,
-                callback_data=False
+                callback_data=True  # تغییر به True
             ),
             update_interval=60
         )
@@ -174,10 +170,20 @@ async def run_bot():
         ))
         application.add_error_handler(handle_error)
         
-        # راه‌اندازی ربات
+        # راه‌اندازی ربات و منتظر ماندن
         await application.initialize()
         await application.start()
-        await application.run_polling(allowed_updates=Update.ALL_TYPES)
+        logger.info("Bot started successfully!")
+        
+        # اجرای polling تا زمان دریافت سیگنال shutdown
+        while not shutdown_event.is_set():
+            try:
+                await application.update_queue.get()
+            except asyncio.CancelledError:
+                break
+        
+        # مدیریت shutdown
+        await shutdown()
         
     except Exception as e:
         logger.error(f"Error in run_bot: {e}")
@@ -191,37 +197,14 @@ def main():
         sys.exit(1)
 
     try:
-        # حذف ایجاد loop جدید و استفاده از loop پیش‌فرض
-        try:
-            loop = asyncio.get_event_loop()
-        except RuntimeError:
-            loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(loop)
-
-        # تنظیم signal handlers
-        handle_signals()
-        
-        # اجرای ربات
-        loop.run_until_complete(run_bot())
-        loop.run_forever()  # اضافه کردن این خط
-        
+        # استفاده از asyncio.run برای مدیریت درست event loop
+        asyncio.run(run_bot())
     except KeyboardInterrupt:
         logger.info("Received KeyboardInterrupt")
         if application:
-            loop.run_until_complete(shutdown())
+            asyncio.run(shutdown())
     except Exception as e:
         logger.error(f"Error in main: {e}")
-    finally:
-        try:
-            # بستن تمیز loop
-            pending = asyncio.all_tasks(loop)
-            for task in pending:
-                task.cancel()
-            loop.run_until_complete(asyncio.gather(*pending, return_exceptions=True))
-            loop.stop()
-            loop.close()
-        except Exception as e:
-            logger.error(f"Error while closing loop: {e}")
 
 if __name__ == '__main__':
     main()
