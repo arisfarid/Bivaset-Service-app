@@ -37,27 +37,28 @@ is_shutting_down = False
 
 async def post_init(application: Application):
     """اجرا شدن بعد از راه‌اندازی"""
-    logger.info("Bot started, loading persistence data...")
+    logger.info("Bot started, initializing...")
     
     try:
-        # بازیابی داده‌های persistence
+        # اول persistence را لود کنیم
         if application.persistence:
             bot_data = await application.persistence.get_bot_data()
-            if not bot_data:
-                bot_data = {}
-            application.bot_data.update(bot_data)
-        
-        # اطمینان از وجود لیست active_chats
+            if bot_data:
+                application.bot_data.update(bot_data)
+                logger.info("Loaded persistence data")
+            
+        # بررسی و ایجاد لیست active_chats
         if 'active_chats' not in application.bot_data:
             application.bot_data['active_chats'] = []
-            
+        
         active_chats = application.bot_data['active_chats']
         logger.info(f"Found {len(active_chats)} active chats")
         
-        # ارسال پیام به چت‌های فعال
+        # ارسال پیام به چت‌های فعال با تاخیر
+        await asyncio.sleep(2)  # صبر برای اطمینان از آماده بودن کامل ربات
+        
         for chat_id in active_chats:
             try:
-                # ارسال پیام آپدیت بی‌صدا
                 message = await application.bot.send_message(
                     chat_id=chat_id,
                     text="🔄 ربات مجدداً راه‌اندازی شد!\nلطفاً منتظر بمانید...",
@@ -65,50 +66,47 @@ async def post_init(application: Application):
                     disable_notification=True
                 )
                 
-                # صبر کوتاه
                 await asyncio.sleep(2)
                 
                 try:
-                    # پاک کردن پیام آپدیت
                     await message.delete()
-                    
-                    # ارسال کامند start به صورت خودکار
                     await application.bot.send_message(
                         chat_id=chat_id,
                         text="/start",
                         disable_notification=True
                     )
-                    logger.info(f"Sent restart notification and auto-start to {chat_id}")
-                    
+                    logger.info(f"Sent restart notification to {chat_id}")
                 except Exception as e:
-                    logger.error(f"Failed to process restart for chat {chat_id}: {e}")
-                    continue
-                    
+                    logger.error(f"Failed to process restart for {chat_id}: {e}")
             except Exception as e:
-                logger.error(f"Failed to notify chat {chat_id}: {e}")
-                # اگر چت غیرفعال است، از لیست حذف می‌کنیم
+                logger.error(f"Failed to notify {chat_id}: {e}")
                 if "chat not found" in str(e).lower() or "blocked" in str(e).lower():
                     active_chats.remove(chat_id)
                     logger.info(f"Removed inactive chat {chat_id}")
-                continue
-
+        
         # ذخیره تغییرات
         if application.persistence:
             await application.persistence.update_bot_data(application.bot_data)
+            logger.info("Updated persistence data")
             
     except Exception as e:
         logger.error(f"Error in post_init: {e}")
+        raise  # اضافه کردن raise برای اطلاع از خطا
 
 def handle_signals():
     """تنظیم signal handlers"""
     def signal_handler(signum, frame):
         """Handler برای سیگنال‌های سیستمی"""
         global is_shutting_down
-        if is_shutting_down:
-            return
-        is_shutting_down = True
-        logger.info(f"Received signal {signum}")
-        shutdown_event.set()
+        if not is_shutting_down:
+            is_shutting_down = True
+            logger.info(f"Received signal {signum}")
+            
+            # اجرای shutdown در event loop اصلی
+            if application:
+                loop = asyncio.get_event_loop()
+                loop.create_task(shutdown())
+                loop.stop()
 
     signal.signal(signal.SIGINT, signal_handler)
     signal.signal(signal.SIGTERM, signal_handler)
@@ -148,7 +146,6 @@ async def run_bot():
     global application
     
     try:
-        # ایجاد persistence
         persistence = PicklePersistence(
             filepath=PERSISTENCE_PATH,
             store_data=PersistenceInput(
@@ -160,12 +157,12 @@ async def run_bot():
             update_interval=60
         )
         
-        # ساخت application
+        # تغییر ترتیب اجرا
         application = (
             Application.builder()
             .token(TOKEN)
             .persistence(persistence)
-            .post_init(post_init)
+            .post_init(post_init)  # post_init قبل از initialize باید اجرا شود
             .build()
         )
 
@@ -177,18 +174,17 @@ async def run_bot():
             handle_photos_command
         ))
         application.add_error_handler(handle_error)
-        application.job_queue.run_repeating(watchdog_job, interval=300)
         
+        # اول initialize و start انجام شود
         await application.initialize()
         await application.start()
         
-        # اجرای polling تا زمان دریافت سیگنال shutdown
-        while not shutdown_event.is_set():
-            try:
-                await application.update_queue.get()
-            except asyncio.CancelledError:
-                break
-            
+        # بعد از initialize شدن کامل، watchdog اضافه شود
+        application.job_queue.run_repeating(watchdog_job, interval=300)
+        
+        # اجرای polling
+        await application.run_polling(allowed_updates=Update.ALL_TYPES)
+        
     except Exception as e:
         logger.error(f"Error in run_bot: {e}")
         await shutdown()
