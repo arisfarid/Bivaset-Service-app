@@ -157,12 +157,11 @@ async def run_bot():
             update_interval=60
         )
         
-        # تغییر ترتیب اجرا
         application = (
             Application.builder()
             .token(TOKEN)
             .persistence(persistence)
-            .post_init(post_init)  # post_init قبل از initialize باید اجرا شود
+            .post_init(post_init)
             .build()
         )
 
@@ -175,19 +174,17 @@ async def run_bot():
         ))
         application.add_error_handler(handle_error)
         
-        # اول initialize و start انجام شود
+        # راه‌اندازی ربات به صورت blocking
         await application.initialize()
         await application.start()
-        
-        # بعد از initialize شدن کامل، watchdog اضافه شود
-        application.job_queue.run_repeating(watchdog_job, interval=300)
-        
-        # اجرای polling
-        await application.run_polling(allowed_updates=Update.ALL_TYPES)
+        await application.run_polling(allowed_updates=Update.ALL_TYPES, close_loop=False)
         
     except Exception as e:
         logger.error(f"Error in run_bot: {e}")
-        await shutdown()
+    finally:
+        if application:
+            await application.stop()
+            await application.shutdown()
 
 def main():
     """Main function"""
@@ -195,18 +192,24 @@ def main():
         logger.error("TELEGRAM_BOT_TOKEN not set!")
         sys.exit(1)
 
-    # تنظیم signal handlers
-    handle_signals()
-
     try:
-        # اجرای اصلی برنامه
-        asyncio.run(run_bot())
+        # تنظیم signal handlers
+        handle_signals()
+        
+        # ایجاد و تنظیم event loop
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        
+        # اجرای ربات
+        loop.run_until_complete(run_bot())
+        
     except KeyboardInterrupt:
         logger.info("Received KeyboardInterrupt")
     finally:
-        # اطمینان از cleanup مناسب
-        if application:
-            asyncio.run(shutdown())
+        # اطمینان از بسته شدن loop
+        loop = asyncio.get_event_loop()
+        loop.stop()
+        loop.close()
 
 if __name__ == '__main__':
     main()
