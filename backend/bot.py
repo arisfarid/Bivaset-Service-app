@@ -35,12 +35,25 @@ async def post_init(application: Application):
     
     for chat_id in active_chats:
         try:
-            await application.bot.send_message(
+            # ارسال پیام به صورت بی‌صدا
+            message = await application.bot.send_message(
                 chat_id=chat_id,
                 text="🔄 ربات مجدداً راه‌اندازی شد!\nلطفاً از منوی زیر ادامه دهید:",
-                reply_markup=MAIN_MENU_KEYBOARD
+                reply_markup=MAIN_MENU_KEYBOARD,
+                disable_notification=True  # بی‌صدا
             )
+            
+            # صبر کردن 3 ثانیه
+            await asyncio.sleep(3)
+            
+            # پاک کردن پیام
+            try:
+                await message.delete()
+            except Exception as e:
+                logger.error(f"Failed to delete restart message: {e}")
+                
             logger.info(f"Sent restart notification to {chat_id}")
+            
         except Exception as e:
             logger.error(f"Failed to notify chat {chat_id}: {e}")
             continue
