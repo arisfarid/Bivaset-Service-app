@@ -80,22 +80,39 @@ async def shutdown():
     is_shutting_down = True    
     logger.info("Shutting down application...")
     
-    if app:
-        try:
+    try:
+        if app and not app.running:
+            logger.info("Application already stopped")
+            return
+            
+        if app and app.running:
             if app.persistence:
-                await app.persistence.flush()
-            await app.stop()
-            await app.shutdown()
-            app = None
-            logger.info("Application shutdown complete")
-        except Exception as e:
-            logger.error(f"Error during shutdown: {e}", exc_info=True)
+                try:
+                    await app.persistence.flush()
+                except Exception as e:
+                    logger.error(f"Error flushing persistence: {e}")
+                    
+            try:
+                await app.stop()
+                await app.shutdown()
+            except Exception as e:
+                logger.error(f"Error stopping application: {e}")
+            
+        app = None
+        logger.info("Application shutdown complete")
+        
+    except Exception as e:
+        logger.error(f"Error during shutdown: {e}", exc_info=True)
 
 async def run_bot():
     """Main async function to run the bot"""
     global app
 
     try:
+        if app:
+            logger.warning("Application instance already exists, shutting down...")
+            await shutdown()
+        
         # تنظیم persistence
         persistence = PicklePersistence(
             filepath=PERSISTENCE_PATH,
@@ -125,15 +142,20 @@ async def run_bot():
         app.add_error_handler(handle_error)
 
         logger.info("Bot started successfully!")
-        # فراخوانی run_polling که خودش initialize و start را اجرا می‌کند
+        
+        # فراخوانی run_polling با تنظیمات مناسب
+        await app.initialize()
+        await app.start()
         await app.run_polling(
             allowed_updates=Update.ALL_TYPES,
             drop_pending_updates=True,
-            close_loop=True  # ensure the loop is closed after polling
+            close_loop=False
         )
+
     except telegram.error.Conflict as e:
-        logger.error(f"Conflict error: {e}. Likely another instance is running. Shutting down gracefully.")
-        await shutdown()
+        logger.error(f"Conflict error: {e}. Another instance may be running.")
+        if app:
+            await shutdown()
     except Exception as e:
         logger.error(f"Error in run_bot: {e}", exc_info=True)
         if app:

@@ -32,19 +32,24 @@ def get_conversation_handler() -> ConversationHandler:
             EMPLOYER_MENU: [CallbackQueryHandler(handle_message)],
             CATEGORY: [CallbackQueryHandler(handle_category_selection)],
             SUBCATEGORY: [CallbackQueryHandler(handle_category_selection)],
-            DESCRIPTION: [CallbackQueryHandler(handle_project_details)],
+            DESCRIPTION: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_project_details)],
             LOCATION_TYPE: [CallbackQueryHandler(handle_location)],
-            LOCATION_INPUT: [CallbackQueryHandler(handle_location)],
+            LOCATION_INPUT: [
+                MessageHandler(filters.LOCATION, handle_location),
+                CallbackQueryHandler(handle_location)
+            ],
             DETAILS: [CallbackQueryHandler(handle_project_details)],
             DETAILS_FILES: [CallbackQueryHandler(handle_attachment)],
         },
         fallbacks=[
+            CommandHandler("cancel", cancel),
             CallbackQueryHandler(handle_callback, pattern="^cancel$")
         ],
         name="main_conversation",
         persistent=True,
-        allow_reentry=True,
-        per_message=True  # Changed to True to avoid the warning
+        per_chat=True,
+        per_user=True,
+        per_message=False  # Changed to False to allow different handler types
     )
 
 async def log_state(update: Update, context: ContextTypes.DEFAULT_TYPE):
