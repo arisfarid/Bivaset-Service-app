@@ -115,8 +115,8 @@ async def shutdown():
     
     try:
         if application:
-            await application.stop()
-            await application.shutdown()
+            await application.stop()  # Properly await the coroutine
+            await application.shutdown()  # Properly await the coroutine
             application = None
     except Exception as e:
         logger.error(f"Error during shutdown: {e}")
@@ -161,8 +161,8 @@ async def run_bot():
         application.add_error_handler(handle_error)
         
         # راه‌اندازی ربات
-        await application.initialize()
-        await application.start()
+        await application.initialize()  # Properly await the coroutine
+        await application.start()  # Properly await the coroutine
         
         logger.info("Bot started successfully!")
         
