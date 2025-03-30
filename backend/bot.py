@@ -3,7 +3,7 @@ import sys
 import signal
 import asyncio
 import logging
-from telegram.ext import Application, CommandHandler, CallbackQueryHandler, ContextTypes, PicklePersistence, PersistenceInput, ConversationHandler
+from telegram.ext import Application, CommandHandler, CallbackQueryHandler, ContextTypes, PicklePersistence, PersistenceInput
 from telegram import Update
 from handlers.state_handler import get_conversation_handler, handle_error
 from handlers.callback_handler import handle_callback
@@ -38,7 +38,7 @@ async def shutdown(application: Application):
         await application.shutdown()
     logger.info("Application shutdown complete")
 
-async def run_bot():
+def build_application():
     persistence = PicklePersistence(
         filepath=PERSISTENCE_PATH,
         store_data=PersistenceInput(bot_data=True, chat_data=True, user_data=True, callback_data=True),
@@ -59,10 +59,7 @@ async def run_bot():
     app.add_handler(CallbackQueryHandler(handle_callback))
     app.add_error_handler(handle_error)
     
-    logger.info("Bot started successfully!")
-    await app.run_polling(allowed_updates=Update.ALL_TYPES, drop_pending_updates=True)
-    
-    return app  # برگردوندن app برای مدیریت بهتر
+    return app
 
 async def reset_conversation(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     context.user_data.clear()
@@ -77,26 +74,24 @@ def main():
         logger.error("TELEGRAM_BOT_TOKEN not set!")
         sys.exit(1)
 
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
+    app = build_application()
+    logger.info("Bot started successfully!")
     
-    async def signal_handler():
-        logger.info("Received shutdown signal")
-        if 'app' in locals():
-            await shutdown(app)
-        loop.stop()
+    # مدیریت سیگنال‌ها
+    def signal_handler(signum, frame):
+        logger.info(f"Received signal {signum}")
+        asyncio.run(shutdown(app))
+        sys.exit(0)
 
-    for sig in (signal.SIGINT, signal.SIGTERM):
-        loop.add_signal_handler(sig, lambda: asyncio.create_task(signal_handler()))
+    signal.signal(signal.SIGINT, signal_handler)
+    signal.signal(signal.SIGTERM, signal_handler)
 
     try:
-        app = loop.run_until_complete(run_bot())
+        app.run_polling(allowed_updates=Update.ALL_TYPES, drop_pending_updates=True)
     except Exception as e:
         logger.error(f"Error in main: {e}", exc_info=True)
     finally:
-        if 'app' in locals():
-            loop.run_until_complete(shutdown(app))
-        loop.close()
+        asyncio.run(shutdown(app))
 
 if __name__ == '__main__':
     main()
