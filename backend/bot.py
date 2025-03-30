@@ -13,6 +13,7 @@ from telegram.ext import (
 from handlers.state_handler import get_conversation_handler, handle_error
 from handlers.attachment_handler import handle_photos_command
 from handlers.callback_handler import handle_callback
+from handlers.message_handler import handle_message
 from keyboards import MAIN_MENU_KEYBOARD
 
 # تنظیمات اولیه
