@@ -34,8 +34,16 @@ async def send_message_with_keyboard(context, chat_id, text, reply_markup):
     )
 
 async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    chat_id = update.effective_chat.id
     query = update.callback_query
     data = query.data
+    
+    # اضافه کردن به لیست چت‌های فعال
+    if 'active_chats' not in context.bot_data:
+        context.bot_data['active_chats'] = []
+    if chat_id not in context.bot_data['active_chats']:
+        context.bot_data['active_chats'].append(chat_id)
+        logger.info(f"Added {chat_id} to active chats")
     
     if data == "restart":
         try:

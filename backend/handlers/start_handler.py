@@ -12,7 +12,16 @@ START, REGISTER, ROLE, EMPLOYER_MENU, CATEGORY, SUBCATEGORY, DESCRIPTION, LOCATI
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Handle the start command."""
-    # پاک کردن داده‌های قبلی
+    chat_id = update.effective_chat.id
+    
+    # اضافه کردن به لیست چت‌های فعال
+    if 'active_chats' not in context.bot_data:
+        context.bot_data['active_chats'] = []
+    if chat_id not in context.bot_data['active_chats']:
+        context.bot_data['active_chats'].append(chat_id)
+        logger.info(f"Added {chat_id} to active chats")
+    
+    # پاک کردن داده‌های قبلی کاربر
     context.user_data.clear()
     
     # فقط در اولین اجرا یا با دستور start پیام خوش‌آمد نمایش داده شود

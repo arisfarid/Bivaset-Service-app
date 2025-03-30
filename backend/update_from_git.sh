@@ -4,7 +4,6 @@ PROJECT_DIR="/home/ubuntu/Bivaset-Service-app/backend"
 
 echo "Updating from GitHub..."
 cd "$PROJECT_DIR" || { echo "Failed to enter project directory"; exit 1; }
-python3 -c "from utils import save_timestamp; save_timestamp()"  # ذخیره timestamp قبل از هر تغییر
 git fetch origin
 git reset --hard origin/main
 echo "# Updated at $(date)" >> bot.py  # تغییر زمان فایل bot.py
@@ -37,7 +36,7 @@ sudo systemctl status gunicorn --no-pager | head -n 10
 # ری‌استارت ربات
 echo "Restarting bot..."
 pkill -f "python3 bot.py"
-nohup python3 bot.py > bot.log 2>&1 &
+python3 bot.py &
 echo "Bot restarted. Check bot.log for output."
 
 echo "Update and restart completed successfully!"

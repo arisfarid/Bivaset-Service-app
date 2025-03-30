@@ -15,8 +15,16 @@ START, REGISTER, ROLE, EMPLOYER_MENU, CATEGORY, SUBCATEGORY, DESCRIPTION, LOCATI
 message_lock = Lock()
 
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    chat_id = update.effective_chat.id
     text = update.message.text
     current_state = context.user_data.get('state', ROLE)
+    
+    # اضافه کردن به لیست چت‌های فعال
+    if 'active_chats' not in context.bot_data:
+        context.bot_data['active_chats'] = []
+    if chat_id not in context.bot_data['active_chats']:
+        context.bot_data['active_chats'].append(chat_id)
+        logger.info(f"Added {chat_id} to active chats")
     
     # اگر location ارسال شده
     if update.message.location:
@@ -53,7 +61,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         context.user_data['categories'] = categories
         keyboard = create_category_keyboard(categories)
         
-        # مستقیماً به انتخاب دسته‌بندی برود بدون پیام اضافی
+        # حذف پیام "چی میخوای امروز؟" و مستقیماً نمایش دسته‌بندی‌ها
         await update.message.reply_text(
             "🌟 دسته‌بندی خدماتت رو انتخاب کن:",
             reply_markup=keyboard

@@ -63,27 +63,6 @@ async def upload_attachments(files, context):
         logger.error(f"Error in upload_attachments: {e}")
         return []
 
-def get_last_mod_time():
-    return os.path.getmtime(BOT_FILE)
-
-def save_timestamp():
-    with open(TIMESTAMP_FILE, 'w') as f:
-        f.write(str(get_last_mod_time()))
-
-def load_timestamp():
-    if os.path.exists(TIMESTAMP_FILE):
-        with open(TIMESTAMP_FILE, 'r') as f:
-            return float(f.read())
-    return 0
-
-def check_for_updates(bot_data):
-    last_mod_time = get_last_mod_time()
-    saved_time = load_timestamp()
-    logger.info(f"Last mod time: {last_mod_time}, Saved time: {saved_time}")
-    result = last_mod_time > saved_time
-    logger.info(f"Update check result: {result}")
-    return result
-
 # بقیه توابع بدون تغییر
 def persian_to_english(text):
     persian_digits = '۰۱۲۳۴۵۶۷۸۹'
