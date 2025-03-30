@@ -1,6 +1,6 @@
 from telegram import Update, KeyboardButton, ReplyKeyboardMarkup
 from telegram.ext import ContextTypes, ConversationHandler
-from utils import get_categories, get_user_phone, log_chat
+from utils import get_categories, get_user_phone, log_chat, ensure_active_chat
 import logging
 from handlers.location_handler import handle_location
 from handlers.start_handler import check_phone
@@ -15,6 +15,7 @@ START, REGISTER, ROLE, EMPLOYER_MENU, CATEGORY, SUBCATEGORY, DESCRIPTION, LOCATI
 message_lock = Lock()
 
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    await ensure_active_chat(update, context)
     chat_id = update.effective_chat.id
     text = update.message.text
     current_state = context.user_data.get('state', ROLE)

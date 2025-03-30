@@ -6,7 +6,7 @@ from handlers.category_handler import handle_category_callback
 from handlers.edit_handler import handle_edit_callback
 from handlers.view_handler import handle_view_callback
 from handlers.attachment_handler import show_photo_management, handle_photos_command
-from utils import log_chat,get_categories
+from utils import log_chat,get_categories, ensure_active_chat
 from keyboards import create_category_keyboard, EMPLOYER_MENU_KEYBOARD, FILE_MANAGEMENT_MENU_KEYBOARD, RESTART_INLINE_MENU_KEYBOARD, BACK_INLINE_MENU_KEYBOARD, MAIN_MENU_KEYBOARD
 import asyncio  # برای استفاده از sleep
 from asyncio import Lock
@@ -34,6 +34,7 @@ async def send_message_with_keyboard(context, chat_id, text, reply_markup):
     )
 
 async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    await ensure_active_chat(update, context)
     chat_id = update.effective_chat.id
     query = update.callback_query
     data = query.data

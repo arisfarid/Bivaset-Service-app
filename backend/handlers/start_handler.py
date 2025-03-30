@@ -1,6 +1,6 @@
 from telegram import Update, KeyboardButton, ReplyKeyboardMarkup
 from telegram.ext import ContextTypes, ConversationHandler
-from utils import get_user_phone, BASE_URL, log_chat
+from utils import get_user_phone, BASE_URL, log_chat, ensure_active_chat
 from keyboards import MAIN_MENU_KEYBOARD, REGISTER_MENU_KEYBOARD, EMPLOYER_MENU_KEYBOARD  # اضافه شده
 import requests
 import logging
@@ -12,6 +12,7 @@ START, REGISTER, ROLE, EMPLOYER_MENU, CATEGORY, SUBCATEGORY, DESCRIPTION, LOCATI
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Handle the start command."""
+    await ensure_active_chat(update, context)
     chat_id = update.effective_chat.id
     
     # اضافه کردن به لیست چت‌های فعال
