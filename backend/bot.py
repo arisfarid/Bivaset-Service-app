@@ -174,17 +174,15 @@ async def run_bot():
         ))
         application.add_error_handler(handle_error)
         
-        # راه‌اندازی ربات به صورت blocking
+        # راه‌اندازی ربات
         await application.initialize()
         await application.start()
-        await application.run_polling(allowed_updates=Update.ALL_TYPES, close_loop=False)
+        await application.run_polling(allowed_updates=Update.ALL_TYPES)
         
     except Exception as e:
         logger.error(f"Error in run_bot: {e}")
-    finally:
         if application:
-            await application.stop()
-            await application.shutdown()
+            await shutdown()
 
 def main():
     """Main function"""
@@ -193,23 +191,37 @@ def main():
         sys.exit(1)
 
     try:
+        # حذف ایجاد loop جدید و استفاده از loop پیش‌فرض
+        try:
+            loop = asyncio.get_event_loop()
+        except RuntimeError:
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+
         # تنظیم signal handlers
         handle_signals()
         
-        # ایجاد و تنظیم event loop
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        
         # اجرای ربات
         loop.run_until_complete(run_bot())
+        loop.run_forever()  # اضافه کردن این خط
         
     except KeyboardInterrupt:
         logger.info("Received KeyboardInterrupt")
+        if application:
+            loop.run_until_complete(shutdown())
+    except Exception as e:
+        logger.error(f"Error in main: {e}")
     finally:
-        # اطمینان از بسته شدن loop
-        loop = asyncio.get_event_loop()
-        loop.stop()
-        loop.close()
+        try:
+            # بستن تمیز loop
+            pending = asyncio.all_tasks(loop)
+            for task in pending:
+                task.cancel()
+            loop.run_until_complete(asyncio.gather(*pending, return_exceptions=True))
+            loop.stop()
+            loop.close()
+        except Exception as e:
+            logger.error(f"Error while closing loop: {e}")
 
 if __name__ == '__main__':
     main()
