@@ -100,11 +100,11 @@ async def show_photo_management(update: Update, context: ContextTypes.DEFAULT_TY
         return
 
     keyboard = [
-        [InlineInlineKeyboardButton(f"📸 عکس {i+1}", callback_data=f"view_photo_{i}"),
-         InlineInlineKeyboardButton("✏️ ویرایش", callback_data=f"edit_photo_{i}")]
+        [InlineKeyboardButton(f"📸 عکس {i+1}", callback_data=f"view_photo_{i}"),
+         InlineKeyboardButton("✏️ ویرایش", callback_data=f"edit_photo_{i}")]
         for i in range(len(files))
     ]
-    keyboard.append([InlineInlineKeyboardButton("⬅️ برگشت به ارسال", callback_data="back_to_upload")])
+    keyboard.append([InlineKeyboardButton("⬅️ برگشت به ارسال", callback_data="back_to_upload")])
     await update.message.reply_text(
         "📸 عکس‌های ثبت‌شده:",
         reply_markup=InlineKeyboardMarkup(keyboard)
