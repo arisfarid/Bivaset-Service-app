@@ -1,5 +1,5 @@
 # keyboards.py
-from telegram import InlineKeyboardMarkup, InlineKeyboardButton
+from telegram import InlineKeyboardMarkup, InlineKeyboardButton, KeyboardButton, ReplyKeyboardMarkup
 
 # منوی اصلی 
 MAIN_MENU_KEYBOARD = InlineKeyboardMarkup([
@@ -29,10 +29,15 @@ LOCATION_TYPE_MENU_KEYBOARD = InlineKeyboardMarkup([
     [InlineKeyboardButton("⬅️ بازگشت", callback_data="back_to_desc")]
 ])
 
-# منوی ارسال لوکیشن
+# منوی ارسال لوکیشن (از ReplyKeyboardMarkup استفاده می‌کنیم)
+LOCATION_INPUT_MENU = ReplyKeyboardMarkup([
+    [KeyboardButton("📲 ارسال موقعیت فعلی", request_location=True)],
+    [KeyboardButton("⬅️ بازگشت")]
+], resize_keyboard=True)
+
+# منوی inline ارسال لوکیشن
 LOCATION_INPUT_MENU_KEYBOARD = InlineKeyboardMarkup([
     [InlineKeyboardButton("📍 انتخاب از نقشه", callback_data="send_location")],
-    [InlineKeyboardButton("📲 ارسال موقعیت فعلی", request_location=True)],
     [InlineKeyboardButton("⬅️ بازگشت", callback_data="back_to_location_type")]
 ])
 
@@ -50,9 +55,14 @@ VIEW_PROJECTS_MENU_KEYBOARD = InlineKeyboardMarkup([
     [InlineKeyboardButton("⬅️ بازگشت", callback_data="back_to_employer_menu")]
 ])
 
-# منوی ثبت‌نام
+# منوی ثبت‌نام با KeyboardButton برای ارسال شماره تماس
+REGISTER_MENU = ReplyKeyboardMarkup([
+    [KeyboardButton("ثبت شماره تلفن", request_contact=True)]
+], resize_keyboard=True)
+
+# نسخه inline منوی ثبت‌نام
 REGISTER_MENU_KEYBOARD = InlineKeyboardMarkup([
-    [InlineKeyboardButton("ثبت شماره تلفن", callback_data="register_phone", request_contact=True)]
+    [InlineKeyboardButton("ثبت شماره تلفن", callback_data="register_phone")]
 ])
 
 # منوی اینلاین کارفرما

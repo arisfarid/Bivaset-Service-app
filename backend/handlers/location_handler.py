@@ -23,6 +23,7 @@ async def handle_location(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
                 'latitude': location.latitude
             }
             context.user_data['state'] = DETAILS
+            # تغییر به کیبورد عادی
             await update.message.reply_text(
                 "📋 جزئیات درخواست:\n"
                 "اگه بخوای می‌تونی برای راهنمایی بهتر مجری‌ها این اطلاعات رو هم وارد کنی:",
@@ -34,7 +35,7 @@ async def handle_location(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
             logger.error(f"Error handling location: {e}")
             await update.message.reply_text(
                 "❌ خطا در ثبت لوکیشن. لطفاً دوباره تلاش کنید.",
-                reply_markup=LOCATION_INPUT_MENU_KEYBOARD
+                reply_markup=LOCATION_INPUT_MENU_KEYBOARD  # استفاده از کیبورد ReplyKeyboardMarkup
             )
             return current_state
 
