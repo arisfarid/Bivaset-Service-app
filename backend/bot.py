@@ -40,34 +40,39 @@ async def post_init(application: Application):
     logger.info("Bot started, initializing...")
     
     try:
-        # اول persistence را لود کنیم
-        if application.persistence:
-            bot_data = await application.persistence.get_bot_data()
-            if bot_data:
-                application.bot_data.update(bot_data)
-                logger.info("Loaded persistence data")
-            
-        # بررسی و ایجاد لیست active_chats
+        # بازیابی داده‌ها از persistence
+        if application.persistence and os.path.exists(PERSISTENCE_PATH):
+            try:
+                bot_data = await application.persistence.get_bot_data()
+                if bot_data:
+                    application.bot_data.update(bot_data)
+                    logger.info(f"Loaded persistence data: {bot_data}")
+            except Exception as e:
+                logger.error(f"Error loading persistence data: {e}")
+                application.bot_data.clear()
+        
+        # اطمینان از وجود لیست active_chats
         if 'active_chats' not in application.bot_data:
             application.bot_data['active_chats'] = []
+            logger.info("Created new active_chats list")
         
-        active_chats = application.bot_data['active_chats']
-        logger.info(f"Found {len(active_chats)} active chats")
+        active_chats = application.bot_data.get('active_chats', [])
+        logger.info(f"Found {len(active_chats)} active chats: {active_chats}")
         
-        # ارسال پیام به چت‌های فعال با تاخیر
-        await asyncio.sleep(2)  # صبر برای اطمینان از آماده بودن کامل ربات
-        
-        for chat_id in active_chats:
+        # ارسال پیام به چت‌های فعال
+        for chat_id in active_chats[:]:  # استفاده از کپی برای حذف ایمن
             try:
+                # ارسال پیام راه‌اندازی مجدد
                 message = await application.bot.send_message(
                     chat_id=chat_id,
-                    text="🔄 ربات مجدداً راه‌اندازی شد!\nلطفاً منتظر بمانید...",
-                    reply_markup=MAIN_MENU_KEYBOARD,
+                    text="🔄 ربات در حال راه‌اندازی مجدد است...",
                     disable_notification=True
                 )
                 
-                await asyncio.sleep(2)
+                # صبر کوتاه
+                await asyncio.sleep(1)
                 
+                # پاک کردن پیام قبلی و ارسال /start
                 try:
                     await message.delete()
                     await application.bot.send_message(
@@ -75,23 +80,32 @@ async def post_init(application: Application):
                         text="/start",
                         disable_notification=True
                     )
-                    logger.info(f"Sent restart notification to {chat_id}")
+                    logger.info(f"Successfully restarted chat {chat_id}")
+                    
                 except Exception as e:
-                    logger.error(f"Failed to process restart for {chat_id}: {e}")
-            except Exception as e:
-                logger.error(f"Failed to notify {chat_id}: {e}")
-                if "chat not found" in str(e).lower() or "blocked" in str(e).lower():
+                    logger.error(f"Error in message handling for chat {chat_id}: {e}")
+                    
+            except telegram.error.Unauthorized:
+                logger.info(f"Removing blocked chat {chat_id}")
+                active_chats.remove(chat_id)
+            except telegram.error.BadRequest as e:
+                if "chat not found" in str(e).lower():
+                    logger.info(f"Removing invalid chat {chat_id}")
                     active_chats.remove(chat_id)
-                    logger.info(f"Removed inactive chat {chat_id}")
+                else:
+                    logger.error(f"BadRequest for chat {chat_id}: {e}")
+            except Exception as e:
+                logger.error(f"Unexpected error for chat {chat_id}: {e}")
         
-        # ذخیره تغییرات
+        # ذخیره تغییرات در bot_data
+        application.bot_data['active_chats'] = active_chats
         if application.persistence:
             await application.persistence.update_bot_data(application.bot_data)
-            logger.info("Updated persistence data")
+            logger.info("Updated persistence data with current active chats")
             
     except Exception as e:
-        logger.error(f"Error in post_init: {e}")
-        raise  # اضافه کردن raise برای اطلاع از خطا
+        logger.error(f"Error in post_init: {e}", exc_info=True)
+        raise
 
 def handle_signals():
     """تنظیم signal handlers"""
@@ -142,22 +156,25 @@ async def run_bot():
     global application
     
     try:
+        # تنظیم persistence
         persistence = PicklePersistence(
             filepath=PERSISTENCE_PATH,
             store_data=PersistenceInput(
                 bot_data=True,
                 chat_data=True,
                 user_data=True,
-                callback_data=True  # تغییر به True
+                callback_data=False
             ),
-            update_interval=60
+            update_interval=30  # کاهش فاصله به‌روزرسانی
         )
         
+        # ساخت application
         application = (
             Application.builder()
             .token(TOKEN)
             .persistence(persistence)
             .post_init(post_init)
+            .concurrent_updates(True)  # فعال کردن پردازش همزمان
             .build()
         )
 
@@ -170,25 +187,22 @@ async def run_bot():
         ))
         application.add_error_handler(handle_error)
         
-        # راه‌اندازی ربات و منتظر ماندن
+        # راه‌اندازی
         await application.initialize()
         await application.start()
-        logger.info("Bot started successfully!")
-        
-        # اجرای polling تا زمان دریافت سیگنال shutdown
-        while not shutdown_event.is_set():
-            try:
-                await application.update_queue.get()
-            except asyncio.CancelledError:
-                break
-        
-        # مدیریت shutdown
-        await shutdown()
-        
+        await application.run_polling(
+            allowed_updates=Update.ALL_TYPES,
+            drop_pending_updates=True,  # نادیده گرفتن آپدیت‌های معلق
+            close_loop=False,
+            read_timeout=30,
+            write_timeout=30
+        )
+            
     except Exception as e:
-        logger.error(f"Error in run_bot: {e}")
+        logger.error(f"Error in run_bot: {e}", exc_info=True)
         if application:
             await shutdown()
+        raise
 
 def main():
     """Main function"""
