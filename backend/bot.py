@@ -10,7 +10,7 @@ from telegram import Update
 from telegram.ext import (
     Application, CallbackQueryHandler, 
     ContextTypes, PicklePersistence, PersistenceInput,
-    CommandHandler, ConversationHandler, Update
+    CommandHandler, ConversationHandler
 )
 from handlers.state_handler import get_conversation_handler, handle_error
 from handlers.callback_handler import handle_callback
