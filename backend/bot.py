@@ -5,6 +5,7 @@ import asyncio
 import logging
 import requests
 import nest_asyncio
+import telegram.error  # added to catch Conflict errors
 from utils import BASE_URL, restart_chat
 from telegram import Update
 from telegram.ext import (
@@ -128,9 +129,11 @@ async def run_bot():
         await app.run_polling(
             allowed_updates=Update.ALL_TYPES,
             drop_pending_updates=True,
-            close_loop=False
+            close_loop=True  # ensure the loop is closed after polling
         )
-
+    except telegram.error.Conflict as e:
+        logger.error(f"Conflict error: {e}. Likely another instance is running. Shutting down gracefully.")
+        await shutdown()
     except Exception as e:
         logger.error(f"Error in run_bot: {e}", exc_info=True)
         if app:
