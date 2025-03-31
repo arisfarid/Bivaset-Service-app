@@ -8,6 +8,7 @@ from telegram import Update
 from handlers.state_handler import get_conversation_handler, handle_error
 from handlers.callback_handler import handle_callback
 from keyboards import MAIN_MENU_KEYBOARD
+from utils import restart_chat
 
 # تنظیمات لاگ
 logging.basicConfig(
@@ -56,7 +57,7 @@ async def post_init(application: Application):
     bot_data['active_chats'] = active_chats
     await application.persistence.update_bot_data(bot_data)
     logger.info("Updated persistence data")
-    
+
 async def shutdown(application: Application):
     logger.info("Shutting down application...")
     if application.running:
