@@ -181,6 +181,7 @@ async def restart_chat(application, chat_id):
     """
     try:
         # پاک کردن داده‌های قبلی کاربر
+        await application.bot.get_chat(chat_id)
         user_data = await application.persistence.get_user_data()
         if str(chat_id) in user_data:
             user_data[str(chat_id)].clear()

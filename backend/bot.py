@@ -27,14 +27,14 @@ os.makedirs(os.path.dirname(PERSISTENCE_PATH), exist_ok=True)
 async def post_init(application: Application):
     logger.info("Bot started, initializing...")
     bot_data = await application.persistence.get_bot_data() or {}
-    active_chats = bot_data.get('active_chats', [])  # تعریف active_chats
+    active_chats = bot_data.get('active_chats', [])
     logger.info(f"Found {len(active_chats)} active chats")
-    # خط تستی
-    if 123456789 not in active_chats:  # فقط اگه وجود نداره اضافه کن
-        active_chats.append(123456789)
+    my_chat_id = 95206265  # chat_id تو
+    if my_chat_id not in active_chats:
+        active_chats.append(my_chat_id)
         bot_data['active_chats'] = active_chats
         await application.persistence.update_bot_data(bot_data)
-        logger.info("Added test chat_id 123456789 to active_chats")
+        logger.info(f"Added test chat_id {my_chat_id} to active_chats")
     await asyncio.sleep(2)
     for chat_id in active_chats[:]:
         try:
@@ -89,6 +89,14 @@ def build_application():
     return app
 
 async def reset_conversation(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    chat_id = update.effective_chat.id
+    bot_data = context.bot_data
+    if 'active_chats' not in bot_data:
+        bot_data['active_chats'] = []
+    if chat_id not in bot_data['active_chats']:
+        bot_data['active_chats'].append(chat_id)
+        await context.application.persistence.update_bot_data(bot_data)
+        logger.info(f"Added {chat_id} to active chats from reset_conversation")
     context.user_data.clear()
     await update.message.reply_text(
         "👋 سلام! دوباره خوش آمدید.\nلطفاً /start را برای شروع مجدد ارسال کنید.",
