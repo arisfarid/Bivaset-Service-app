@@ -54,26 +54,53 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Start the conversation with the bot."""
     await ensure_active_chat(update, context)
     
-    # If already in REGISTER state, re-prompt instead of restarting
-    if context.user_data.get('state') == REGISTER:
-        logger.info(f"User {update.effective_user.id} in REGISTER state, re-prompting")
+    # Check if the user has a registered phone
+    telegram_id = str(update.effective_user.id)
+    try:
+        response = requests.get(f"{BASE_URL}users/?telegram_id={telegram_id}")
+        if response.status_code == 200 and response.json():
+            user_data = response.json()[0]
+            phone = user_data.get('phone')
+            
+            # If the user has no valid phone or a temporary phone
+            if not phone or phone.startswith('tg_'):
+                logger.info(f"User {telegram_id} needs phone registration")
+                await update.message.reply_text(
+                    "👋 سلام! برای استفاده از امکانات ربات، لطفاً شماره تلفن خود را به اشتراک بگذارید:",
+                    reply_markup=REGISTER_MENU_KEYBOARD
+                )
+                context.user_data['state'] = REGISTER
+                return REGISTER
+                
+            # If the user has a valid phone
+            context.user_data['phone'] = phone
+            welcome_message = (
+                f"👋 سلام {update.effective_user.first_name}! به ربات خدمات بی‌واسط خوش آمدید.\n"
+                "لطفاً یکی از گزینه‌ها را انتخاب کنید:"
+            )
+            await update.message.reply_text(
+                welcome_message,
+                reply_markup=MAIN_MENU_KEYBOARD
+            )
+            return ROLE
+            
+        # If the user is new
+        logger.info(f"New user {telegram_id}")
         await update.message.reply_text(
-            "⚠️ برای استفاده از ربات، باید شماره تلفن خود را به اشتراک بگذارید:",
+            "👋 سلام! برای استفاده از امکانات ربات، لطفاً شماره تلفن خود را به اشتراک بگذارید:",
             reply_markup=REGISTER_MENU_KEYBOARD
         )
-        return REGISTER
-
-    if not await check_phone(update, context):
-        logger.info(f"User {update.effective_user.id} needs phone registration")
         context.user_data['state'] = REGISTER
         return REGISTER
 
-    welcome_message = (
-        f"👋 سلام {update.effective_user.first_name}! به ربات خدمات بی‌واسط خوش آمدید.\n"
-        "لطفاً یکی از گزینه‌ها را انتخاب کنید."
-    )
-    await update.message.reply_text(welcome_message, reply_markup=MAIN_MENU_KEYBOARD)
-    return ROLE
+    except Exception as e:
+        logger.error(f"Error in start command for {telegram_id}: {e}")
+        await update.message.reply_text(
+            "❌ خطا در برقراری ارتباط. لطفاً دوباره تلاش کنید.",
+            reply_markup=REGISTER_MENU_KEYBOARD
+        )
+        context.user_data['state'] = REGISTER
+        return REGISTER
 
 async def handle_contact(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Handle receiving the user's phone number."""
