@@ -81,10 +81,10 @@ async def handle_contact(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     try:
         contact = update.message.contact
         telegram_id = str(update.effective_user.id)
-        logger.info(f"Processing contact for user {telegram_id}")
+        logger.info(f"Processing contact from user {telegram_id}: {contact.phone_number}")
 
         if str(contact.user_id) != telegram_id:
-            logger.warning(f"User {telegram_id} tried to share someone else's contact")
+            logger.warning(f"User {telegram_id} tried to submit someone else's contact")
             await update.message.reply_text(
                 "❌ لطفاً فقط شماره تلفن خودتان را به اشتراک بگذارید!",
                 reply_markup=REGISTER_MENU_KEYBOARD
@@ -94,7 +94,7 @@ async def handle_contact(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         phone = contact.phone_number.lstrip('+')
         name = update.effective_user.full_name or "کاربر"
         
-        # Check for existing phone
+        # Check for existing phone with detailed logging
         phone_check_url = f"{BASE_URL}users/?phone={phone}"
         logger.info(f"Checking phone: GET {phone_check_url}")
         phone_check = requests.get(phone_check_url)
