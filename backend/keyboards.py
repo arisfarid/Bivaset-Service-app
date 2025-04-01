@@ -61,9 +61,13 @@ REGISTER_MENU = ReplyKeyboardMarkup([
 ], resize_keyboard=True)
 
 # نسخه inline منوی ثبت‌نام
-REGISTER_MENU_KEYBOARD = InlineKeyboardMarkup([
-    [InlineKeyboardButton("ثبت شماره تلفن", callback_data="register_phone")]
-])
+REGISTER_MENU_KEYBOARD = ReplyKeyboardMarkup(
+    [
+        [KeyboardButton("📱 ثبت شماره تلفن", request_contact=True)]
+    ],
+    resize_keyboard=True,  # کیبورد کوچکتر و مرتب‌تر
+    one_time_keyboard=True  # بعد از استفاده مخفی می‌شود
+)
 
 # منوی اینلاین کارفرما
 EMPLOYER_INLINE_MENU_KEYBOARD = InlineKeyboardMarkup([

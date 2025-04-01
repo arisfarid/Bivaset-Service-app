@@ -14,44 +14,38 @@ START, REGISTER, ROLE, EMPLOYER_MENU, CATEGORY, SUBCATEGORY, DESCRIPTION, LOCATI
 CHANGE_PHONE, VERIFY_CODE = range(20, 22)  # states جدید
 
 async def check_phone(update: Update, context: ContextTypes.DEFAULT_TYPE) -> bool:
-    """بررسی وجود شماره تلفن برای کاربر فعلی"""
     telegram_id = str(update.effective_user.id)
     
     try:
-        # بررسی وجود کاربر در API
         response = requests.get(f"{BASE_URL}users/?telegram_id={telegram_id}")
         
-        # اگر کاربر وجود نداشت یا شماره تلفن نداشت
         if response.status_code != 200 or not response.json():
             logger.info(f"User {telegram_id} not found in database")
             await update.effective_message.reply_text(
-                "😊 برای استفاده از امکانات ربات، لطفاً شماره تلفنت رو با دکمه زیر ثبت کن! 📱",
-                reply_markup=REGISTER_MENU_KEYBOARD
+                "😊 برای استفاده از امکانات ربات، لطفاً شماره تلفن خود را با دکمه زیر به اشتراک بگذارید:",
+                reply_markup=REGISTER_MENU_KEYBOARD  # استفاده از کیبورد جدید
             )
             return False
 
         user_data = response.json()[0]
         phone = user_data.get('phone')
 
-        # اگر شماره تلفن موقت باشد (شماره‌های موقت با tg_ شروع می‌شوند)
         if not phone or phone.startswith('tg_'):
             logger.info(f"User {telegram_id} has temporary phone number")
             await update.effective_message.reply_text(
-                "😊 برای استفاده از امکانات ربات، لطفاً شماره تلفنت رو با دکمه زیر ثبت کن! 📱",
-                reply_markup=REGISTER_MENU_KEYBOARD
+                "😊 برای استفاده از امکانات ربات، لطفاً شماره تلفن خود را با دکمه زیر به اشتراک بگذارید:",
+                reply_markup=REGISTER_MENU_KEYBOARD  # استفاده از کیبورد جدید
             )
             return False
 
-        # اگر شماره تلفن معتبر داشت
         context.user_data['phone'] = phone
-        logger.info(f"User {telegram_id} has valid phone number: {phone}")
         return True
 
     except Exception as e:
         logger.error(f"Error checking phone for user {telegram_id}: {e}")
         await update.effective_message.reply_text(
             "❌ خطا در بررسی اطلاعات کاربر. لطفاً دوباره تلاش کنید.",
-            reply_markup=REGISTER_MENU_KEYBOARD
+            reply_markup=REGISTER_MENU_KEYBOARD  # استفاده از کیبورد جدید
         )
         return False
 
