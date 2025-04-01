@@ -64,7 +64,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
         f"👋 سلام {update.effective_user.first_name}! به ربات خدمات بی‌واسط خوش آمدید.\n"
         "لطفاً یکی از گزینه‌ها را انتخاب کنید."
     )
-    await update.message.reply_text(welcome_message, reply_markup=MAIN_MENU_KEYBOARD)
+    await update.effective_message.reply_text(welcome_message, reply_markup=MAIN_MENU_KEYBOARD)
     return ROLE
 
 async def handle_contact(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
@@ -76,7 +76,7 @@ async def handle_contact(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     
     # Ensure the phone number belongs to the user
     if contact.user_id != update.effective_user.id:
-        await update.message.reply_text("❌ لطفاً شماره تلفن خودتان را به اشتراک بگذارید!")
+        await update.effective_message.reply_text("❌ لطفاً شماره تلفن خودتان را به اشتراک بگذارید!")
         return REGISTER
 
     logger.info(f"Received contact for user {telegram_id}: {phone}")
@@ -98,7 +98,7 @@ async def handle_contact(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
             logger.debug(f"PUT response: {update_response.status_code} {update_response.text}")
             if update_response.status_code in [200, 201]:
                 logger.info(f"Updated user {telegram_id} with phone {phone}")
-                await update.message.reply_text("✅ شماره تلفن شما با موفقیت به‌روزرسانی شد.")
+                await update.effective_message.reply_text("✅ شماره تلفن شما با موفقیت به‌روزرسانی شد.")
             else:
                 raise Exception(f"Failed to update user: {update_response.status_code}")
         else:
@@ -106,7 +106,7 @@ async def handle_contact(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
             logger.debug(f"POST response: {create_response.status_code} {create_response.text}")
             if create_response.status_code in [200, 201]:
                 logger.info(f"Created new user {telegram_id} with phone {phone}")
-                await update.message.reply_text("✅ ثبت‌نام با موفقیت انجام شد!")
+                await update.effective_message.reply_text("✅ ثبت‌نام با موفقیت انجام شد!")
             else:
                 raise Exception(f"Failed to create user: {create_response.status_code}")
 
@@ -115,17 +115,17 @@ async def handle_contact(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
 
     except requests.exceptions.ConnectionError:
         logger.error(f"Connection error while registering user {telegram_id}")
-        await update.message.reply_text("❌ خطا در ارتباط با سرور.\nلطفاً دوباره تلاش کنید.")
+        await update.effective_message.reply_text("❌ خطا در ارتباط با سرور.\nلطفاً دوباره تلاش کنید.")
         return REGISTER
         
     except Exception as e:
         logger.error(f"Error in handle_contact for user {telegram_id}: {e}")
-        await update.message.reply_text("❌ خطا در ثبت شماره تلفن.\nلطفاً دوباره تلاش کنید.")
+        await update.effective_message.reply_text("❌ خطا در ثبت شماره تلفن.\nلطفاً دوباره تلاش کنید.")
         return REGISTER
 
 async def change_phone(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """هندلر دستور /change_phone"""
-    await update.message.reply_text(
+    await update.effective_message.reply_text(
         "📱 لطفاً شماره تلفن جدید خود را وارد کنید:\n"
         "مثال: 09123456789"
     )
@@ -136,7 +136,7 @@ async def handle_new_phone(update: Update, context: ContextTypes.DEFAULT_TYPE) -
     new_phone = update.message.text.strip()
     
     if not new_phone.startswith('09') or not new_phone.isdigit() or len(new_phone) != 11:
-        await update.message.reply_text(
+        await update.effective_message.reply_text(
             "❌ فرمت شماره نامعتبر است.\n"
             "لطفاً شماره را به فرمت 09123456789 وارد کنید."
         )
@@ -144,7 +144,7 @@ async def handle_new_phone(update: Update, context: ContextTypes.DEFAULT_TYPE) -
         
     response = requests.get(f"{BASE_URL}users/?phone={new_phone}")
     if response.status_code == 200 and response.json():
-        await update.message.reply_text(
+        await update.effective_message.reply_text(
             "❌ این شماره قبلاً توسط کاربر دیگری ثبت شده است."
         )
         return CHANGE_PHONE
@@ -156,7 +156,7 @@ async def handle_new_phone(update: Update, context: ContextTypes.DEFAULT_TYPE) -
     
     sms_text = f"کد تایید بی‌واسط: {verification_code}\nاعتبار: 2 دقیقه"
     try:
-        await update.message.reply_text(
+        await update.effective_message.reply_text(
             "📤 کد تأیید ارسال شد.\n"
             f"(کد تست: {verification_code})\n"
             "لطفاً کد 6 رقمی دریافتی را وارد کنید:"
@@ -164,7 +164,7 @@ async def handle_new_phone(update: Update, context: ContextTypes.DEFAULT_TYPE) -
         return VERIFY_CODE
     except Exception as e:
         logger.error(f"Error sending SMS: {e}")
-        await update.message.reply_text(
+        await update.effective_message.reply_text(
             "❌ خطا در ارسال کد تأیید.\n"
             "لطفاً دوباره تلاش کنید."
         )
@@ -178,15 +178,15 @@ async def verify_new_phone(update: Update, context: ContextTypes.DEFAULT_TYPE) -
     new_phone = context.user_data.get('new_phone')
     
     if not all([stored_code, expires_at, new_phone]):
-        await update.message.reply_text("❌ اطلاعات تأیید نامعتبر است.")
+        await update.effective_message.reply_text("❌ اطلاعات تأیید نامعتبر است.")
         return ROLE
         
     if datetime.now() > expires_at:
-        await update.message.reply_text("⏰ کد تأیید منقضی شده است.")
+        await update.effective_message.reply_text("⏰ کد تأیید منقضی شده است.")
         return ROLE
         
     if code != stored_code:
-        await update.message.reply_text("❌ کد وارد شده اشتباه است.")
+        await update.effective_message.reply_text("❌ کد وارد شده اشتباه است.")
         return VERIFY_CODE
         
     telegram_id = str(update.effective_user.id)
@@ -198,18 +198,18 @@ async def verify_new_phone(update: Update, context: ContextTypes.DEFAULT_TYPE) -
             update_response = requests.put(f"{BASE_URL}users/{user['id']}/", json=user)
             
             if update_response.status_code == 200:
-                await update.message.reply_text(
+                await update.effective_message.reply_text(
                     "✅ شماره تلفن شما با موفقیت تغییر کرد."
                 )
             else:
-                await update.message.reply_text("❌ خطا در بروزرسانی شماره تلفن.")
+                await update.effective_message.reply_text("❌ خطا در بروزرسانی شماره تلفن.")
         
         for key in ['verification_code', 'code_expires_at', 'new_phone']:
             context.user_data.pop(key, None)
             
     except Exception as e:
         logger.error(f"Error updating phone: {e}")
-        await update.message.reply_text("❌ خطا در بروزرسانی شماره تلفن.")
+        await update.effective_message.reply_text("❌ خطا در بروزرسانی شماره تلفن.")
     
     return ROLE
 
