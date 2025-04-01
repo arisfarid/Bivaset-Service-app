@@ -12,6 +12,7 @@ from handlers.attachment_handler import handle_attachment, handle_photos_command
 from handlers.project_details_handler import handle_project_details
 from handlers.view_handler import handle_view_projects
 from handlers.callback_handler import handle_callback
+from keyboards import REGISTER_MENU_KEYBOARD
 
 logger = logging.getLogger(__name__)
 
@@ -25,7 +26,14 @@ from handlers.submission_handler import submit_project
 from handlers.phone_handler import change_phone, handle_new_phone, verify_new_phone
 
 def get_conversation_handler() -> ConversationHandler:
-    """تنظیم و برگرداندن ConversationHandler اصلی"""
+    async def handle_non_contact(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+        """Handle any non-contact message in REGISTER state"""
+        await update.message.reply_text(
+            "⚠️ برای استفاده از ربات، باید شماره تلفن خود را به اشتراک بگذارید.",
+            reply_markup=REGISTER_MENU_KEYBOARD
+        )
+        return REGISTER
+
     return ConversationHandler(
         entry_points=[
             CommandHandler("start", start),
@@ -37,7 +45,8 @@ def get_conversation_handler() -> ConversationHandler:
             CATEGORY: [CallbackQueryHandler(handle_category_selection)],
             SUBCATEGORY: [CallbackQueryHandler(handle_category_selection)],
             REGISTER: [
-                MessageHandler(filters.CONTACT, handle_contact)
+                MessageHandler(filters.CONTACT, handle_contact),
+                MessageHandler(~filters.CONTACT & ~filters.COMMAND, handle_non_contact)  # New handler
             ],
             DESCRIPTION: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_project_details)],
             LOCATION_TYPE: [CallbackQueryHandler(handle_location)],

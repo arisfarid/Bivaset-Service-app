@@ -17,9 +17,16 @@ message_lock = Lock()
 
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     await ensure_active_chat(update, context)
+    current_state = context.user_data.get('state', ROLE)
+    
+    # Force phone check first
+    if not await check_phone(update, context):
+        logger.info(f"User {update.effective_user.id} blocked: no phone registered")
+        context.user_data['state'] = REGISTER
+        return REGISTER
+    
     chat_id = update.effective_chat.id
     text = update.message.text
-    current_state = context.user_data.get('state', ROLE)
     
     # اضافه کردن به لیست چت‌های فعال
     if 'active_chats' not in context.bot_data:
@@ -31,10 +38,6 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     # اگر location ارسال شده
     if update.message.location:
         return await handle_location(update, context)
-        
-    # بررسی ثبت‌نام
-    if not await check_phone(update, context):
-        return REGISTER
         
     if text == "درخواست خدمات | کارفرما 👔":
         # پاک کردن context و تنظیم state جدید
