@@ -36,6 +36,10 @@ def get_conversation_handler() -> ConversationHandler:
             EMPLOYER_MENU: [CallbackQueryHandler(handle_message)],
             CATEGORY: [CallbackQueryHandler(handle_category_selection)],
             SUBCATEGORY: [CallbackQueryHandler(handle_category_selection)],
+            REGISTER: [
+                MessageHandler(filters.CONTACT, handle_contact),  # اضافه کردن هندلر contact
+                CommandHandler("start", start)
+            ],
             DESCRIPTION: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_project_details)],
             LOCATION_TYPE: [CallbackQueryHandler(handle_location)],
             LOCATION_INPUT: [
