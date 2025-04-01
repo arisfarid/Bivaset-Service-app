@@ -38,12 +38,15 @@ def get_conversation_handler() -> ConversationHandler:
         return REGISTER
 
     return ConversationHandler(
-        entry_points=[CommandHandler("start", start)],
+        entry_points=[
+            CommandHandler("start", start),
+            CommandHandler("change_phone", change_phone)
+        ],
         states={
             REGISTER: [
-                MessageHandler(filters.CONTACT, handle_contact),
-                MessageHandler(~filters.CONTACT, handle_non_contact),  # Handle all non-contact messages
-                CommandHandler("start", start)  # Allow /start to re-prompt
+                MessageHandler(filters.CONTACT, handle_contact),  # Must be first
+                CommandHandler("start", start),  # Allow restart
+                MessageHandler((~filters.CONTACT & ~filters.COMMAND), handle_non_contact)  # Handle all other messages
             ],
             ROLE: [CallbackQueryHandler(handle_role)],
             EMPLOYER_MENU: [CallbackQueryHandler(handle_message)],
