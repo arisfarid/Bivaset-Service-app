@@ -67,41 +67,80 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     return ROLE
 
 async def handle_contact(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    """Handle receiving the user's phone number."""
     contact = update.message.contact
     phone = contact.phone_number
     name = update.effective_user.full_name or "کاربر"
     telegram_id = str(update.effective_user.id)
     
+    # Ensure the phone number belongs to the user
     if contact.user_id != update.effective_user.id:
         await update.message.reply_text(
             "❌ لطفاً شماره تلفن خودتان را به اشتراک بگذارید!"
         )
         return REGISTER
 
-    url = BASE_URL + 'users/'
+    logger.info(f"Received contact for user {telegram_id}: {phone}")  # Add logging
+
+    # Prepare user data
     data = {
         'phone': phone,
         'telegram_id': telegram_id,
-        'telegram_phone': phone,  # ذخیره شماره تلگرام
+        'telegram_phone': phone,
         'name': name,
         'role': context.user_data.get('role', 'client')
     }
     
     try:
-        response = requests.post(url, json=data)
-        if response.status_code in [200, 201]:
-            await update.message.reply_text(
-                "✅ ثبت‌نام با موفقیت انجام شد!\n"
-                "برای تغییر شماره تماس در آینده می‌توانید از دستور /change_phone استفاده کنید."
+        # Check if the user exists
+        response = requests.get(f"{BASE_URL}users/?telegram_id={telegram_id}")
+        
+        if response.status_code == 200 and response.json():
+            # User exists - update their information
+            user = response.json()[0]
+            update_response = requests.put(
+                f"{BASE_URL}users/{user['id']}/",
+                json=data
             )
-            return await start(update, context)
-        elif response.status_code == 400 and "phone" in response.text:
-            await update.message.reply_text(
-                "👋 خوش اومدی! شماره‌ات قبلاً ثبت شده."
-            )
-            return await start(update, context)
+            if update_response.status_code in [200, 201]:
+                logger.info(f"Updated user {telegram_id} with phone {phone}")
+                await update.message.reply_text(
+                    "✅ شماره تلفن شما با موفقیت به‌روزرسانی شد."
+                )
+            else:
+                raise Exception(f"Failed to update user: {update_response.status_code}")
+                
+        else:
+            # New user - create
+            create_response = requests.post(f"{BASE_URL}users/", json=data)
+            if create_response.status_code in [200, 201]:
+                logger.info(f"Created new user {telegram_id} with phone {phone}")
+                await update.message.reply_text(
+                    "✅ ثبت‌نام با موفقیت انجام شد!"
+                )
+            else:
+                raise Exception(f"Failed to create user: {create_response.status_code}")
+
+        # Clear temporary data
+        context.user_data.clear()
+        
+        # Restart with the main menu
+        return await start(update, context)
+
     except requests.exceptions.ConnectionError:
-        await update.message.reply_text("❌ خطا در ارتباط با سرور")
+        logger.error(f"Connection error while registering user {telegram_id}")
+        await update.message.reply_text(
+            "❌ خطا در ارتباط با سرور.\n"
+            "لطفاً دوباره تلاش کنید."
+        )
+        return REGISTER
+        
+    except Exception as e:
+        logger.error(f"Error in handle_contact for user {telegram_id}: {e}")
+        await update.message.reply_text(
+            "❌ خطا در ثبت شماره تلفن.\n"
+            "لطفاً دوباره تلاش کنید."
+        )
         return REGISTER
 
 async def change_phone(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
