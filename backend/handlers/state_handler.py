@@ -26,10 +26,13 @@ from handlers.submission_handler import submit_project
 from handlers.phone_handler import change_phone, handle_new_phone, verify_new_phone
 
 def get_conversation_handler() -> ConversationHandler:
+    """تنظیم و برگرداندن ConversationHandler اصلی"""
     async def handle_non_contact(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-        """Handle any non-contact message in REGISTER state"""
+        """Re-prompt user for contact when they send anything else in REGISTER state"""
+        logger.info(f"User {update.effective_user.id} sent non-contact message in REGISTER state")
         await update.message.reply_text(
-            "⚠️ برای استفاده از ربات، باید شماره تلفن خود را به اشتراک بگذارید.",
+            "⚠️ برای استفاده از ربات، باید شماره تلفن خود را به اشتراک بگذارید.\n"
+            "لطفاً از دکمه زیر استفاده کنید:",
             reply_markup=REGISTER_MENU_KEYBOARD
         )
         return REGISTER
@@ -46,7 +49,8 @@ def get_conversation_handler() -> ConversationHandler:
             SUBCATEGORY: [CallbackQueryHandler(handle_category_selection)],
             REGISTER: [
                 MessageHandler(filters.CONTACT, handle_contact),
-                MessageHandler(~filters.CONTACT & ~filters.COMMAND, handle_non_contact)  # New handler
+                MessageHandler(~filters.CONTACT & ~filters.COMMAND, handle_non_contact),
+                CommandHandler("start", start)  # Allow /start to re-prompt
             ],
             DESCRIPTION: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_project_details)],
             LOCATION_TYPE: [CallbackQueryHandler(handle_location)],

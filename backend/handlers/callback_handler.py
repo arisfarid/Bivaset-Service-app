@@ -40,18 +40,22 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     data = query.data
     
     try:
+        if not query.message:
+            logger.warning(f"No message found in callback query. Data: {data}")
+            await query.answer("❌ خطا: پیام قابل دسترسی نیست")
+            return context.user_data.get('state', START)
+
         if data == "restart":
-            # پاک کردن پیام آپدیت
-            await query.message.delete()
+            try:
+                await query.message.delete()
+            except Exception as e:
+                logger.error(f"Error deleting message: {e}")
             
-            # پاک کردن داده‌های قبلی کاربر
             context.user_data.clear()
-            
-            # اجرای دستور /start
             return await start(update, context)
             
         if data == "employer":
-            await query.edit_message_text(
+            await query.message.edit_text(
                 "🎉 عالیه! چه کاری برات انجام بدم؟",
                 reply_markup=EMPLOYER_MENU_KEYBOARD
             )
@@ -70,7 +74,10 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         
     except Exception as e:
         logger.error(f"Error in callback handler: {e}")
-        await query.answer("❌ خطایی رخ داد!")
+        try:
+            await query.answer("❌ خطایی رخ داد!")
+        except Exception:
+            pass
     
     return context.user_data.get('state')
 

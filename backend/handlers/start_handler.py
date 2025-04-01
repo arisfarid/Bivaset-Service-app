@@ -54,7 +54,18 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Start the conversation with the bot."""
     await ensure_active_chat(update, context)
     
+    # If user is in REGISTER state, don't restart flow
+    if context.user_data.get('state') == REGISTER:
+        logger.info(f"User {update.effective_user.id} in REGISTER state, re-prompting")
+        await update.message.reply_text(
+            "⚠️ برای استفاده از ربات، باید شماره تلفن خود را به اشتراک بگذارید:",
+            reply_markup=REGISTER_MENU_KEYBOARD
+        )
+        return REGISTER
+    
     if not await check_phone(update, context):
+        logger.info(f"User {update.effective_user.id} needs to register phone")
+        context.user_data['state'] = REGISTER  # Explicitly set state
         await update.message.reply_text(
             "😊 برای استفاده از امکانات ربات، لطفاً شماره تلفن خود را به اشتراک بگذارید:",
             reply_markup=REGISTER_MENU_KEYBOARD
@@ -70,27 +81,26 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
 
 async def handle_contact(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Handle receiving the user's phone number."""
-    contact = update.message.contact
-    telegram_id = str(update.effective_user.id)
-    
-    logger.info(f"Received contact from user {telegram_id}: {contact.phone_number}")
-
-    # Verify the contact belongs to the user
-    if str(contact.user_id) != telegram_id:
-        logger.warning(f"User {telegram_id} tried to submit someone else's contact")
-        await update.message.reply_text(
-            "❌ لطفاً فقط شماره تلفن خودتان را به اشتراک بگذارید!",
-            reply_markup=REGISTER_MENU_KEYBOARD
-        )
-        return REGISTER
-
-    phone = contact.phone_number.lstrip('+')
-    name = update.effective_user.full_name or "کاربر"
-    
     try:
+        contact = update.message.contact
+        telegram_id = str(update.effective_user.id)
+        logger.info(f"Handling contact for user {telegram_id}")
+        
+        if str(contact.user_id) != telegram_id:
+            logger.warning(f"User {telegram_id} tried to submit someone else's contact")
+            await update.message.reply_text(
+                "❌ لطفاً فقط شماره تلفن خودتان را به اشتراک بگذارید!",
+                reply_markup=REGISTER_MENU_KEYBOARD
+            )
+            return REGISTER
+
+        phone = contact.phone_number.lstrip('+')
+        name = update.effective_user.full_name or "کاربر"
+        
         # Check for existing phone
-        logger.info(f"Checking if phone {phone} exists")
-        phone_check = requests.get(f"{BASE_URL}users/?phone={phone}")
+        phone_check_url = f"{BASE_URL}users/?phone={phone}"
+        logger.info(f"Checking phone: GET {phone_check_url}")
+        phone_check = requests.get(phone_check_url)
         logger.info(f"Phone check response: {phone_check.status_code}, {phone_check.text}")
         
         if phone_check.status_code == 200 and phone_check.json():
@@ -110,46 +120,41 @@ async def handle_contact(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
             'name': name,
             'role': 'client'
         }
-
-        # Try to find existing user by telegram_id
-        logger.info(f"Checking for existing user with telegram_id {telegram_id}")
-        response = requests.get(f"{BASE_URL}users/?telegram_id={telegram_id}")
+        
+        # Try to update existing user or create new one
+        user_check_url = f"{BASE_URL}users/?telegram_id={telegram_id}"
+        logger.info(f"Checking user: GET {user_check_url}")
+        response = requests.get(user_check_url)
         logger.info(f"User check response: {response.status_code}, {response.text}")
 
         if response.status_code == 200 and response.json():
-            # Update existing user
             user = response.json()[0]
-            logger.info(f"Updating existing user {user['id']}")
-            update_response = requests.put(f"{BASE_URL}users/{user['id']}/", json=data)
+            update_url = f"{BASE_URL}users/{user['id']}/"
+            logger.info(f"Updating user: PUT {update_url}")
+            update_response = requests.put(update_url, json=data)
             logger.info(f"Update response: {update_response.status_code}, {update_response.text}")
-            
-            if update_response.status_code == 200:
-                context.user_data['phone'] = phone  # Save phone in context
-                await update.message.reply_text(
-                    "✅ شماره تلفن شما با موفقیت ثبت شد.",
-                    reply_markup=MAIN_MENU_KEYBOARD
-                )
-                return ROLE
+            success = update_response.status_code == 200
         else:
-            # Create new user
-            logger.info("Creating new user")
+            logger.info(f"Creating new user: POST {BASE_URL}users/")
             create_response = requests.post(f"{BASE_URL}users/", json=data)
             logger.info(f"Create response: {create_response.status_code}, {create_response.text}")
-            
-            if create_response.status_code in [200, 201]:
-                context.user_data['phone'] = phone  # Save phone in context
-                await update.message.reply_text(
-                    "✅ ثبت‌نام شما با موفقیت انجام شد.",
-                    reply_markup=MAIN_MENU_KEYBOARD
-                )
-                return ROLE
+            success = create_response.status_code in [200, 201]
 
-        raise Exception("Failed to create/update user")
+        if success:
+            context.user_data['phone'] = phone
+            context.user_data['state'] = ROLE
+            await update.message.reply_text(
+                "✅ شماره تلفن شما با موفقیت ثبت شد.",
+                reply_markup=MAIN_MENU_KEYBOARD
+            )
+            return ROLE
+        else:
+            raise Exception("Failed to save user data")
 
     except Exception as e:
         logger.error(f"Error in handle_contact: {e}")
         await update.message.reply_text(
-            "❌ خطا در ثبت شماره تلفن.\nلطفاً دوباره تلاش کنید.",
+            "❌ خطا در ثبت شماره تلفن. لطفاً دوباره تلاش کنید.",
             reply_markup=REGISTER_MENU_KEYBOARD
         )
         return REGISTER
