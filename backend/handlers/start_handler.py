@@ -58,7 +58,8 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
         return REGISTER
         
     # ادامه روند معمول
-    context.user_data.clear()
+    # Commented out to preserve state (role/phone) after registration
+    # context.user_data.clear()
     welcome_message = (
         f"👋 سلام {update.effective_user.first_name}! به ربات خدمات بی‌واسط خوش آمدید.\n"
         "لطفاً یکی از گزینه‌ها را انتخاب کنید."
@@ -109,7 +110,8 @@ async def handle_contact(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
             else:
                 raise Exception(f"Failed to create user: {create_response.status_code}")
 
-        return await start(update, context)
+        # Instead of calling start() again (which resets state), we simply return the next state.
+        return ROLE
 
     except requests.exceptions.ConnectionError:
         logger.error(f"Connection error while registering user {telegram_id}")
