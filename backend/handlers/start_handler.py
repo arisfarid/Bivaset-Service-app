@@ -51,38 +51,28 @@ async def check_phone(update: Update, context: ContextTypes.DEFAULT_TYPE) -> boo
         return False
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    """شروع مکالمه با ربات"""
+    """Start the conversation with the bot."""
     await ensure_active_chat(update, context)
     
-    # بررسی شماره تلفن
     if not await check_phone(update, context):
+        await update.message.reply_text(
+            "😊 برای استفاده از امکانات ربات، لطفاً شماره تلفن خود را به اشتراک بگذارید:",
+            reply_markup=REGISTER_MENU_KEYBOARD
+        )
         return REGISTER
-        
-    # ادامه روند معمول
-    # Commented out to preserve state (role/phone) after registration
-    # context.user_data.clear()
+
     welcome_message = (
         f"👋 سلام {update.effective_user.first_name}! به ربات خدمات بی‌واسط خوش آمدید.\n"
         "لطفاً یکی از گزینه‌ها را انتخاب کنید."
     )
-    await update.effective_message.reply_text(welcome_message, reply_markup=MAIN_MENU_KEYBOARD)
+    await update.message.reply_text(welcome_message, reply_markup=MAIN_MENU_KEYBOARD)
     return ROLE
 
 async def handle_contact(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Handle receiving the user's phone number."""
     contact = update.message.contact
-    if not contact:
-        await update.message.reply_text(
-            "❌ لطفاً از دکمه 'ثبت شماره تلفن' استفاده کنید.",
-            reply_markup=REGISTER_MENU_KEYBOARD
-        )
-        return REGISTER
-    # Remove '+' prefix if present
-    phone = contact.phone_number.lstrip('+')
-    name = update.effective_user.full_name or "کاربر"
     telegram_id = str(update.effective_user.id)
     
-    # Ensure the phone number belongs to the user
     if str(contact.user_id) != telegram_id:
         await update.message.reply_text(
             "❌ لطفاً شماره تلفن خودتان را به اشتراک بگذارید!",
@@ -90,10 +80,10 @@ async def handle_contact(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         )
         return REGISTER
 
-    logger.info(f"Received contact for user {telegram_id}: {phone}")
-
+    phone = contact.phone_number.lstrip('+')
+    name = update.effective_user.full_name or "کاربر"
+    
     try:
-        # Check if phone already registered to a different telegram_id
         phone_check = requests.get(f"{BASE_URL}users/?phone={phone}")
         if phone_check.status_code == 200 and phone_check.json():
             existing_user = phone_check.json()[0]
@@ -108,38 +98,29 @@ async def handle_contact(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
             'phone': phone,
             'telegram_id': telegram_id,
             'name': name,
-            'role': context.user_data.get('role', 'client')
+            'role': 'client'
         }
 
-        # Check if the user exists by telegram_id
         response = requests.get(f"{BASE_URL}users/?telegram_id={telegram_id}")
-        logger.info(f"GET user response: {response.status_code}")
         if response.status_code == 200 and response.json():
-            # Update existing user
             user = response.json()[0]
             update_response = requests.put(f"{BASE_URL}users/{user['id']}/", json=data)
-            logger.info(f"PUT response: {update_response.status_code}")
             if update_response.status_code == 200:
                 await update.message.reply_text(
                     "✅ شماره تلفن شما با موفقیت ثبت شد.",
                     reply_markup=MAIN_MENU_KEYBOARD
                 )
-            else:
-                raise Exception(f"Failed to update user: {update_response.text}")
+                return ROLE
         else:
-            # Create new user
             create_response = requests.post(f"{BASE_URL}users/", json=data)
-            logger.info(f"POST response: {create_response.status_code}")
             if create_response.status_code in [200, 201]:
                 await update.message.reply_text(
                     "✅ ثبت‌نام شما با موفقیت انجام شد.",
                     reply_markup=MAIN_MENU_KEYBOARD
                 )
-            else:
-                raise Exception(f"Failed to create user: {create_response.text}")
+                return ROLE
 
-        context.user_data['phone'] = phone
-        return ROLE
+        raise Exception("Failed to create/update user")
 
     except Exception as e:
         logger.error(f"Error in handle_contact: {e}")
