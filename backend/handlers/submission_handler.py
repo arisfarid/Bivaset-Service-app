@@ -10,6 +10,7 @@ import asyncio  # برای sleep
 logger = logging.getLogger(__name__)
 
 START, REGISTER, ROLE, EMPLOYER_MENU, CATEGORY, SUBCATEGORY, DESCRIPTION, LOCATION_TYPE, LOCATION_INPUT, DETAILS, DETAILS_FILES, DETAILS_DATE, DETAILS_DEADLINE, DETAILS_BUDGET, DETAILS_QUANTITY, SUBMIT, VIEW_PROJECTS, PROJECT_ACTIONS = range(18)
+CHANGE_PHONE, VERIFY_CODE = range(20, 22)  # states جدید
 
 # در متد submit_project در submission_handler.py
 async def submit_project(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:

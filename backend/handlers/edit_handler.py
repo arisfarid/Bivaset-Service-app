@@ -7,6 +7,7 @@ from utils import BASE_URL, log_chat
 logger = logging.getLogger(__name__)
 
 START, REGISTER, ROLE, EMPLOYER_MENU, CATEGORY, SUBCATEGORY, DESCRIPTION, LOCATION_TYPE, LOCATION_INPUT, DETAILS, DETAILS_FILES, DETAILS_DATE, DETAILS_DEADLINE, DETAILS_BUDGET, DETAILS_QUANTITY, SUBMIT, VIEW_PROJECTS, PROJECT_ACTIONS = range(18)
+CHANGE_PHONE, VERIFY_CODE = range(20, 22)  # states جدید
 
 async def handle_edit_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     query = update.callback_query
