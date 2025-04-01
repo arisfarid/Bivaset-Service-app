@@ -54,7 +54,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Start the conversation with the bot."""
     await ensure_active_chat(update, context)
     
-    # If user is in REGISTER state, don't restart flow
+    # If already in REGISTER state, re-prompt instead of restarting
     if context.user_data.get('state') == REGISTER:
         logger.info(f"User {update.effective_user.id} in REGISTER state, re-prompting")
         await update.message.reply_text(
@@ -62,14 +62,10 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
             reply_markup=REGISTER_MENU_KEYBOARD
         )
         return REGISTER
-    
+
     if not await check_phone(update, context):
-        logger.info(f"User {update.effective_user.id} needs to register phone")
-        context.user_data['state'] = REGISTER  # Explicitly set state
-        await update.message.reply_text(
-            "😊 برای استفاده از امکانات ربات، لطفاً شماره تلفن خود را به اشتراک بگذارید:",
-            reply_markup=REGISTER_MENU_KEYBOARD
-        )
+        logger.info(f"User {update.effective_user.id} needs phone registration")
+        context.user_data['state'] = REGISTER
         return REGISTER
 
     welcome_message = (
@@ -81,13 +77,14 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
 
 async def handle_contact(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Handle receiving the user's phone number."""
+    logger.info("handle_contact triggered")  # Debug log
     try:
         contact = update.message.contact
         telegram_id = str(update.effective_user.id)
-        logger.info(f"Handling contact for user {telegram_id}")
-        
+        logger.info(f"Processing contact for user {telegram_id}")
+
         if str(contact.user_id) != telegram_id:
-            logger.warning(f"User {telegram_id} tried to submit someone else's contact")
+            logger.warning(f"User {telegram_id} tried to share someone else's contact")
             await update.message.reply_text(
                 "❌ لطفاً فقط شماره تلفن خودتان را به اشتراک بگذارید!",
                 reply_markup=REGISTER_MENU_KEYBOARD

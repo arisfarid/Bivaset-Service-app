@@ -35,11 +35,12 @@ async def send_message_with_keyboard(context, chat_id, text, reply_markup):
     )
 
 async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """هندلر اصلی برای تمام callback‌ها"""
+    """Main callback handler with improved error handling"""
     query = update.callback_query
     data = query.data
     
     try:
+        # Check if message exists before using it
         if not query.message:
             logger.warning(f"No message found in callback query. Data: {data}")
             await query.answer("❌ خطا: پیام قابل دسترسی نیست")
@@ -49,16 +50,22 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             try:
                 await query.message.delete()
             except Exception as e:
-                logger.error(f"Error deleting message: {e}")
+                logger.error(f"Error deleting message during restart: {e}")
             
             context.user_data.clear()
             return await start(update, context)
             
+        # Safely handle message editing
         if data == "employer":
-            await query.message.edit_text(
-                "🎉 عالیه! چه کاری برات انجام بدم؟",
-                reply_markup=EMPLOYER_MENU_KEYBOARD
-            )
+            try:
+                await query.message.edit_text(
+                    "🎉 عالیه! چه کاری برات انجام بدم؟",
+                    reply_markup=EMPLOYER_MENU_KEYBOARD
+                )
+            except Exception as e:
+                logger.error(f"Error editing message for employer menu: {e}")
+                await query.answer("❌ خطا در نمایش منو")
+                return context.user_data.get('state')
             
         elif data == "new_request":
             categories = await get_categories()

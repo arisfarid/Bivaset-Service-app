@@ -28,8 +28,8 @@ from handlers.phone_handler import change_phone, handle_new_phone, verify_new_ph
 def get_conversation_handler() -> ConversationHandler:
     """تنظیم و برگرداندن ConversationHandler اصلی"""
     async def handle_non_contact(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-        """Re-prompt user for contact when they send anything else in REGISTER state"""
-        logger.info(f"User {update.effective_user.id} sent non-contact message in REGISTER state")
+        """Re-prompt for contact on non-contact messages in REGISTER state"""
+        logger.info(f"Non-contact message in REGISTER state from user {update.effective_user.id}")
         await update.message.reply_text(
             "⚠️ برای استفاده از ربات، باید شماره تلفن خود را به اشتراک بگذارید.\n"
             "لطفاً از دکمه زیر استفاده کنید:",
@@ -49,7 +49,7 @@ def get_conversation_handler() -> ConversationHandler:
             SUBCATEGORY: [CallbackQueryHandler(handle_category_selection)],
             REGISTER: [
                 MessageHandler(filters.CONTACT, handle_contact),
-                MessageHandler(~filters.CONTACT & ~filters.COMMAND, handle_non_contact),
+                MessageHandler(~filters.CONTACT, handle_non_contact),  # Handle all non-contact messages
                 CommandHandler("start", start)  # Allow /start to re-prompt
             ],
             DESCRIPTION: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_project_details)],
