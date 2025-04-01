@@ -39,7 +39,16 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     data = query.data
     
     try:
-        # منوی اصلی
+        if data == "restart":
+            # پاک کردن پیام آپدیت
+            await query.message.delete()
+            
+            # پاک کردن داده‌های قبلی کاربر
+            context.user_data.clear()
+            
+            # اجرای دستور /start
+            return await start(update, context)
+            
         if data == "employer":
             await query.edit_message_text(
                 "🎉 عالیه! چه کاری برات انجام بدم؟",

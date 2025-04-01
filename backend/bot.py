@@ -7,7 +7,7 @@ from telegram.ext import Application, CommandHandler, CallbackQueryHandler, Cont
 from telegram import Update
 from handlers.state_handler import get_conversation_handler, handle_error
 from handlers.callback_handler import handle_callback
-from keyboards import MAIN_MENU_KEYBOARD
+from keyboards import MAIN_MENU_KEYBOARD, RESTART_INLINE_MENU_KEYBOARD
 from utils import restart_chat
 
 # تنظیمات لاگ
@@ -25,38 +25,66 @@ PERSISTENCE_PATH = os.path.join(os.path.dirname(__file__), 'data', 'persistence.
 os.makedirs(os.path.dirname(PERSISTENCE_PATH), exist_ok=True)
 
 async def post_init(application: Application):
+    """مدیریت راه‌اندازی مجدد پس از آپدیت"""
     logger.info("Bot started, initializing...")
-    bot_data = await application.persistence.get_bot_data() or {}
-    active_chats = bot_data.get('active_chats', [])
-    logger.info(f"Found {len(active_chats)} active chats")
-    my_chat_id = 95206265  # chat_id تو
-    if my_chat_id not in active_chats:
-        active_chats.append(my_chat_id)
+    
+    try:
+        bot_data = await application.persistence.get_bot_data() or {}
+        active_chats = bot_data.get('active_chats', [])
+        logger.info(f"Found {len(active_chats)} active chats")
+        
+        # پاک کردن پیام‌های آپدیت قدیمی
+        if 'update_messages' in bot_data:
+            for chat_id, message_id in bot_data['update_messages'].items():
+                try:
+                    await application.bot.delete_message(
+                        chat_id=int(chat_id),
+                        message_id=message_id
+                    )
+                except Exception as e:
+                    logger.warning(f"Could not delete old update message in chat {chat_id}: {e}")
+        
+        # ریست کردن لیست پیام‌های آپدیت
+        bot_data['update_messages'] = {}
+        
+        update_message = (
+            "🔄 *ربات بی‌واسط به‌روزرسانی شد!*\n\n"
+            "✨ امکانات جدید اضافه شده\n"
+            "🛠 بهبود عملکرد و رفع باگ‌ها\n\n"
+            "برای استفاده از نسخه جدید، لطفاً روی دکمه زیر کلیک کنید:"
+        )
+
+        for chat_id in active_chats[:]:
+            try:
+                # ارسال پیام آپدیت بی‌صدا
+                sent_message = await application.bot.send_message(
+                    chat_id=chat_id,
+                    text=update_message,
+                    parse_mode='Markdown',
+                    disable_notification=True,
+                    reply_markup=RESTART_INLINE_MENU_KEYBOARD
+                )
+                
+                # ذخیره message_id برای پاک کردن بعدی
+                bot_data['update_messages'][str(chat_id)] = sent_message.message_id
+                
+                logger.info(f"Update message sent to chat {chat_id}")
+                
+                # تاخیر کوتاه بین ارسال‌ها
+                await asyncio.sleep(0.5)
+                
+            except Exception as e:
+                logger.error(f"Failed to send update message to chat {chat_id}: {e}")
+                active_chats.remove(chat_id)
+                continue
+        
+        # ذخیره تغییرات در persistence
         bot_data['active_chats'] = active_chats
         await application.persistence.update_bot_data(bot_data)
-        logger.info(f"Added test chat_id {my_chat_id} to active_chats")
-    await asyncio.sleep(2)
-    for chat_id in active_chats[:]:
-        try:
-            for attempt in range(3):
-                success = await restart_chat(application, chat_id)
-                if success:
-                    logger.info(f"Chat {chat_id} restarted successfully on attempt {attempt + 1}")
-                    break
-                else:
-                    logger.warning(f"Restart attempt {attempt + 1} failed for chat {chat_id}")
-                    await asyncio.sleep(1)
-            else:
-                logger.error(f"All restart attempts failed for chat {chat_id}")
-                active_chats.remove(chat_id)
-        except Exception as e:
-            logger.error(f"Failed to restart chat {chat_id}: {e}")
-            active_chats.remove(chat_id)
-            continue
-        await asyncio.sleep(0.5)
-    bot_data['active_chats'] = active_chats
-    await application.persistence.update_bot_data(bot_data)
-    logger.info("Updated persistence data")
+        logger.info("Updated persistence data")
+        
+    except Exception as e:
+        logger.error(f"Error in post_init: {e}")
 
 async def shutdown(application: Application):
     logger.info("Shutting down application...")
