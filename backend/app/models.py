@@ -12,6 +12,7 @@ class Category(models.Model):
 class User(models.Model):
     phone = models.CharField(max_length=50, unique=True)
     telegram_id = models.CharField(max_length=50, unique=True, null=True, blank=True)
+    telegram_phone = models.CharField(max_length=50, null=True, blank=True)  # شماره تلگرام اصلی
     name = models.CharField(max_length=100, blank=True)
     role = models.CharField(max_length=20, choices=[("client", "کارفرما"), ("contractor", "مجری")])
     created_at = models.DateTimeField(auto_now_add=True)

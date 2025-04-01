@@ -19,14 +19,18 @@ logger = logging.getLogger(__name__)
 START, REGISTER, ROLE, EMPLOYER_MENU, CATEGORY, SUBCATEGORY, DESCRIPTION, \
 LOCATION_TYPE, LOCATION_INPUT, DETAILS, DETAILS_FILES, DETAILS_DATE, \
 DETAILS_DEADLINE, DETAILS_BUDGET, DETAILS_QUANTITY, SUBMIT, VIEW_PROJECTS, \
-PROJECT_ACTIONS = range(18)
+PROJECT_ACTIONS, CHANGE_PHONE, VERIFY_CODE = range(20)
 
 from handlers.submission_handler import submit_project
+from handlers.phone_handler import change_phone, handle_new_phone, verify_new_phone
 
 def get_conversation_handler() -> ConversationHandler:
     """تنظیم و برگرداندن ConversationHandler اصلی"""
     return ConversationHandler(
-        entry_points=[CommandHandler("start", start)],
+        entry_points=[
+            CommandHandler("start", start),
+            CommandHandler("change_phone", change_phone)
+        ],
         states={
             ROLE: [CallbackQueryHandler(handle_role)],
             EMPLOYER_MENU: [CallbackQueryHandler(handle_message)],
@@ -40,6 +44,8 @@ def get_conversation_handler() -> ConversationHandler:
             ],
             DETAILS: [CallbackQueryHandler(handle_project_details)],
             DETAILS_FILES: [CallbackQueryHandler(handle_attachment)],
+            CHANGE_PHONE: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_new_phone)],
+            VERIFY_CODE: [MessageHandler(filters.TEXT & ~filters.COMMAND, verify_new_phone)],
         },
         fallbacks=[
             CommandHandler("cancel", cancel),
