@@ -53,22 +53,48 @@ def get_conversation_handler() -> ConversationHandler:
                 CommandHandler("start", start)  # Allow restart
             ],
             ROLE: [
-                MessageHandler(filters.TEXT, handle_role),
-                CallbackQueryHandler(handle_role)
+                MessageHandler(filters.TEXT & ~filters.COMMAND, handle_role),  # Handle text messages
+                CallbackQueryHandler(handle_role)  # Handle button clicks
             ],
-            EMPLOYER_MENU: [CallbackQueryHandler(handle_message)],
-            CATEGORY: [CallbackQueryHandler(handle_category_selection)],
-            SUBCATEGORY: [CallbackQueryHandler(handle_category_selection)],
-            DESCRIPTION: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_project_details)],
-            LOCATION_TYPE: [CallbackQueryHandler(handle_location)],
-            LOCATION_INPUT: [
-                MessageHandler(filters.LOCATION, handle_location),
+            EMPLOYER_MENU: [
+                MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message),  # Handle text
+                CallbackQueryHandler(handle_message)  # Handle buttons
+            ],
+            CATEGORY: [
+                MessageHandler(filters.TEXT & ~filters.COMMAND, handle_category_selection),  # Handle text
+                CallbackQueryHandler(handle_category_selection)
+            ],
+            SUBCATEGORY: [
+                MessageHandler(filters.TEXT & ~filters.COMMAND, handle_category_selection),  # Handle text
+                CallbackQueryHandler(handle_category_selection)
+            ],
+            DESCRIPTION: [
+                MessageHandler(filters.TEXT & ~filters.COMMAND, handle_project_details)
+            ],
+            LOCATION_TYPE: [
+                MessageHandler(filters.TEXT & ~filters.COMMAND, handle_location),  # Handle text
                 CallbackQueryHandler(handle_location)
             ],
-            DETAILS: [CallbackQueryHandler(handle_project_details)],
-            DETAILS_FILES: [CallbackQueryHandler(handle_attachment)],
-            CHANGE_PHONE: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_new_phone)],
-            VERIFY_CODE: [MessageHandler(filters.TEXT & ~filters.COMMAND, verify_new_phone)],
+            LOCATION_INPUT: [
+                MessageHandler(filters.LOCATION, handle_location),  # Handle location
+                MessageHandler(filters.TEXT & ~filters.COMMAND, handle_location),  # Handle text
+                CallbackQueryHandler(handle_location)  # Handle buttons
+            ],
+            DETAILS: [
+                MessageHandler(filters.TEXT & ~filters.COMMAND, handle_project_details),  # Handle text
+                CallbackQueryHandler(handle_project_details)  # Handle buttons
+            ],
+            DETAILS_FILES: [
+                MessageHandler(filters.PHOTO, handle_attachment),  # Handle photos
+                MessageHandler(filters.TEXT & ~filters.COMMAND, handle_attachment),  # Handle text
+                CallbackQueryHandler(handle_attachment)  # Handle buttons
+            ],
+            CHANGE_PHONE: [
+                MessageHandler(filters.TEXT & ~filters.COMMAND, handle_new_phone)
+            ],
+            VERIFY_CODE: [
+                MessageHandler(filters.TEXT & ~filters.COMMAND, verify_new_phone)
+            ]
         },
         fallbacks=[
             CommandHandler("cancel", cancel),
