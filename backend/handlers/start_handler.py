@@ -6,7 +6,6 @@ import requests
 import logging
 from datetime import datetime, timedelta
 import random
-from handlers.phone_handler import require_phone
 
 logger = logging.getLogger(__name__)
 
@@ -51,7 +50,6 @@ async def check_phone(update: Update, context: ContextTypes.DEFAULT_TYPE) -> boo
         )
         return False
 
-@require_phone
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Start the conversation with the bot."""
     await ensure_active_chat(update, context)
