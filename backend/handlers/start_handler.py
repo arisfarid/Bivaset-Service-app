@@ -57,6 +57,12 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     # Set state to REGISTER initially
     context.user_data['state'] = REGISTER
 
+    # Check if it's a callback query
+    message = update.callback_query.message if update.callback_query else update.message
+    if not message:
+        logger.error("No message object found in update")
+        return REGISTER
+
     # Check if user has a registered phone
     telegram_id = str(update.effective_user.id)
     try:
@@ -73,7 +79,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
                     f"👋 سلام {update.effective_user.first_name}! به ربات خدمات بی‌واسط خوش آمدید.\n"
                     "لطفاً یکی از گزینه‌ها را انتخاب کنید:"
                 )
-                await update.message.reply_text(
+                await message.reply_text(
                     welcome_message,
                     reply_markup=MAIN_MENU_KEYBOARD
                 )
@@ -81,7 +87,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
         
         # No valid phone found, prompt for registration
         logger.info(f"No valid phone for user {telegram_id}, prompting registration")
-        await update.message.reply_text(
+        await message.reply_text(
             "👋 سلام! برای استفاده از امکانات ربات، لطفاً شماره تلفن خود را به اشتراک بگذارید:",
             reply_markup=REGISTER_MENU_KEYBOARD
         )
@@ -89,7 +95,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
 
     except Exception as e:
         logger.error(f"Error in start command: {e}")
-        await update.message.reply_text(
+        await message.reply_text(
             "❌ خطا در برقراری ارتباط. لطفاً دوباره تلاش کنید.",
             reply_markup=REGISTER_MENU_KEYBOARD
         )

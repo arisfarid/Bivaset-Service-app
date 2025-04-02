@@ -29,8 +29,13 @@ def get_conversation_handler() -> ConversationHandler:
     """تنظیم و برگرداندن ConversationHandler اصلی"""
     async def handle_non_contact(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
         """Re-prompt for contact on non-contact messages in REGISTER state"""
+        message = update.callback_query.message if update.callback_query else update.message
+        if not message:
+            logger.error("No message object found in update")
+            return REGISTER
+            
         logger.info(f"Non-contact message in REGISTER state from user {update.effective_user.id}")
-        await update.message.reply_text(
+        await message.reply_text(
             "⚠️ برای استفاده از ربات، باید شماره تلفن خود را به اشتراک بگذارید.\n"
             "لطفاً از دکمه زیر استفاده کنید:",
             reply_markup=REGISTER_MENU_KEYBOARD
@@ -38,11 +43,15 @@ def get_conversation_handler() -> ConversationHandler:
         return REGISTER
 
     return ConversationHandler(
-        entry_points=[CommandHandler("start", start)],
+        entry_points=[
+            CommandHandler("start", start),
+            CallbackQueryHandler(start, pattern="^start$")
+        ],
         states={
             REGISTER: [
                 MessageHandler(filters.CONTACT, handle_contact),  # Explicitly handle contact messages first
                 MessageHandler(filters.ALL & ~filters.CONTACT & ~filters.COMMAND, handle_non_contact),  # All other messages
+                CallbackQueryHandler(handle_non_contact),
                 CommandHandler("start", start),  # Allow restart
             ],
             ROLE: [
@@ -63,7 +72,10 @@ def get_conversation_handler() -> ConversationHandler:
             CHANGE_PHONE: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_new_phone)],
             VERIFY_CODE: [MessageHandler(filters.TEXT & ~filters.COMMAND, verify_new_phone)],
         },
-        fallbacks=[CommandHandler("cancel", cancel)],
+        fallbacks=[
+            CommandHandler("cancel", cancel),
+            CallbackQueryHandler(cancel, pattern="^cancel$")
+        ],
         name="main_conversation",
         persistent=True,
         allow_reentry=True
