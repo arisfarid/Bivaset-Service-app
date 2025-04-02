@@ -118,10 +118,10 @@ async def handle_contact(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
             )
             return REGISTER
 
-        # تمیز کردن شماره تلفن
+        # تمیز کردن شماره تلفن - اصلاح شده
         phone = contact.phone_number.lstrip('+')
         if phone.startswith('98'):
-            phone = '0' + phone[2:]
+            phone = '0' + phone[2:]  # تبدیل 989108150015 به 09108150015
         logger.info(f"Cleaned phone number: {phone}")
             
         # بررسی فرمت صحیح شماره
@@ -158,47 +158,46 @@ async def handle_contact(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         }
         logger.info(f"Prepared user data: {user_data}")
 
-        # تلاش برای آپدیت یا ایجاد کاربر
-        try:
-            user_check_url = f"{BASE_URL}users/?telegram_id={telegram_id}"
-            logger.info(f"Checking for existing user: GET {user_check_url}")
-            user_response = requests.get(user_check_url)
-            logger.info(f"User check response: {user_response.status_code}, {user_response.text}")
+        # تلاش برای ایجاد کاربر جدید ابتدا
+        create_url = f"{BASE_URL}users/"
+        logger.info(f"Creating new user: POST {create_url}")
+        create_response = requests.post(create_url, json=user_data)
+        logger.info(f"Create response: {create_response.status_code}, {create_response.text}")
 
+        if create_response.status_code in [200, 201]:
+            # کاربر با موفقیت ایجاد شد
+            context.user_data['phone'] = phone
+            context.user_data['state'] = ROLE
+            await update.message.reply_text(
+                "✅ شماره تلفن شما با موفقیت ثبت شد.",
+                reply_markup=MAIN_MENU_KEYBOARD
+            )
+            logger.info("=== Successfully created new user ===")
+            return ROLE
+
+        # اگر کاربر از قبل وجود دارد، آپدیت می‌کنیم
+        elif create_response.status_code == 400:
+            user_check_url = f"{BASE_URL}users/?telegram_id={telegram_id}"
+            user_response = requests.get(user_check_url)
             if user_response.status_code == 200 and user_response.json():
-                # آپدیت کاربر موجود
                 user = user_response.json()[0]
                 update_url = f"{BASE_URL}users/{user['id']}/"
                 logger.info(f"Updating existing user: PUT {update_url}")
                 update_response = requests.put(update_url, json=user_data)
                 logger.info(f"Update response: {update_response.status_code}, {update_response.text}")
-                if update_response.status_code != 200:
-                    raise Exception(f"Failed to update user. Status: {update_response.status_code}")
-            else:
-                # ایجاد کاربر جدید
-                create_url = f"{BASE_URL}users/"
-                logger.info(f"Creating new user: POST {create_url}")
-                create_response = requests.post(create_url, json=user_data)
-                logger.info(f"Create response: {create_response.status_code}, {create_response.text}")
-                if create_response.status_code not in [200, 201]:
-                    raise Exception(f"Failed to create user. Status: {create_response.status_code}")
 
-            # ذخیره شماره در context
-            context.user_data['phone'] = phone
-            context.user_data['state'] = ROLE
-            logger.info("Successfully saved phone to context and set state to ROLE")
-            
-            # ارسال پیام موفقیت
-            await update.message.reply_text(
-                "✅ شماره تلفن شما با موفقیت ثبت شد.",
-                reply_markup=MAIN_MENU_KEYBOARD
-            )
-            logger.info("=== Successfully completed handle_contact function ===")
-            return ROLE
+                if update_response.status_code == 200:
+                    context.user_data['phone'] = phone
+                    context.user_data['state'] = ROLE
+                    await update.message.reply_text(
+                        "✅ شماره تلفن شما با موفقیت به‌روز شد.",
+                        reply_markup=MAIN_MENU_KEYBOARD
+                    )
+                    logger.info("=== Successfully updated existing user ===")
+                    return ROLE
 
-        except Exception as e:
-            logger.error(f"Error in user creation/update: {str(e)}")
-            raise
+        # در صورت خطا
+        raise Exception(f"Failed to save user. Create status: {create_response.status_code}")
 
     except Exception as e:
         logger.error(f"Error in handle_contact: {str(e)}")
