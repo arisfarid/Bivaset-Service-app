@@ -37,9 +37,32 @@ async def send_message_with_keyboard(context, chat_id, text, reply_markup):
 async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Main callback handler with improved error handling"""
     query = update.callback_query
-    data = query.data
-    
+    if not query:
+        return START
+
     try:
+        data = query.data
+        logger.info(f"Handling callback: {data}")
+
+        if data == "restart":
+            try:
+                if query.message:
+                    await query.message.delete()
+            except Exception as e:
+                logger.warning(f"Could not delete message: {e}")
+
+            context.user_data.clear()
+            if not await check_phone(update, context):
+                return REGISTER
+                
+            # ارسال مستقیم منوی اصلی
+            await query.message.reply_text(
+                f"👋 سلام {update.effective_user.first_name}! به ربات خدمات بی‌واسط خوش آمدید.\n"
+                "لطفاً یکی از گزینه‌ها را انتخاب کنید:",
+                reply_markup=MAIN_MENU_KEYBOARD
+            )
+            return ROLE
+
         # اضافه کردن لاگ بیشتر
         logger.info(f"Handling callback: {data}")
         logger.info(f"Current state: {context.user_data.get('state')}")
