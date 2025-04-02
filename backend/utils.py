@@ -34,46 +34,44 @@ async def get_user_phone(telegram_id: str) -> str:
         logger.error(f"Error in get_user_phone: {e}")
         return None
 
-async def save_user_phone(telegram_id: str, phone: str, name: str = None) -> bool:
+async def save_user_phone(telegram_id: str, phone: str, name: str = None) -> tuple[bool, str]:
     """ذخیره یا آپدیت شماره تلفن کاربر در دیتابیس"""
-    logger.info(f"=== Starting save_user_phone function ===")
-    logger.info(f"Saving phone {phone} for telegram_id {telegram_id}")
-    
+    logger.info(f"=== Starting save_user_phone function for {telegram_id} ===")
     try:
+        # چک کردن تکراری نبودن شماره
+        check_response = requests.get(f"{BASE_URL}users/?phone={phone}")
+        if check_response.status_code == 200 and check_response.json():
+            existing_user = check_response.json()[0]
+            if existing_user['telegram_id'] != telegram_id:
+                logger.warning(f"Phone {phone} already registered to {existing_user['telegram_id']}")
+                return False, "duplicate_phone"
+
         user_data = {
             'phone': phone,
             'telegram_id': telegram_id,
             'name': name or 'کاربر',
             'role': 'client'
         }
-        
+
         # چک کردن وجود کاربر
-        check_url = f"{BASE_URL}users/?telegram_id={telegram_id}"
-        logger.info(f"Checking existing user: GET {check_url}")
-        check_response = requests.get(check_url)
-        logger.info(f"Check response: {check_response.status_code}")
+        user_response = requests.get(f"{BASE_URL}users/?telegram_id={telegram_id}")
         
-        if check_response.status_code == 200 and check_response.json():
+        if user_response.status_code == 200 and user_response.json():
             # آپدیت کاربر موجود
-            user = check_response.json()[0]
+            user = user_response.json()[0]
             update_url = f"{BASE_URL}users/{user['id']}/"
-            logger.info(f"Updating user: PUT {update_url}")
             response = requests.put(update_url, json=user_data)
         else:
             # ایجاد کاربر جدید
-            create_url = f"{BASE_URL}users/"
-            logger.info(f"Creating new user: POST {create_url}")
-            response = requests.post(create_url, json=user_data)
-            
-        logger.info(f"API Response: {response.status_code} - {response.text}")
+            response = requests.post(f"{BASE_URL}users/", json=user_data)
+
         success = response.status_code in [200, 201]
         logger.info(f"Save operation {'successful' if success else 'failed'}")
-        logger.info("=== Finished save_user_phone function ===")
-        return success
-        
+        return success, "success" if success else "api_error"
+
     except Exception as e:
         logger.error(f"Error in save_user_phone: {e}")
-        return False
+        return False, "server_error"
 
 async def get_categories():
     try:

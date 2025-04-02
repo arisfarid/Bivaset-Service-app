@@ -75,7 +75,6 @@ async def handle_contact(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     try:
         contact = update.message.contact
         telegram_id = str(update.effective_user.id)
-        logger.info(f"Received contact for user {telegram_id}: {contact.phone_number}")
         
         # اطمینان از تطابق شماره با کاربر
         if str(contact.user_id) != telegram_id:
@@ -93,36 +92,40 @@ async def handle_contact(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         elif not phone.startswith('0'):
             phone = '0' + phone
         logger.info(f"Cleaned phone number: {phone}")
-        
-        # بررسی وجود شماره در دیتابیس
-        check_url = f"{BASE_URL}users/?phone={phone}"
-        logger.info(f"Checking duplicate phone: GET {check_url}")
-        check_response = requests.get(check_url)
-        logger.info(f"Check response: {check_response.status_code} - {check_response.text}")
 
-        if check_response.status_code == 200 and check_response.json():
-            existing_user = check_response.json()[0]
-            if existing_user['telegram_id'] != telegram_id:
-                logger.warning(f"Phone {phone} already registered to {existing_user['telegram_id']}")
-                await update.message.reply_text(
-                    "❌ این شماره قبلاً توسط کاربر دیگری ثبت شده است.",
-                    reply_markup=REGISTER_MENU_KEYBOARD
-                )
-                return REGISTER
-
-        # ذخیره شماره تلفن
-        logger.info("Attempting to save phone number")
-        if await save_user_phone(telegram_id, phone, update.effective_user.full_name):
-            context.user_data['phone'] = phone
-            context.user_data['state'] = ROLE
+        # اعتبارسنجی فرمت شماره
+        if not (phone.startswith('09') and len(phone) == 11 and phone.isdigit()):
+            logger.warning(f"Invalid phone format: {phone}")
             await update.message.reply_text(
-                "✅ شماره تلفن شما با موفقیت ثبت شد.",
-                reply_markup=MAIN_MENU_KEYBOARD
+                "❌ فرمت شماره تلفن نامعتبر است!",
+                reply_markup=REGISTER_MENU_KEYBOARD
             )
-            logger.info("Successfully saved phone and transitioned to ROLE state")
-            return ROLE
-        else:
-            raise Exception("Failed to save phone number")
+            return REGISTER
+
+        # ذخیره شماره در دیتابیس
+        success, status = await save_user_phone(telegram_id, phone, update.effective_user.full_name)
+        
+        if not success:
+            error_messages = {
+                "duplicate_phone": "❌ این شماره قبلاً توسط کاربر دیگری ثبت شده است.",
+                "api_error": "❌ خطا در ثبت شماره تلفن. لطفاً دوباره تلاش کنید.",
+                "server_error": "❌ خطا در ارتباط با سرور. لطفاً دوباره تلاش کنید."
+            }
+            await update.message.reply_text(
+                error_messages.get(status, "❌ خطای ناشناخته. لطفاً دوباره تلاش کنید."),
+                reply_markup=REGISTER_MENU_KEYBOARD
+            )
+            return REGISTER
+
+        # ذخیره موفق
+        context.user_data['phone'] = phone
+        context.user_data['state'] = ROLE
+        await update.message.reply_text(
+            "✅ شماره تلفن شما با موفقیت ثبت شد.",
+            reply_markup=MAIN_MENU_KEYBOARD
+        )
+        logger.info("Successfully registered phone")
+        return ROLE
 
     except Exception as e:
         logger.error(f"Error in handle_contact: {str(e)}")
