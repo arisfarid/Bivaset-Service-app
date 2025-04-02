@@ -36,7 +36,9 @@ async def get_user_phone(telegram_id: str) -> str:
 
 async def save_user_phone(telegram_id: str, phone: str, name: str = None) -> bool:
     """ذخیره یا آپدیت شماره تلفن کاربر در دیتابیس"""
-    logger.info(f"Attempting to save phone {phone} for telegram_id {telegram_id}")
+    logger.info(f"=== Starting save_user_phone function ===")
+    logger.info(f"Saving phone {phone} for telegram_id {telegram_id}")
+    
     try:
         user_data = {
             'phone': phone,
@@ -46,22 +48,31 @@ async def save_user_phone(telegram_id: str, phone: str, name: str = None) -> boo
         }
         
         # چک کردن وجود کاربر
-        check_response = requests.get(f"{BASE_URL}users/?telegram_id={telegram_id}")
-        logger.info(f"Check user response: {check_response.status_code}")
+        check_url = f"{BASE_URL}users/?telegram_id={telegram_id}"
+        logger.info(f"Checking existing user: GET {check_url}")
+        check_response = requests.get(check_url)
+        logger.info(f"Check response: {check_response.status_code}")
         
         if check_response.status_code == 200 and check_response.json():
             # آپدیت کاربر موجود
             user = check_response.json()[0]
-            response = requests.put(f"{BASE_URL}users/{user['id']}/", json=user_data)
+            update_url = f"{BASE_URL}users/{user['id']}/"
+            logger.info(f"Updating user: PUT {update_url}")
+            response = requests.put(update_url, json=user_data)
         else:
             # ایجاد کاربر جدید
-            response = requests.post(f"{BASE_URL}users/", json=user_data)
+            create_url = f"{BASE_URL}users/"
+            logger.info(f"Creating new user: POST {create_url}")
+            response = requests.post(create_url, json=user_data)
             
-        logger.info(f"Save user response: {response.status_code}")
-        return response.status_code in [200, 201]
+        logger.info(f"API Response: {response.status_code} - {response.text}")
+        success = response.status_code in [200, 201]
+        logger.info(f"Save operation {'successful' if success else 'failed'}")
+        logger.info("=== Finished save_user_phone function ===")
+        return success
         
     except Exception as e:
-        logger.error(f"Error saving user phone: {e}")
+        logger.error(f"Error in save_user_phone: {e}")
         return False
 
 async def get_categories():
