@@ -128,9 +128,14 @@ def require_phone(func):
     """دکوراتور برای اجبار به ثبت شماره تلفن"""
     @wraps(func)
     async def wrapper(update: Update, context: ContextTypes.DEFAULT_TYPE, *args, **kwargs):
+        # اگر در حالت REGISTER هستیم، مستقیماً اجازه عبور بدهیم
+        current_state = context.user_data.get('state')
+        if current_state == 'REGISTER':
+            return await func(update, context, *args, **kwargs)
+            
         if not update.effective_user:
             return
-            
+
         telegram_id = str(update.effective_user.id)
         
         try:
@@ -163,16 +168,7 @@ def require_phone(func):
             else:
                 # کاربر در دیتابیس نیست
                 logger.info(f"User {telegram_id} not found in database")
-                if update.callback_query:
-                    await update.callback_query.message.reply_text(
-                        "برای استفاده از امکانات ربات، لطفاً ابتدا شماره تلفن خود را ثبت کنید:",
-                        reply_markup=REGISTER_MENU_KEYBOARD
-                    )
-                else:
-                    await update.message.reply_text(
-                        "برای استفاده از امکانات ربات، لطفاً ابتدا شماره تلفن خود را ثبت کنید:",
-                        reply_markup=REGISTER_MENU_KEYBOARD
-                    )
+                await send_register_prompt(update)
                 context.user_data['state'] = 'REGISTER'
                 return 'REGISTER'
                 
@@ -182,3 +178,19 @@ def require_phone(func):
             return await func(update, context, *args, **kwargs)
             
     return wrapper
+
+async def send_register_prompt(update: Update):
+    """ارسال پیام درخواست ثبت شماره"""
+    message = (
+        "برای استفاده از امکانات ربات، لطفاً ابتدا شماره تلفن خود را ثبت کنید:"
+    )
+    if update.callback_query:
+        await update.callback_query.message.reply_text(
+            message,
+            reply_markup=REGISTER_MENU_KEYBOARD
+        )
+    else:
+        await update.message.reply_text(
+            message,
+            reply_markup=REGISTER_MENU_KEYBOARD
+        )
