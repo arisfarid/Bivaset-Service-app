@@ -4,7 +4,8 @@ from telegram.ext import (
     ConversationHandler, filters, ContextTypes
 )
 import logging
-from handlers.start_handler import start, handle_contact, handle_role, cancel
+from handlers.start_handler import start, handle_role, cancel
+from handlers.phone_handler import handle_contact
 from handlers.message_handler import handle_message
 from handlers.category_handler import handle_category_selection
 from handlers.location_handler import handle_location
