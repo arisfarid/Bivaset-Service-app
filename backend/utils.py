@@ -15,13 +15,23 @@ BASE_URL = 'http://185.204.171.107:8000/api/'
 BOT_FILE = os.path.abspath(__file__)
 TIMESTAMP_FILE = '/home/ubuntu/Bivaset-Service-app/backend/last_update.txt'
 
-async def get_user_phone(telegram_id):
+async def get_user_phone(telegram_id: str) -> str:
+    """دریافت شماره تلفن کاربر از دیتابیس"""
+    logger.info(f"Getting phone for telegram_id: {telegram_id}")
     try:
         response = requests.get(f"{BASE_URL}users/?telegram_id={telegram_id}")
+        logger.info(f"API Response: {response.status_code}")
+        
         if response.status_code == 200 and response.json():
-            return response.json()[0]['phone']
+            user_data = response.json()[0]
+            phone = user_data.get('phone')
+            if phone and not phone.startswith('tg_'):
+                logger.info(f"Found valid phone: {phone}")
+                return phone
+        logger.info("No valid phone found")
         return None
-    except requests.exceptions.ConnectionError:
+    except Exception as e:
+        logger.error(f"Error in get_user_phone: {e}")
         return None
 
 async def get_categories():

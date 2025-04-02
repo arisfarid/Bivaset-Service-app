@@ -109,19 +109,13 @@ async def handle_contact(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         telegram_id = str(update.effective_user.id)
         logger.info(f"Received contact for user {telegram_id}: {contact.phone_number}")
         
-        # اطمینان از تطابق شماره با کاربر
-        if str(contact.user_id) != telegram_id:
-            logger.warning(f"Phone number belongs to different user. Contact user_id: {contact.user_id}, Sender id: {telegram_id}")
-            await update.message.reply_text(
-                "❌ لطفاً فقط شماره تلفن خودتان را به اشتراک بگذارید!",
-                reply_markup=REGISTER_MENU_KEYBOARD
-            )
-            return REGISTER
-
-        # تمیز کردن شماره تلفن - اصلاح شده
+        # تمیز کردن شماره تلفن - بهبود یافته
         phone = contact.phone_number.lstrip('+')
         if phone.startswith('98'):
-            phone = '0' + phone[2:]  # تبدیل 989108150015 به 09108150015
+            phone = '0' + phone[2:]
+        elif not phone.startswith('0'):
+            phone = '0' + phone
+            
         logger.info(f"Cleaned phone number: {phone}")
             
         # بررسی فرمت صحیح شماره
@@ -133,22 +127,6 @@ async def handle_contact(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
             )
             return REGISTER
 
-        # چک کردن تکراری نبودن شماره
-        phone_check_url = f"{BASE_URL}users/?phone={phone}"
-        logger.info(f"Checking for duplicate phone: GET {phone_check_url}")
-        response = requests.get(phone_check_url)
-        logger.info(f"Duplicate check response: {response.status_code}, {response.text}")
-
-        if response.status_code == 200 and response.json():
-            existing_user = response.json()[0]
-            if existing_user['telegram_id'] != telegram_id:
-                logger.warning(f"Phone {phone} already registered to telegram_id: {existing_user['telegram_id']}")
-                await update.message.reply_text(
-                    "❌ این شماره قبلاً توسط کاربر دیگری ثبت شده است.",
-                    reply_markup=REGISTER_MENU_KEYBOARD
-                )
-                return REGISTER
-
         # آماده‌سازی داده‌های کاربر
         user_data = {
             'phone': phone,
@@ -158,46 +136,24 @@ async def handle_contact(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         }
         logger.info(f"Prepared user data: {user_data}")
 
-        # تلاش برای ایجاد کاربر جدید ابتدا
+        # ایجاد یا آپدیت کاربر
         create_url = f"{BASE_URL}users/"
-        logger.info(f"Creating new user: POST {create_url}")
-        create_response = requests.post(create_url, json=user_data)
-        logger.info(f"Create response: {create_response.status_code}, {create_response.text}")
+        response = requests.post(create_url, json=user_data)
+        logger.info(f"API Response: {response.status_code} - {response.text}")
 
-        if create_response.status_code in [200, 201]:
-            # کاربر با موفقیت ایجاد شد
+        if response.status_code in [200, 201]:
             context.user_data['phone'] = phone
             context.user_data['state'] = ROLE
             await update.message.reply_text(
                 "✅ شماره تلفن شما با موفقیت ثبت شد.",
                 reply_markup=MAIN_MENU_KEYBOARD
             )
-            logger.info("=== Successfully created new user ===")
+            logger.info("Successfully registered phone")
             return ROLE
 
-        # اگر کاربر از قبل وجود دارد، آپدیت می‌کنیم
-        elif create_response.status_code == 400:
-            user_check_url = f"{BASE_URL}users/?telegram_id={telegram_id}"
-            user_response = requests.get(user_check_url)
-            if user_response.status_code == 200 and user_response.json():
-                user = user_response.json()[0]
-                update_url = f"{BASE_URL}users/{user['id']}/"
-                logger.info(f"Updating existing user: PUT {update_url}")
-                update_response = requests.put(update_url, json=user_data)
-                logger.info(f"Update response: {update_response.status_code}, {update_response.text}")
-
-                if update_response.status_code == 200:
-                    context.user_data['phone'] = phone
-                    context.user_data['state'] = ROLE
-                    await update.message.reply_text(
-                        "✅ شماره تلفن شما با موفقیت به‌روز شد.",
-                        reply_markup=MAIN_MENU_KEYBOARD
-                    )
-                    logger.info("=== Successfully updated existing user ===")
-                    return ROLE
-
-        # در صورت خطا
-        raise Exception(f"Failed to save user. Create status: {create_response.status_code}")
+        else:
+            logger.error(f"Failed to create/update user: {response.text}")
+            raise Exception("Failed to save user data")
 
     except Exception as e:
         logger.error(f"Error in handle_contact: {str(e)}")

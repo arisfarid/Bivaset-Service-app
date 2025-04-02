@@ -1,7 +1,7 @@
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ContextTypes, ConversationHandler
 import logging
-from handlers.start_handler import start
+from handlers.start_handler import start, check_phone
 from handlers.category_handler import handle_category_callback
 from handlers.edit_handler import handle_edit_callback
 from handlers.view_handler import handle_view_callback
@@ -40,12 +40,22 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     data = query.data
     
     try:
-        # Check if message exists before using it
+        # اضافه کردن لاگ بیشتر
+        logger.info(f"Handling callback: {data}")
+        logger.info(f"Current state: {context.user_data.get('state')}")
+
         if not query.message:
             logger.warning(f"No message found in callback query. Data: {data}")
             await query.answer("❌ خطا: پیام قابل دسترسی نیست")
             return context.user_data.get('state', START)
 
+        # بررسی وضعیت ثبت‌نام کاربر
+        if not await check_phone(update, context):
+            logger.info("User needs to register phone first")
+            await query.answer("لطفا ابتدا شماره تلفن خود را ثبت کنید")
+            return REGISTER
+
+        # ادامه پردازش callback
         if data == "restart":
             try:
                 await query.message.delete()
@@ -85,8 +95,7 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await query.answer("❌ خطایی رخ داد!")
         except Exception:
             pass
-    
-    return context.user_data.get('state')
+        return START
 
 async def handle_new_request(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     query = update.callback_query
