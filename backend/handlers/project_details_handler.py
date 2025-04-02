@@ -5,6 +5,8 @@ from utils import clean_budget, validate_date, validate_deadline, log_chat, form
 from khayyam import JalaliDatetime
 from datetime import datetime, timedelta
 import logging
+from handlers.phone_handler import require_phone
+
 
 logger = logging.getLogger(__name__)
 
@@ -13,7 +15,7 @@ CHANGE_PHONE, VERIFY_CODE = range(20, 22)  # states جدید
 
 from handlers.submission_handler import submit_project
 
-
+@require_phone
 async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     await log_chat(update, context)
     text = update.message.text

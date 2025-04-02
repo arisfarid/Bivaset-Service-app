@@ -6,15 +6,14 @@ from handlers.location_handler import handle_location
 from handlers.start_handler import check_phone
 from keyboards import create_category_keyboard, EMPLOYER_MENU_KEYBOARD, CONTRACTOR_MENU_KEYBOARD, MAIN_MENU_KEYBOARD
 from asyncio import Lock
-
-logger = logging.getLogger(__name__)
+from handlers.phone_handler import require_phone
 
 START, REGISTER, ROLE, EMPLOYER_MENU, CATEGORY, SUBCATEGORY, DESCRIPTION, LOCATION_TYPE, LOCATION_INPUT, DETAILS, DETAILS_FILES, DETAILS_DATE, DETAILS_DEADLINE, DETAILS_BUDGET, DETAILS_QUANTITY, SUBMIT, VIEW_PROJECTS, PROJECT_ACTIONS = range(18)
 CHANGE_PHONE, VERIFY_CODE = range(20, 22)  # states جدید
 
 # ایجاد قفل سراسری
 message_lock = Lock()
-
+@require_phone
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     await ensure_active_chat(update, context)
     current_state = context.user_data.get('state', ROLE)

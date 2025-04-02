@@ -1,3 +1,4 @@
+from functools import wraps
 from telegram import Update
 from telegram.ext import ContextTypes
 from datetime import datetime, timedelta
@@ -5,7 +6,7 @@ import random
 import requests
 import logging
 from utils import BASE_URL
-from keyboards import MAIN_MENU_KEYBOARD
+from keyboards import MAIN_MENU_KEYBOARD, REGISTER_MENU_KEYBOARD
 
 logger = logging.getLogger(__name__)
 
@@ -119,3 +120,65 @@ async def verify_new_phone(update: Update, context: ContextTypes.DEFAULT_TYPE) -
         logger.error(f"Error updating phone: {e}")
         await update.message.reply_text("❌ خطا در ثبت شماره تلفن.\nلطفاً دوباره تلاش کنید.")
     return CHANGE_PHONE
+
+
+logger = logging.getLogger(__name__)
+
+def require_phone(func):
+    """دکوراتور برای اجبار به ثبت شماره تلفن"""
+    @wraps(func)
+    async def wrapper(update: Update, context: ContextTypes.DEFAULT_TYPE, *args, **kwargs):
+        if not update.effective_user:
+            return
+            
+        telegram_id = str(update.effective_user.id)
+        
+        try:
+            # چک کردن شماره تلفن در دیتابیس
+            response = requests.get(f"{BASE_URL}users/?telegram_id={telegram_id}")
+            
+            if response.status_code == 200 and response.json():
+                user_data = response.json()[0]
+                phone = user_data.get('phone')
+                
+                # اگر شماره معتبر نداشت یا شماره موقت داشت
+                if not phone or phone.startswith('tg_'):
+                    logger.info(f"User {telegram_id} needs to register phone")
+                    if update.callback_query:
+                        await update.callback_query.message.reply_text(
+                            "برای استفاده از امکانات ربات، لطفاً ابتدا شماره تلفن خود را ثبت کنید:",
+                            reply_markup=REGISTER_MENU_KEYBOARD
+                        )
+                    else:
+                        await update.message.reply_text(
+                            "برای استفاده از امکانات ربات، لطفاً ابتدا شماره تلفن خود را ثبت کنید:",
+                            reply_markup=REGISTER_MENU_KEYBOARD
+                        )
+                    context.user_data['state'] = 'REGISTER'
+                    return 'REGISTER'
+                    
+                # اگر شماره معتبر داشت
+                return await func(update, context, *args, **kwargs)
+                
+            else:
+                # کاربر در دیتابیس نیست
+                logger.info(f"User {telegram_id} not found in database")
+                if update.callback_query:
+                    await update.callback_query.message.reply_text(
+                        "برای استفاده از امکانات ربات، لطفاً ابتدا شماره تلفن خود را ثبت کنید:",
+                        reply_markup=REGISTER_MENU_KEYBOARD
+                    )
+                else:
+                    await update.message.reply_text(
+                        "برای استفاده از امکانات ربات، لطفاً ابتدا شماره تلفن خود را ثبت کنید:",
+                        reply_markup=REGISTER_MENU_KEYBOARD
+                    )
+                context.user_data['state'] = 'REGISTER'
+                return 'REGISTER'
+                
+        except Exception as e:
+            logger.error(f"Error checking phone requirement: {e}")
+            # در صورت خطا اجازه عبور می‌دهیم
+            return await func(update, context, *args, **kwargs)
+            
+    return wrapper

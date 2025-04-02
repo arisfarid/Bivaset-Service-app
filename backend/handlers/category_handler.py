@@ -4,12 +4,14 @@ from utils import get_categories, log_chat
 import logging
 from handlers.start_handler import start
 from keyboards import EMPLOYER_MENU_KEYBOARD  # اضافه شده برای بازگشت به منوی اصلی
+from handlers.phone_handler import require_phone
 
 logger = logging.getLogger(__name__)
 
 START, REGISTER, ROLE, EMPLOYER_MENU, CATEGORY, SUBCATEGORY, DESCRIPTION, LOCATION_TYPE, LOCATION_INPUT, DETAILS, DETAILS_FILES, DETAILS_DATE, DETAILS_DEADLINE, DETAILS_BUDGET, DETAILS_QUANTITY, SUBMIT, VIEW_PROJECTS, PROJECT_ACTIONS = range(18)
 CHANGE_PHONE, VERIFY_CODE = range(20, 22)  # states جدید
 
+@require_phone
 async def handle_category_selection(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     query = update.callback_query
     data = query.data
@@ -35,6 +37,7 @@ async def handle_category_selection(update: Update, context: ContextTypes.DEFAUL
         )
         return DESCRIPTION
 
+@require_phone
 async def handle_category_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     query = update.callback_query
     data = query.data

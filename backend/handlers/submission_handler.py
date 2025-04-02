@@ -6,6 +6,7 @@ import logging
 from handlers.start_handler import start
 from keyboards import create_dynamic_keyboard, MAIN_MENU_KEYBOARD  # اضافه کردن import
 import asyncio  # برای sleep
+from handlers.phone_handler import require_phone
 
 logger = logging.getLogger(__name__)
 
@@ -13,6 +14,7 @@ START, REGISTER, ROLE, EMPLOYER_MENU, CATEGORY, SUBCATEGORY, DESCRIPTION, LOCATI
 CHANGE_PHONE, VERIFY_CODE = range(20, 22)  # states جدید
 
 # در متد submit_project در submission_handler.py
+@require_phone
 async def submit_project(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     if update.message.text != "✅ ثبت درخواست":
         return DETAILS
