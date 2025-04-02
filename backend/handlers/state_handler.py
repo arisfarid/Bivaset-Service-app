@@ -29,7 +29,7 @@ def get_conversation_handler() -> ConversationHandler:
     """تنظیم و برگرداندن ConversationHandler اصلی"""
     async def handle_non_contact(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
         """Re-prompt for contact on non-contact messages in REGISTER state"""
-        logger.info(f"=== Non-contact message received in REGISTER state ===")
+        logger.info("=== Non-contact message received ===")  # اضافه کردن لاگ
         logger.info(f"Update type: {type(update.message.text if update.message else 'callback_query')}")
         message = update.callback_query.message if update.callback_query else update.message
         if not message:
@@ -45,7 +45,10 @@ def get_conversation_handler() -> ConversationHandler:
         return REGISTER
 
     return ConversationHandler(
-        entry_points=[CommandHandler("start", start)],
+        entry_points=[
+            CommandHandler("start", start),
+            MessageHandler(filters.TEXT | filters.CONTACT, start)  # اضافه کردن این خط
+        ],
         states={
             REGISTER: [
                 MessageHandler(filters.CONTACT, handle_contact),  # Handle contact messages first
@@ -53,7 +56,7 @@ def get_conversation_handler() -> ConversationHandler:
                 CommandHandler("start", start)  # Allow restart
             ],
             ROLE: [
-                MessageHandler(filters.TEXT & ~filters.COMMAND, handle_role),  # Handle text messages
+                MessageHandler(filters.TEXT | filters.CONTACT, handle_role),  # تغییر این خط
                 CallbackQueryHandler(handle_role)  # Handle button clicks
             ],
             EMPLOYER_MENU: [
@@ -98,11 +101,15 @@ def get_conversation_handler() -> ConversationHandler:
         },
         fallbacks=[
             CommandHandler("cancel", cancel),
-            CallbackQueryHandler(cancel, pattern="^cancel$")
+            CallbackQueryHandler(handle_callback),  # اضافه کردن general callback handler
+            MessageHandler(filters.ALL, handle_non_contact)  # اضافه کردن fallback برای همه پیام‌ها
         ],
         name="main_conversation",
         persistent=True,
-        allow_reentry=True
+        allow_reentry=True,
+        per_chat=False,  # تغییر این پارامتر
+        per_user=True,
+        per_message=False
     )
 
 async def log_state(update: Update, context: ContextTypes.DEFAULT_TYPE):

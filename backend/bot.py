@@ -109,10 +109,15 @@ def build_application():
         .build()
     )
     
-    app.add_handler(CommandHandler("start", reset_conversation))
-    app.add_handler(get_conversation_handler())
-    app.add_handler(CallbackQueryHandler(handle_callback))
-    app.add_error_handler(handle_error)
+    # تغییر ترتیب ثبت هندلرها
+    app.add_handler(get_conversation_handler())  # اول
+    app.add_handler(CommandHandler("start", reset_conversation))  # دوم
+    app.add_handler(CallbackQueryHandler(handle_callback))  # سوم
+    app.add_error_handler(handle_error)  # آخر
+    
+    # اضافه کردن لاگر برای دیباگ
+    logging.getLogger('telegram').setLevel(logging.DEBUG)
+    logging.getLogger('telegram.ext.conversationhandler').setLevel(logging.DEBUG)
     
     return app
 
