@@ -93,10 +93,10 @@ def get_conversation_handler() -> ConversationHandler:
                 CallbackQueryHandler(handle_attachment)  # Handle buttons
             ],
             CHANGE_PHONE: [
-                MessageHandler(filters.TEXT & ~filters.COMMAND, handle_new_phone)
+                MessageHandler(filters.TEXT & ~filters.COMMAND, handle_new_phone)  # از phone_handler
             ],
             VERIFY_CODE: [
-                MessageHandler(filters.TEXT & ~filters.COMMAND, verify_new_phone)
+                MessageHandler(filters.TEXT & ~filters.COMMAND, verify_new_phone)  # از phone_handler
             ]
         },
         fallbacks=[

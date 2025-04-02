@@ -5,12 +5,12 @@ from datetime import datetime, timedelta
 import random
 import requests
 import logging
-from utils import BASE_URL
+from utils import BASE_URL, save_user_phone
 from keyboards import MAIN_MENU_KEYBOARD, REGISTER_MENU_KEYBOARD
 
 logger = logging.getLogger(__name__)
 
-CHANGE_PHONE, VERIFY_CODE = range(20, 22)
+ROLE, CHANGE_PHONE, VERIFY_CODE, REGISTER = range(4)
 
 SMS_API_KEY = "your-api-key"  # تنظیم بعدی
 SMS_URL = "https://api.sms.ir/v1/send/verify"
@@ -194,3 +194,86 @@ async def send_register_prompt(update: Update):
             message,
             reply_markup=REGISTER_MENU_KEYBOARD
         )
+
+async def check_phone(update: Update, context: ContextTypes.DEFAULT_TYPE) -> bool:
+    """فقط بررسی وجود شماره تلفن معتبر برای کاربر"""
+    telegram_id = str(update.effective_user.id)
+    logger.info(f"Checking phone for user {telegram_id}")
+    
+    try:
+        response = requests.get(f"{BASE_URL}users/?telegram_id={telegram_id}")
+        logger.info(f"Check phone response: {response.status_code} - {response.text}")
+        
+        if response.status_code == 200 and response.json():
+            user_data = response.json()[0]
+            phone = user_data.get('phone')
+            
+            if phone and not phone.startswith('tg_'):
+                context.user_data['phone'] = phone
+                logger.info(f"Valid phone found: {phone}")
+                return True
+                
+        logger.info("No valid phone found")
+        return False
+
+    except Exception as e:
+        logger.error(f"Error checking phone: {e}")
+        return False
+
+async def handle_contact(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    """Handle receiving the user's phone number."""
+    logger.info("=== Starting handle_contact function ===")
+    try:
+        contact = update.message.contact
+        telegram_id = str(update.effective_user.id)
+        logger.info(f"Received contact for user {telegram_id}: {contact.phone_number}")
+        
+        # اطمینان از تطابق شماره با کاربر
+        if str(contact.user_id) != telegram_id:
+            logger.warning(f"Phone mismatch - Contact user_id: {contact.user_id}, Sender id: {telegram_id}")
+            await update.message.reply_text(
+                "❌ لطفاً فقط شماره تلفن خودتان را به اشتراک بگذارید!",
+                reply_markup=REGISTER_MENU_KEYBOARD
+            )
+            return REGISTER
+
+        # تمیز کردن شماره تلفن
+        phone = contact.phone_number.lstrip('+')
+        if phone.startswith('98'):
+            phone = '0' + phone[2:]
+        elif not phone.startswith('0'):
+            phone = '0' + phone
+        logger.info(f"Cleaned phone number: {phone}")
+
+        # ذخیره شماره در دیتابیس
+        success, status = await save_user_phone(telegram_id, phone, update.effective_user.full_name)
+        
+        if not success:
+            error_messages = {
+                "duplicate_phone": "❌ این شماره قبلاً توسط کاربر دیگری ثبت شده است.",
+                "api_error": "❌ خطا در ثبت شماره تلفن. لطفاً دوباره تلاش کنید.",
+                "server_error": "❌ خطا در ارتباط با سرور. لطفاً دوباره تلاش کنید."
+            }
+            await update.message.reply_text(
+                error_messages.get(status, "❌ خطای ناشناخته. لطفاً دوباره تلاش کنید."),
+                reply_markup=REGISTER_MENU_KEYBOARD
+            )
+            return REGISTER
+
+        # ذخیره موفق
+        context.user_data['phone'] = phone
+        context.user_data['state'] = ROLE
+        await update.message.reply_text(
+            "✅ شماره تلفن شما با موفقیت ثبت شد.",
+            reply_markup=MAIN_MENU_KEYBOARD
+        )
+        logger.info("Successfully registered phone")
+        return ROLE
+
+    except Exception as e:
+        logger.error(f"Error in handle_contact: {str(e)}")
+        await update.message.reply_text(
+            "❌ خطا در ثبت شماره تلفن. لطفاً دوباره تلاش کنید.",
+            reply_markup=REGISTER_MENU_KEYBOARD
+        )
+        return REGISTER
