@@ -38,17 +38,17 @@ def get_conversation_handler() -> ConversationHandler:
         return REGISTER
 
     return ConversationHandler(
-        entry_points=[
-            CommandHandler("start", start),
-            CommandHandler("change_phone", change_phone)
-        ],
+        entry_points=[CommandHandler("start", start)],
         states={
             REGISTER: [
-                MessageHandler(filters.CONTACT, handle_contact),  # Must be first
+                MessageHandler(filters.CONTACT, handle_contact),  # Explicitly handle contact messages first
+                MessageHandler(filters.ALL & ~filters.CONTACT & ~filters.COMMAND, handle_non_contact),  # All other messages
                 CommandHandler("start", start),  # Allow restart
-                MessageHandler((~filters.CONTACT & ~filters.COMMAND), handle_non_contact)  # Handle all other messages
             ],
-            ROLE: [CallbackQueryHandler(handle_role)],
+            ROLE: [
+                MessageHandler(filters.TEXT, handle_role),
+                CallbackQueryHandler(handle_role)
+            ],
             EMPLOYER_MENU: [CallbackQueryHandler(handle_message)],
             CATEGORY: [CallbackQueryHandler(handle_category_selection)],
             SUBCATEGORY: [CallbackQueryHandler(handle_category_selection)],
@@ -63,15 +63,10 @@ def get_conversation_handler() -> ConversationHandler:
             CHANGE_PHONE: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_new_phone)],
             VERIFY_CODE: [MessageHandler(filters.TEXT & ~filters.COMMAND, verify_new_phone)],
         },
-        fallbacks=[
-            CommandHandler("cancel", cancel),
-            CallbackQueryHandler(handle_callback, pattern="^cancel$")
-        ],
+        fallbacks=[CommandHandler("cancel", cancel)],
         name="main_conversation",
         persistent=True,
-        per_chat=True,
-        per_user=True,
-        per_message=False  # Changed to False to allow different handler types
+        allow_reentry=True
     )
 
 async def log_state(update: Update, context: ContextTypes.DEFAULT_TYPE):
