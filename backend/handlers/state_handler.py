@@ -29,12 +29,14 @@ def get_conversation_handler() -> ConversationHandler:
     """تنظیم و برگرداندن ConversationHandler اصلی"""
     async def handle_non_contact(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
         """Re-prompt for contact on non-contact messages in REGISTER state"""
+        logger.info(f"=== Non-contact message received in REGISTER state ===")
+        logger.info(f"Update type: {type(update.message.text if update.message else 'callback_query')}")
         message = update.callback_query.message if update.callback_query else update.message
         if not message:
             logger.error("No message object found in update")
             return REGISTER
             
-        logger.info(f"Non-contact message in REGISTER state from user {update.effective_user.id}")
+        logger.info(f"User {update.effective_user.id} sent non-contact message in REGISTER state")
         await message.reply_text(
             "⚠️ برای استفاده از ربات، باید شماره تلفن خود را به اشتراک بگذارید.\n"
             "لطفاً از دکمه زیر استفاده کنید:",
@@ -43,16 +45,12 @@ def get_conversation_handler() -> ConversationHandler:
         return REGISTER
 
     return ConversationHandler(
-        entry_points=[
-            CommandHandler("start", start),
-            CallbackQueryHandler(start, pattern="^start$")
-        ],
+        entry_points=[CommandHandler("start", start)],
         states={
             REGISTER: [
-                MessageHandler(filters.CONTACT, handle_contact),  # Explicitly handle contact messages first
-                MessageHandler(filters.ALL & ~filters.CONTACT & ~filters.COMMAND, handle_non_contact),  # All other messages
-                CallbackQueryHandler(handle_non_contact),
-                CommandHandler("start", start),  # Allow restart
+                MessageHandler(filters.CONTACT, handle_contact),  # Handle contact messages first
+                MessageHandler(~filters.CONTACT & ~filters.COMMAND, handle_non_contact),  # All other messages
+                CommandHandler("start", start)  # Allow restart
             ],
             ROLE: [
                 MessageHandler(filters.TEXT, handle_role),
