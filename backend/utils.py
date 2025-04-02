@@ -34,6 +34,36 @@ async def get_user_phone(telegram_id: str) -> str:
         logger.error(f"Error in get_user_phone: {e}")
         return None
 
+async def save_user_phone(telegram_id: str, phone: str, name: str = None) -> bool:
+    """ذخیره یا آپدیت شماره تلفن کاربر در دیتابیس"""
+    logger.info(f"Attempting to save phone {phone} for telegram_id {telegram_id}")
+    try:
+        user_data = {
+            'phone': phone,
+            'telegram_id': telegram_id,
+            'name': name or 'کاربر',
+            'role': 'client'
+        }
+        
+        # چک کردن وجود کاربر
+        check_response = requests.get(f"{BASE_URL}users/?telegram_id={telegram_id}")
+        logger.info(f"Check user response: {check_response.status_code}")
+        
+        if check_response.status_code == 200 and check_response.json():
+            # آپدیت کاربر موجود
+            user = check_response.json()[0]
+            response = requests.put(f"{BASE_URL}users/{user['id']}/", json=user_data)
+        else:
+            # ایجاد کاربر جدید
+            response = requests.post(f"{BASE_URL}users/", json=user_data)
+            
+        logger.info(f"Save user response: {response.status_code}")
+        return response.status_code in [200, 201]
+        
+    except Exception as e:
+        logger.error(f"Error saving user phone: {e}")
+        return False
+
 async def get_categories():
     try:
         response = requests.get(f"{BASE_URL}categories/")

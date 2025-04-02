@@ -1,6 +1,6 @@
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ContextTypes, ConversationHandler
-from utils import get_user_phone, BASE_URL, log_chat, ensure_active_chat
+from utils import get_user_phone, BASE_URL, log_chat, ensure_active_chat, save_user_phone
 from keyboards import MAIN_MENU_KEYBOARD, REGISTER_MENU_KEYBOARD, EMPLOYER_MENU_KEYBOARD  # اضافه شده
 import requests
 import logging
@@ -108,51 +108,35 @@ async def handle_contact(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         contact = update.message.contact
         telegram_id = str(update.effective_user.id)
         logger.info(f"Received contact for user {telegram_id}: {contact.phone_number}")
-
+        
         # اطمینان از تطابق شماره با کاربر
         if str(contact.user_id) != telegram_id:
-            logger.warning("Phone number belongs to different user")
+            logger.warning(f"Phone number belongs to different user. Contact user_id: {contact.user_id}, Sender id: {telegram_id}")
             await update.message.reply_text(
                 "❌ لطفاً فقط شماره تلفن خودتان را به اشتراک بگذارید!",
                 reply_markup=REGISTER_MENU_KEYBOARD
             )
             return REGISTER
 
-        # تمیز کردن شماره تلفن - بهبود یافته
+        # تمیز کردن شماره تلفن
         phone = contact.phone_number.lstrip('+')
         if phone.startswith('98'):
             phone = '0' + phone[2:]
         elif not phone.startswith('0'):
             phone = '0' + phone
-
         logger.info(f"Cleaned phone number: {phone}")
+            
+        # بررسی فرمت صحیح شماره
+        if not (phone.startswith('09') and len(phone) == 11 and phone.isdigit()):
+            logger.warning(f"Invalid phone format: {phone}")
+            await update.message.reply_text(
+                "❌ فرمت شماره تلفن نامعتبر است!",
+                reply_markup=REGISTER_MENU_KEYBOARD
+            )
+            return REGISTER
 
-        # آماده‌سازی داده‌های کاربر
-        user_data = {
-            'phone': phone,
-            'telegram_id': telegram_id,
-            'name': update.effective_user.full_name or 'کاربر',
-            'role': 'client'
-        }
-
-        # بررسی وجود کاربر
-        check_url = f"{BASE_URL}users/?telegram_id={telegram_id}"
-        check_response = requests.get(check_url)
-        logger.info(f"Check user response: {check_response.status_code}")
-
-        if check_response.status_code == 200 and check_response.json():
-            # آپدیت کاربر موجود
-            user = check_response.json()[0]
-            update_url = f"{BASE_URL}users/{user['id']}/"
-            response = requests.put(update_url, json=user_data)
-        else:
-            # ایجاد کاربر جدید
-            create_url = f"{BASE_URL}users/"
-            response = requests.post(create_url, json=user_data)
-
-        logger.info(f"API Response: {response.status_code} - {response.text}")
-
-        if response.status_code in [200, 201]:
+        # ذخیره شماره تلفن
+        if await save_user_phone(telegram_id, phone, update.effective_user.full_name):
             context.user_data['phone'] = phone
             context.user_data['state'] = ROLE
             await update.message.reply_text(
@@ -161,7 +145,7 @@ async def handle_contact(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
             )
             return ROLE
         else:
-            raise Exception(f"API Error: {response.status_code}")
+            raise Exception("Failed to save phone number")
 
     except Exception as e:
         logger.error(f"Error in handle_contact: {str(e)}")
