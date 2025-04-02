@@ -30,8 +30,13 @@ def get_conversation_handler() -> ConversationHandler:
     """تنظیم و برگرداندن ConversationHandler اصلی"""
     async def handle_non_contact(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
         """Re-prompt for contact on non-contact messages in REGISTER state"""
-        logger.info("=== Non-contact message received ===")  # اضافه کردن لاگ
-        logger.info(f"Update type: {type(update.message.text if update.message else 'callback_query')}")
+        logger.info("=== Non-contact message received in REGISTER state ===")
+        current_state = context.user_data.get('state')
+        logger.info(f"Current state: {current_state}")
+        
+        if current_state != REGISTER:
+            return current_state
+            
         message = update.callback_query.message if update.callback_query else update.message
         if not message:
             logger.error("No message object found in update")
@@ -43,6 +48,7 @@ def get_conversation_handler() -> ConversationHandler:
             "لطفاً از دکمه زیر استفاده کنید:",
             reply_markup=REGISTER_MENU_KEYBOARD
         )
+        context.user_data['state'] = REGISTER
         return REGISTER
 
     return ConversationHandler(

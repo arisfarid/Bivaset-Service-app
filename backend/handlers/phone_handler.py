@@ -128,9 +128,12 @@ def require_phone(func):
     """دکوراتور برای اجبار به ثبت شماره تلفن"""
     @wraps(func)
     async def wrapper(update: Update, context: ContextTypes.DEFAULT_TYPE, *args, **kwargs):
-        # اگر در حالت REGISTER هستیم، مستقیماً اجازه عبور بدهیم
+        # اگر در حالت REGISTER هستیم یا درخواست CONTACT داریم، مستقیماً اجازه عبور بدهیم
         current_state = context.user_data.get('state')
-        if current_state == 'REGISTER':
+        has_contact = bool(update.message and update.message.contact)
+        
+        if current_state == REGISTER or has_contact:
+            logger.info(f"Bypassing phone check - state: {current_state}, has_contact: {has_contact}")
             return await func(update, context, *args, **kwargs)
             
         if not update.effective_user:
@@ -235,6 +238,7 @@ async def handle_contact(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
                 "❌ لطفاً فقط شماره تلفن خودتان را به اشتراک بگذارید!",
                 reply_markup=REGISTER_MENU_KEYBOARD
             )
+            context.user_data['state'] = REGISTER
             return REGISTER
 
         # تمیز کردن شماره تلفن
@@ -247,6 +251,7 @@ async def handle_contact(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
 
         # ذخیره شماره در دیتابیس
         success, status = await save_user_phone(telegram_id, phone, update.effective_user.full_name)
+        logger.info(f"Save phone result: success={success}, status={status}")
         
         if not success:
             error_messages = {
@@ -258,6 +263,7 @@ async def handle_contact(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
                 error_messages.get(status, "❌ خطای ناشناخته. لطفاً دوباره تلاش کنید."),
                 reply_markup=REGISTER_MENU_KEYBOARD
             )
+            context.user_data['state'] = REGISTER
             return REGISTER
 
         # ذخیره موفق
@@ -267,11 +273,12 @@ async def handle_contact(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
             "✅ شماره تلفن شما با موفقیت ثبت شد.",
             reply_markup=MAIN_MENU_KEYBOARD
         )
-        logger.info("Successfully registered phone")
+        logger.info("Successfully registered phone and set state to ROLE")
         return ROLE
 
     except Exception as e:
         logger.error(f"Error in handle_contact: {str(e)}")
+        context.user_data['state'] = REGISTER
         await update.message.reply_text(
             "❌ خطا در ثبت شماره تلفن. لطفاً دوباره تلاش کنید.",
             reply_markup=REGISTER_MENU_KEYBOARD
