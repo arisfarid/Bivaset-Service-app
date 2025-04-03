@@ -229,11 +229,11 @@ async def handle_contact(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     try:
         contact = update.message.contact
         telegram_id = str(update.effective_user.id)
-        logger.info(f"Processing contact for {telegram_id}")
         
         # اضافه کردن لاگ بیشتر برای دیباگ
         logger.info(f"Current state: {context.user_data.get('state')}")
         logger.info(f"Contact info: {contact.phone_number}, user_id: {contact.user_id}")
+        logger.info(f"Telegram ID: {telegram_id}")
 
         if str(contact.user_id) != telegram_id:
             logger.warning(f"Phone mismatch - Contact user_id: {contact.user_id}, Sender id: {telegram_id}")
@@ -251,38 +251,51 @@ async def handle_contact(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
             phone = '0' + phone
         logger.info(f"Cleaned phone number: {phone}")
 
-        # ذخیره شماره در دیتابیس
-        success, status = await save_user_phone(telegram_id, phone, update.effective_user.full_name)
-        logger.info(f"Phone save result: success={success}, status={status}")
-        
-        if not success:
-            error_messages = {
-                "duplicate_phone": "❌ این شماره قبلاً توسط کاربر دیگری ثبت شده است.",
-                "api_error": "❌ خطا در ثبت شماره تلفن. لطفاً دوباره تلاش کنید.",
-                "server_error": "❌ خطا در ارتباط با سرور. لطفاً دوباره تلاش کنید."
-            }
+        try:
+            # ذخیره شماره در دیتابیس با مدیریت خطای بهتر
+            success, status = await save_user_phone(telegram_id, phone, update.effective_user.full_name)
+            logger.info(f"Save phone result - success: {success}, status: {status}")
+
+            if not success:
+                error_messages = {
+                    "duplicate_phone": "❌ این شماره قبلاً توسط کاربر دیگری ثبت شده است.",
+                    "api_error": "❌ خطا در ثبت شماره تلفن. لطفاً دوباره تلاش کنید.",
+                    "server_error": "❌ خطا در ارتباط با سرور. لطفاً دوباره تلاش کنید."
+                }
+                await update.message.reply_text(
+                    error_messages.get(status, "❌ خطای ناشناخته. لطفاً دوباره تلاش کنید."),
+                    reply_markup=REGISTER_MENU_KEYBOARD
+                )
+                return REGISTER
+
+            # ذخیره موفق
+            context.user_data['phone'] = phone
+            context.user_data['state'] = ROLE
+            welcome_message = (
+                f"👋 سلام {update.effective_user.first_name}! به ربات خدمات بی‌واسط خوش آمدید.\n"
+                "لطفاً یکی از گزینه‌ها را انتخاب کنید:"
+            )
             await update.message.reply_text(
-                error_messages.get(status, "❌ خطای ناشناخته. لطفاً دوباره تلاش کنید."),
+                welcome_message,
+                reply_markup=MAIN_MENU_KEYBOARD
+            )
+            logger.info(f"Successfully registered phone {phone} for user {telegram_id}")
+            return ROLE
+
+        except Exception as e:
+            logger.error(f"Database error in handle_contact: {str(e)}")
+            await update.message.reply_text(
+                "❌ خطا در ارتباط با دیتابیس. لطفاً دوباره تلاش کنید.",
                 reply_markup=REGISTER_MENU_KEYBOARD
             )
             return REGISTER
 
-        # ذخیره موفق
-        context.user_data['phone'] = phone
-        context.user_data['state'] = ROLE
-        logger.info(f"Successfully saved phone {phone} for user {telegram_id}")
-        
-        await update.message.reply_text(
-            f"👋 سلام {update.effective_user.first_name}! به ربات خدمات بی‌واسط خوش آمدید.\n"
-            "لطفاً یکی از گزینه‌ها را انتخاب کنید:",
-            reply_markup=MAIN_MENU_KEYBOARD
-        )
-        
-        logger.info("Transitioning to ROLE state")
-        return ROLE
-
     except Exception as e:
         logger.error(f"Error in handle_contact: {str(e)}")
+        await update.message.reply_text(
+            "❌ خطا در پردازش شماره تلفن. لطفاً دوباره تلاش کنید.",
+            reply_markup=REGISTER_MENU_KEYBOARD
+        )
         return REGISTER
 
 async def save_user_phone(telegram_id: str, phone: str, name: str = None) -> tuple[bool, str]:
