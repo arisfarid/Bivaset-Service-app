@@ -57,8 +57,7 @@ def get_conversation_handler() -> ConversationHandler:
     """تنظیم و برگرداندن ConversationHandler اصلی"""
     return ConversationHandler(
         entry_points=[
-            CommandHandler("start", start),
-            MessageHandler(filters.TEXT | filters.CONTACT, start)  # اضافه کردن این خط
+            CommandHandler("start", start)
         ],
         states={
             REGISTER: [

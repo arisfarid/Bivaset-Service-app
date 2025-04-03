@@ -229,16 +229,18 @@ async def handle_contact(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     try:
         contact = update.message.contact
         telegram_id = str(update.effective_user.id)
-        logger.info(f"Received contact for user {telegram_id}: {contact.phone_number}")
+        logger.info(f"Processing contact for {telegram_id}")
         
-        # اطمینان از تطابق شماره با کاربر
+        # اضافه کردن لاگ بیشتر برای دیباگ
+        logger.info(f"Current state: {context.user_data.get('state')}")
+        logger.info(f"Contact info: {contact.phone_number}, user_id: {contact.user_id}")
+
         if str(contact.user_id) != telegram_id:
             logger.warning(f"Phone mismatch - Contact user_id: {contact.user_id}, Sender id: {telegram_id}")
             await update.message.reply_text(
                 "❌ لطفاً فقط شماره تلفن خودتان را به اشتراک بگذارید!",
                 reply_markup=REGISTER_MENU_KEYBOARD
             )
-            context.user_data['state'] = REGISTER
             return REGISTER
 
         # تمیز کردن شماره تلفن
@@ -251,7 +253,7 @@ async def handle_contact(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
 
         # ذخیره شماره در دیتابیس
         success, status = await save_user_phone(telegram_id, phone, update.effective_user.full_name)
-        logger.info(f"Save phone result: success={success}, status={status}")
+        logger.info(f"Phone save result: success={success}, status={status}")
         
         if not success:
             error_messages = {
@@ -263,24 +265,22 @@ async def handle_contact(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
                 error_messages.get(status, "❌ خطای ناشناخته. لطفاً دوباره تلاش کنید."),
                 reply_markup=REGISTER_MENU_KEYBOARD
             )
-            context.user_data['state'] = REGISTER
             return REGISTER
 
         # ذخیره موفق
         context.user_data['phone'] = phone
         context.user_data['state'] = ROLE
+        logger.info(f"Successfully saved phone {phone} for user {telegram_id}")
+        
         await update.message.reply_text(
-            "✅ شماره تلفن شما با موفقیت ثبت شد.",
+            f"👋 سلام {update.effective_user.first_name}! به ربات خدمات بی‌واسط خوش آمدید.\n"
+            "لطفاً یکی از گزینه‌ها را انتخاب کنید:",
             reply_markup=MAIN_MENU_KEYBOARD
         )
-        logger.info("Successfully registered phone and set state to ROLE")
+        
+        logger.info("Transitioning to ROLE state")
         return ROLE
 
     except Exception as e:
         logger.error(f"Error in handle_contact: {str(e)}")
-        context.user_data['state'] = REGISTER
-        await update.message.reply_text(
-            "❌ خطا در ثبت شماره تلفن. لطفاً دوباره تلاش کنید.",
-            reply_markup=REGISTER_MENU_KEYBOARD
-        )
         return REGISTER
