@@ -304,6 +304,8 @@ async def save_user_phone(telegram_id: str, phone: str, name: str = None) -> tup
     try:
         # چک کردن تکراری نبودن شماره
         check_response = requests.get(f"{BASE_URL}users/?phone={phone}")
+        logger.info(f"Check phone API response: {check_response.status_code} - {check_response.text}")
+        
         if check_response.status_code == 200 and check_response.json():
             existing_user = check_response.json()[0]
             # اگر شماره متعلق به کاربر دیگری است
@@ -315,8 +317,34 @@ async def save_user_phone(telegram_id: str, phone: str, name: str = None) -> tup
                 logger.info(f"Phone {phone} already registered to this user")
                 return True, "already_registered"
 
-        # ...existing code...
+        # آماده‌سازی داده‌های کاربر
+        user_data = {
+            'phone': phone,
+            'telegram_id': telegram_id,
+            'name': name or 'کاربر',
+            'role': 'client'
+        }
+        logger.info(f"Prepared user data: {user_data}")
+
+        # چک کردن وجود کاربر
+        user_response = requests.get(f"{BASE_URL}users/?telegram_id={telegram_id}")
+        logger.info(f"Check user API response: {user_response.status_code} - {user_response.text}")
+        
+        if user_response.status_code == 200 and user_response.json():
+            # آپدیت کاربر موجود
+            user = user_response.json()[0]
+            update_url = f"{BASE_URL}users/{user['id']}/"
+            logger.info(f"Updating existing user at: {update_url}")
+            response = requests.put(update_url, json=user_data)
+        else:
+            # ایجاد کاربر جدید
+            logger.info("Creating new user")
+            response = requests.post(f"{BASE_URL}users/", json=user_data)
+
+        logger.info(f"Final API response: {response.status_code} - {response.text}")
+        success = response.status_code in [200, 201]
+        return success, "success" if success else "api_error"
 
     except Exception as e:
-        logger.error(f"Error saving phone: {e}")
-        return False, "api_error"
+        logger.error(f"Error in save_user_phone: {str(e)}")
+        return False, "server_error"
