@@ -230,12 +230,12 @@ async def handle_contact(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         contact = update.message.contact
         telegram_id = str(update.effective_user.id)
         
-        # اضافه کردن لاگ بیشتر برای دیباگ
         logger.info(f"Current state: {context.user_data.get('state')}")
         logger.info(f"Contact info: {contact.phone_number}, user_id: {contact.user_id}")
         logger.info(f"Telegram ID: {telegram_id}")
 
         if str(contact.user_id) != telegram_id:
+            logger.warning(f"Phone mismatch - Contact user_id: {contact.user_id}, Sender id: {telegram_id}")
             logger.warning(f"Phone mismatch - Contact user_id: {contact.user_id}, Sender id: {telegram_id}")
             await update.message.reply_text(
                 "❌ لطفاً فقط شماره تلفن خودتان را به اشتراک بگذارید!",
