@@ -230,12 +230,12 @@ async def handle_contact(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         contact = update.message.contact
         telegram_id = str(update.effective_user.id)
         
+        # اضافه کردن لاگ بیشتر برای دیباگ
         logger.info(f"Current state: {context.user_data.get('state')}")
         logger.info(f"Contact info: {contact.phone_number}, user_id: {contact.user_id}")
         logger.info(f"Telegram ID: {telegram_id}")
 
         if str(contact.user_id) != telegram_id:
-            logger.warning(f"Phone mismatch - Contact user_id: {contact.user_id}, Sender id: {telegram_id}")
             logger.warning(f"Phone mismatch - Contact user_id: {contact.user_id}, Sender id: {telegram_id}")
             await update.message.reply_text(
                 "❌ لطفاً فقط شماره تلفن خودتان را به اشتراک بگذارید!",
@@ -243,13 +243,9 @@ async def handle_contact(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
             )
             return REGISTER
 
-        # تمیز کردن شماره تلفن
-        phone = contact.phone_number.lstrip('+')
-        if phone.startswith('98'):
-            phone = '0' + phone[2:]
-        elif not phone.startswith('0'):
-            phone = '0' + phone
-        logger.info(f"Cleaned phone number: {phone}")
+        # استفاده از شماره خام تلگرام بدون تغییر
+        phone = contact.phone_number
+        logger.info(f"Using original phone number: {phone}")
 
         try:
             # ذخیره شماره در دیتابیس با مدیریت خطای بهتر
