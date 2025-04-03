@@ -284,3 +284,26 @@ async def handle_contact(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     except Exception as e:
         logger.error(f"Error in handle_contact: {str(e)}")
         return REGISTER
+
+async def save_user_phone(telegram_id: str, phone: str, name: str = None) -> tuple[bool, str]:
+    """ذخیره یا آپدیت شماره تلفن کاربر در دیتابیس"""
+    logger.info(f"=== Starting save_user_phone for {telegram_id} with phone {phone} ===")
+    try:
+        # چک کردن تکراری نبودن شماره
+        check_response = requests.get(f"{BASE_URL}users/?phone={phone}")
+        if check_response.status_code == 200 and check_response.json():
+            existing_user = check_response.json()[0]
+            # اگر شماره متعلق به کاربر دیگری است
+            if existing_user.get('telegram_id') and existing_user['telegram_id'] != telegram_id:
+                logger.warning(f"Phone {phone} belongs to telegram_id {existing_user['telegram_id']}")
+                return False, "duplicate_phone"
+            # اگر شماره متعلق به خود کاربر است
+            elif existing_user['telegram_id'] == telegram_id:
+                logger.info(f"Phone {phone} already registered to this user")
+                return True, "already_registered"
+
+        # ...existing code...
+
+    except Exception as e:
+        logger.error(f"Error saving phone: {e}")
+        return False, "api_error"
