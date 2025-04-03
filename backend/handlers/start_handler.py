@@ -12,6 +12,8 @@ START, REGISTER, ROLE, EMPLOYER_MENU = range(4)
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Start the conversation with the bot."""
+    logger.info(f"=== Entering start function - User: {update.effective_user.id} ===")
+    logger.info(f"Current context state: {context.user_data.get('state')}")
     await ensure_active_chat(update, context)
     context.user_data['state'] = REGISTER
     
@@ -23,7 +25,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     # بررسی وجود شماره تلفن
     has_phone = await check_phone(update, context)
     
-    if has_phone:
+    if (has_phone):
         # اگر شماره داشت، نمایش منوی اصلی
         context.user_data['state'] = ROLE
         welcome_message = (
@@ -42,6 +44,9 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
 
 async def handle_role(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Handle role selection."""
+    logger.info(f"=== Entering handle_role - User: {update.effective_user.id} ===")
+    logger.info(f"Message text: {update.message.text if update.message else 'None'}")
+    logger.info(f"Current state: {context.user_data.get('state')}")
     text = update.message.text if update.message else None
     
     if text == "درخواست خدمات | کارفرما 👔":

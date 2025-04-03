@@ -94,6 +94,7 @@ async def shutdown(application: Application):
     logger.info("Application shutdown complete")
 
 def build_application():
+    logger.info("=== Building application and registering handlers ===")
     persistence = PicklePersistence(
         filepath=PERSISTENCE_PATH,
         store_data=PersistenceInput(bot_data=True, chat_data=True, user_data=True, callback_data=True),
@@ -111,6 +112,7 @@ def build_application():
     
     # تغییر ترتیب ثبت هندلرها
     app.add_handler(get_conversation_handler())  # اول
+    logger.info("Added conversation handler")
     app.add_handler(CommandHandler("start", reset_conversation))  # دوم
     app.add_handler(CallbackQueryHandler(handle_callback))  # سوم
     app.add_error_handler(handle_error)  # آخر

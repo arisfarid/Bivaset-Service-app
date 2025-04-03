@@ -26,31 +26,35 @@ PROJECT_ACTIONS, CHANGE_PHONE, VERIFY_CODE = range(20)
 from handlers.submission_handler import submit_project
 from handlers.phone_handler import change_phone, handle_new_phone, verify_new_phone
 
-def get_conversation_handler() -> ConversationHandler:
-    """تنظیم و برگرداندن ConversationHandler اصلی"""
-    async def handle_non_contact(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-        """Re-prompt for contact on non-contact messages in REGISTER state"""
-        logger.info("=== Non-contact message received in REGISTER state ===")
-        current_state = context.user_data.get('state')
-        logger.info(f"Current state: {current_state}")
+async def handle_non_contact(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    logger.info(f"=== Entering handle_non_contact - User: {update.effective_user.id} ===")
+    logger.info(f"Message type: {type(update.message)}")
+    logger.info(f"Message text: {update.message.text if update.message else 'None'}")
+    logger.info(f"Current state: {context.user_data.get('state')}")
+    logger.info("=== Non-contact message received in REGISTER state ===")
+    current_state = context.user_data.get('state')
+    logger.info(f"Current state: {current_state}")
+    
+    if current_state != REGISTER:
+        return current_state
         
-        if current_state != REGISTER:
-            return current_state
-            
-        message = update.callback_query.message if update.callback_query else update.message
-        if not message:
-            logger.error("No message object found in update")
-            return REGISTER
-            
-        logger.info(f"User {update.effective_user.id} sent non-contact message in REGISTER state")
-        await message.reply_text(
-            "⚠️ برای استفاده از ربات، باید شماره تلفن خود را به اشتراک بگذارید.\n"
-            "لطفاً از دکمه زیر استفاده کنید:",
-            reply_markup=REGISTER_MENU_KEYBOARD
-        )
-        context.user_data['state'] = REGISTER
+    message = update.callback_query.message if update.callback_query else update.message
+    if not message:
+        logger.error("No message object found in update")
         return REGISTER
+        
+    logger.info(f"User {update.effective_user.id} sent non-contact message in REGISTER state")
+    await message.reply_text(
+        "⚠️ برای استفاده از ربات، باید شماره تلفن خود را به اشتراک بگذارید.\n"
+        "لطفاً از دکمه زیر استفاده کنید:",
+        reply_markup=REGISTER_MENU_KEYBOARD
+    )
+    context.user_data['state'] = REGISTER
+    return REGISTER
 
+def get_conversation_handler() -> ConversationHandler:
+    logger.info("=== Initializing ConversationHandler ===")
+    """تنظیم و برگرداندن ConversationHandler اصلی"""
     return ConversationHandler(
         entry_points=[
             CommandHandler("start", start),

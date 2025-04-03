@@ -16,6 +16,12 @@ logger = logging.getLogger(__name__)
 message_lock = Lock()
 @require_phone
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    logger.info(f"=== Entering handle_message - User: {update.effective_user.id} ===")
+    logger.info(f"Message type: {type(update.message)}")
+    logger.info(f"Message text: {update.message.text if update.message else 'None'}")
+    logger.info(f"Current state: {context.user_data.get('state')}")
+    logger.info(f"Has phone?: {bool(context.user_data.get('phone'))}")
+
     await ensure_active_chat(update, context)
     current_state = context.user_data.get('state', ROLE)
     
