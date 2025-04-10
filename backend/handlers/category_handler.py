@@ -29,30 +29,30 @@ async def handle_category_selection(update: Update, context: ContextTypes.DEFAUL
                 await query.answer("❌ خطا در دریافت دسته‌بندی‌ها")
                 return CATEGORY
             context.user_data['categories'] = categories
+            logger.info(f"Categories loaded and stored in context: {categories}")
         
         categories = context.user_data['categories']
-        logger.info(f"Available categories: {categories}")
-
+        
         if data.startswith("cat_"):
-            category_id = data.split("_")[1]
+            category_id = int(data.split("_")[1])  # تبدیل به عدد
             # جستجوی دسته‌بندی در دیکشنری categories
-            selected_category = categories[category_id] if category_id in categories else None
-
-            logger.info(f"Selected category ID: {category_id}")
-            logger.info(f"Selected category: {selected_category}")
+            logger.info(f"Looking for category {category_id} in keys: {list(categories.keys())}")
+            selected_category = categories.get(category_id)  # استفاده مستقیم از عدد
+            
+            logger.info(f"Selected category data: {selected_category}")
             
             if not selected_category:
+                logger.error(f"Category {category_id} not found. Available categories: {categories}")
                 await query.answer("❌ دسته‌بندی نامعتبر")
-                logger.error(f"Category {category_id} not found in {categories}")
                 return CATEGORY
 
             # بررسی وجود زیرمجموعه‌ها
             subcategories = []
             for cat_id, cat in categories.items():
-                if cat.get('parent') == int(category_id):
+                if cat.get('parent') == category_id:  # مقایسه با عدد
                     subcategories.append(cat_id)
             
-            logger.info(f"Found subcategories: {subcategories}")
+            logger.info(f"Found subcategories for {category_id}: {subcategories}")
 
             # اگر زیرمجموعه داشت
             if subcategories:
