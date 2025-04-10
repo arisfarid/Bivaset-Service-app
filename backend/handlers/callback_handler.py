@@ -44,8 +44,9 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         data = query.data
         logger.info(f"Handling callback: {data}")
 
-        # پردازش دکمه restart
+        # پردازش دکمه restart با اولویت بالا
         if data == "restart":
+            logger.info("Processing restart button")
             try:
                 if query.message:
                     await query.message.delete()
@@ -53,12 +54,12 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 logger.warning(f"Could not delete message: {e}")
 
             context.user_data.clear()
-            await update.callback_query.message.reply_text(
+            await query.message.reply_text(
                 f"👋 سلام {update.effective_user.first_name}! به ربات خدمات بی‌واسط خوش آمدید.\n"
                 "لطفاً یکی از گزینه‌ها را انتخاب کنید:",
                 reply_markup=MAIN_MENU_KEYBOARD
             )
-            return ROLE
+            return START
 
         # پردازش دسته‌بندی
         if data.startswith(('cat_', 'subcat_')):

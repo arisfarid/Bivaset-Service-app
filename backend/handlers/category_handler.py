@@ -3,7 +3,7 @@ from telegram.ext import ContextTypes, ConversationHandler
 from utils import get_categories, log_chat
 import logging
 from handlers.start_handler import start
-from keyboards import EMPLOYER_MENU_KEYBOARD, create_category_keyboard # اضافه شده برای بازگشت به منوی اصلی
+from keyboards import EMPLOYER_MENU_KEYBOARD,MAIN_MENU_KEYBOARD, create_category_keyboard # اضافه شده برای بازگشت به منوی اصلی
 from handlers.phone_handler import require_phone
 
 logger = logging.getLogger(__name__)
@@ -22,6 +22,16 @@ async def handle_category_selection(update: Update, context: ContextTypes.DEFAUL
         data = query.data
         logger.info(f"Category selection data: {data}")
 
+        if data == "restart":
+            logger.info("Restart button pressed - clearing context and returning to START")
+            context.user_data.clear()
+            await query.message.reply_text(
+                f"👋 سلام {update.effective_user.first_name}! به ربات خدمات بی‌واسط خوش آمدید.\n"
+                "لطفاً یکی از گزینه‌ها را انتخاب کنید:",
+                reply_markup=MAIN_MENU_KEYBOARD
+            )
+            return START
+
         # برگشت به منوی کارفرما
         if data == "back_to_menu":
             await query.message.edit_text(
@@ -32,23 +42,27 @@ async def handle_category_selection(update: Update, context: ContextTypes.DEFAUL
 
         # پردازش انتخاب دسته‌بندی
         if data.startswith("cat_"):
-            category_id = data.split("_")[1]
+            category_id = int(data.split("_")[1])  # تبدیل به عدد
             categories = context.user_data.get('categories', {})
-            selected_category = categories.get(str(category_id))
-
+            
+            logger.info(f"Categories in context: {categories}")
+            logger.info(f"Looking for category_id: {category_id}")
+            
+            selected_category = categories.get(category_id)  # جستجو با عدد
+            logger.info(f"Found category: {selected_category}")
+            
             if not selected_category:
-                logger.error(f"Category {category_id} not found in {categories}")
                 await query.answer("❌ دسته‌بندی نامعتبر")
+                logger.error(f"Category {category_id} not found in categories")
                 return CATEGORY
 
             # بررسی وجود زیرمجموعه‌ها
             subcategories = []
             for cat_id, cat in categories.items():
-                # بررسی parent به صورت string
-                if str(cat.get('parent')) == str(category_id):
+                if cat.get('parent') == category_id:  # مقایسه با عدد
                     subcategories.append(cat_id)
-
-            logger.info(f"Found subcategories for {category_id}: {subcategories}")
+            
+            logger.info(f"Found subcategories: {subcategories}")
 
             # اگر زیرمجموعه داشت
             if subcategories:
@@ -56,7 +70,7 @@ async def handle_category_selection(update: Update, context: ContextTypes.DEFAUL
                 keyboard = []
                 
                 for sub_id in subcategories:
-                    sub_name = categories[str(sub_id)]['name']
+                    sub_name = categories[sub_id]['name']
                     keyboard.append([
                         InlineKeyboardButton(
                             sub_name, 
