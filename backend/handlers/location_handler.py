@@ -11,26 +11,52 @@ CHANGE_PHONE, VERIFY_CODE = range(20, 22)  # states جدید
 
 async def handle_location(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Handle location selection and input"""
-    current_state = context.user_data.get('state', LOCATION_TYPE)
     query = update.callback_query
     message = update.message
+    current_state = context.user_data.get('state', LOCATION_TYPE)
+    logger.info(f"Location handler - State: {current_state}")
     
     # اگر callback دریافت شده
     if query:
         data = query.data
         logger.info(f"Location handler received callback: {data}")
 
-        if data == "back_to_description":
-            logger.info("Returning to description state")
-            context.user_data['state'] = DESCRIPTION
-            await query.message.edit_text(
-                "🌟 توضیحات خدماتت رو بگو:",
-                reply_markup=InlineKeyboardMarkup([
-                    [InlineKeyboardButton("⬅️ بازگشت", callback_data="back_to_categories")]
-                ])
-            )
-            return DESCRIPTION
+        # برگشت به مرحله قبل
+        if data == "back_to_categories":
+            logger.info("Returning to category selection")
+            categories = context.user_data.get('categories', {})
+            category_id = context.user_data.get('category_id')
+            if category_id:
+                category = categories.get(category_id)
+                if category.get('parent'):
+                    # برگشت به زیردسته‌ها
+                    parent = categories.get(category['parent'])
+                    keyboard = []
+                    for child_id in parent.get('children', []):
+                        child = categories.get(child_id)
+                        if child:
+                            keyboard.append([
+                                InlineKeyboardButton(
+                                    child['name'],
+                                    callback_data=f"subcat_{child_id}"
+                                )
+                            ])
+                    keyboard.append([InlineKeyboardButton("⬅️ بازگشت", callback_data="back_to_categories")])
+                    await query.message.edit_text(
+                        f"📋 زیرمجموعه {parent['name']} را انتخاب کنید:",
+                        reply_markup=InlineKeyboardMarkup(keyboard)
+                    )
+                else:
+                    # برگشت به دسته‌های اصلی
+                    keyboard = create_category_keyboard(categories)
+                    await query.message.edit_text(
+                        "🌟 دسته‌بندی خدماتت رو انتخاب کن:",
+                        reply_markup=keyboard
+                    )
+            context.user_data['state'] = CATEGORY
+            return CATEGORY
 
+        # پردازش انتخاب نوع لوکیشن
         elif data.startswith("location_"):
             location_type = data.split("_")[1]
             context.user_data['service_location'] = {
@@ -40,114 +66,81 @@ async def handle_location(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
             }[location_type]
 
             if location_type == 'remote':
-                context.user_data['state'] = DETAILS
-                await query.message.edit_text(
-                    "📋 جزئیات درخواست\n"
-                    "اگه بخوای می‌تونی برای راهنمایی بهتر مجری‌ها این اطلاعات رو هم وارد کنی:",
-                    reply_markup=create_dynamic_keyboard(context)
-                )
-                return DETAILS
-            else:
-                context.user_data['state'] = LOCATION_INPUT
-                await query.message.edit_text(
-                    "📍 برای اتصال به نزدیک‌ترین مجری، لطفاً لوکیشن خود را ارسال کنید:",
-                    reply_markup=LOCATION_INPUT_MENU_KEYBOARD
-                )
-                return LOCATION_INPUT
-
-        return current_state
-
-    # اگر پیام متنی یا لوکیشن دریافت شده
-    text = message.text if message else None
-    location = message.location if message else None
-
-    # اگر location دریافت شد
-    if location:
-        try:
-            context.user_data['location'] = {
-                'longitude': location.longitude,
-                'latitude': location.latitude
-            }
-            context.user_data['state'] = DETAILS
-            await message.reply_text(
-                "📋 جزئیات درخواست:\n"
-                "اگه بخوای می‌تونی برای راهنمایی بهتر مجری‌ها این اطلاعات رو هم وارد کنی:",
-                reply_markup=create_dynamic_keyboard(context)
-            )
-            return DETAILS
-
-        except Exception as e:
-            logger.error(f"Error handling location: {e}")
-            await message.reply_text(
-                "❌ خطا در ثبت لوکیشن. لطفاً دوباره تلاش کنید.",
-                reply_markup=LOCATION_INPUT_MENU_KEYBOARD
-            )
-            return current_state
-
-    # پردازش دکمه‌های برگشت و ادامه
-    if text in ["⬅️ بازگشت", "➡️ ادامه"]:
-        if current_state == LOCATION_TYPE:
-            if text == "⬅️ بازگشت":
+                # اگر غیرحضوری بود مستقیم به مرحله توضیحات برو
                 context.user_data['state'] = DESCRIPTION
-                await message.reply_text(
+                await query.message.edit_text(
                     "🌟 توضیحات خدماتت رو بگو:",
                     reply_markup=InlineKeyboardMarkup([
-                        [InlineKeyboardButton("⬅️ بازگشت", callback_data="back_to_categories")]
+                        [InlineKeyboardButton("⬅️ بازگشت", callback_data="back_to_location_type")]
                     ])
                 )
                 return DESCRIPTION
-
-            elif text == "➡️ ادامه":
-                if 'service_location' not in context.user_data:
-                    await message.reply_text(
-                        "❌ لطفاً محل انجام خدمات رو انتخاب کن!",
-                        reply_markup=LOCATION_TYPE_MENU_KEYBOARD
-                    )
-                    return LOCATION_TYPE
-
-                if context.user_data['service_location'] in ['client_site', 'contractor_site'] and 'location' not in context.user_data:
-                    await message.reply_text(
-                        "❌ برای خدمات حضوری، ارسال لوکیشن اجباری است!",
-                        reply_markup=LOCATION_INPUT_MENU_KEYBOARD
-                    )
-                    return LOCATION_INPUT
-
-                context.user_data['state'] = DETAILS
-                await message.reply_text(
-                    "📋 جزئیات درخواست\n"
-                    "اگه بخوای می‌تونی برای راهنمایی بهتر مجری‌ها این اطلاعات رو هم وارد کنی:",
-                    reply_markup=create_dynamic_keyboard(context)
+            else:
+                # برای خدمات حضوری درخواست لوکیشن
+                context.user_data['state'] = LOCATION_INPUT
+                await query.message.edit_text(
+                    "📍 برای اتصال به نزدیک‌ترین مجری، لطفاً لوکیشن خود را ارسال کنید:",
+                    reply_markup=InlineKeyboardMarkup([
+                        [InlineKeyboardButton("⬅️ بازگشت", callback_data="back_to_location_type")],
+                        [InlineKeyboardButton("➡️ رد کردن", callback_data="skip_location")]
+                    ])
                 )
-                return DETAILS
+                return LOCATION_INPUT
 
-        elif current_state == LOCATION_INPUT:
-            if text == "⬅️ بازگشت":
+        # برگشت به انتخاب نوع لوکیشن
+        elif data == "back_to_location_type":
+            context.user_data['state'] = LOCATION_TYPE
+            keyboard = [
+                [InlineKeyboardButton("🏠 محل من", callback_data="location_client")],
+                [InlineKeyboardButton("🔧 محل مجری", callback_data="location_contractor")],
+                [InlineKeyboardButton("💻 غیرحضوری", callback_data="location_remote")],
+                [InlineKeyboardButton("⬅️ بازگشت", callback_data="back_to_categories")]
+            ]
+            await query.message.edit_text(
+                "🌟 محل انجام خدماتت رو انتخاب کن:",
+                reply_markup=InlineKeyboardMarkup(keyboard)
+            )
+            return LOCATION_TYPE
+
+        # رد کردن ارسال لوکیشن
+        elif data == "skip_location":
+            context.user_data['state'] = DESCRIPTION
+            await query.message.edit_text(
+                "🌟 توضیحات خدماتت رو بگو:",
+                reply_markup=InlineKeyboardMarkup([
+                    [InlineKeyboardButton("⬅️ بازگشت", callback_data="back_to_location_type")]
+                ])
+            )
+            return DESCRIPTION
+
+    # اگر لوکیشن دریافت شد
+    if update.message and update.message.location:
+        location = update.message.location
+        context.user_data['location'] = [location.longitude, location.latitude]
+        context.user_data['state'] = DESCRIPTION
+        await update.message.reply_text(
+            "🌟 توضیحات خدماتت رو بگو:",
+            reply_markup=InlineKeyboardMarkup([
+                [InlineKeyboardButton("⬅️ بازگشت", callback_data="back_to_location_type")]
+            ])
+        )
+        return DESCRIPTION
+
+    # اگر پیام متنی دریافت شد (مثلاً برگشت)
+    if update.message and update.message.text:
+        if update.message.text == "⬅️ بازگشت":
+            if current_state == LOCATION_INPUT:
                 context.user_data['state'] = LOCATION_TYPE
-                await message.reply_text(
+                keyboard = [
+                    [InlineKeyboardButton("🏠 محل من", callback_data="location_client")],
+                    [InlineKeyboardButton("🔧 محل مجری", callback_data="location_contractor")],
+                    [InlineKeyboardButton("💻 غیرحضوری", callback_data="location_remote")],
+                    [InlineKeyboardButton("⬅️ بازگشت", callback_data="back_to_categories")]
+                ]
+                await update.message.reply_text(
                     "🌟 محل انجام خدماتت رو انتخاب کن:",
-                    reply_markup=LOCATION_TYPE_MENU_KEYBOARD
+                    reply_markup=InlineKeyboardMarkup(keyboard)
                 )
                 return LOCATION_TYPE
 
-            elif text == "➡️ ادامه":
-                if context.user_data.get('service_location') in ['client_site', 'contractor_site'] and 'location' not in context.user_data:
-                    await message.reply_text(
-                        "❌ برای خدمات حضوری، ارسال لوکیشن اجباری است!",
-                        reply_markup=LOCATION_INPUT_MENU_KEYBOARD
-                    )
-                    return LOCATION_INPUT
-
-                context.user_data['state'] = DETAILS
-                await message.reply_text(
-                    "📋 جزئیات درخواست\n"
-                    "اگه بخوای می‌تونی برای راهنمایی بهتر مجری‌ها این اطلاعات رو هم وارد کنی:",
-                    reply_markup=create_dynamic_keyboard(context)
-                )
-                return DETAILS
-
-    # اگر متن نامعتبر دریافت شده
-    await message.reply_text(
-        "❌ لطفاً از دکمه‌های موجود استفاده کنید یا لوکیشن ارسال کنید.",
-        reply_markup=LOCATION_INPUT_MENU_KEYBOARD if current_state == LOCATION_INPUT else LOCATION_TYPE_MENU_KEYBOARD
-    )
     return current_state

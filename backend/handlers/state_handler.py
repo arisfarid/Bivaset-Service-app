@@ -53,6 +53,7 @@ async def handle_non_contact(update: Update, context: ContextTypes.DEFAULT_TYPE)
     return REGISTER
 
 def get_conversation_handler() -> ConversationHandler:
+    """ایجاد مدیریت کننده مکالمه با ترتیب جدید مراحل"""
     logger.info("=== Initializing ConversationHandler ===")
     return ConversationHandler(
         entry_points=[CommandHandler("start", start)],
@@ -61,50 +62,57 @@ def get_conversation_handler() -> ConversationHandler:
                 MessageHandler(filters.CONTACT, handle_contact),
                 MessageHandler(~filters.CONTACT & ~filters.COMMAND, handle_non_contact),
                 CommandHandler("start", start),
-                CallbackQueryHandler(handle_callback)  # اضافه کردن کالبک‌هندلر برای REGISTER
+                CallbackQueryHandler(handle_callback)
             ],
             ROLE: [
                 MessageHandler(filters.TEXT, handle_role),
-                CallbackQueryHandler(handle_callback)  # اصلاح کالبک‌هندلر برای ROLE
+                CallbackQueryHandler(handle_callback)
             ],
             EMPLOYER_MENU: [
                 MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message),
-                CallbackQueryHandler(handle_callback)  # اصلاح کالبک‌هندلر برای EMPLOYER_MENU
+                CallbackQueryHandler(handle_callback)
             ],
             CATEGORY: [
-                MessageHandler(filters.TEXT & ~filters.COMMAND, handle_category_selection),  # Handle text
+                MessageHandler(filters.TEXT & ~filters.COMMAND, handle_category_selection),
                 CallbackQueryHandler(handle_category_selection)
             ],
             SUBCATEGORY: [
-                MessageHandler(filters.TEXT & ~filters.COMMAND, handle_category_selection),  # Handle text
+                MessageHandler(filters.TEXT & ~filters.COMMAND, handle_category_selection),
                 CallbackQueryHandler(handle_category_selection)
             ],
-            DESCRIPTION: [
-                MessageHandler(filters.TEXT & ~filters.COMMAND, handle_project_details)
-            ],
             LOCATION_TYPE: [
-                MessageHandler(filters.TEXT & ~filters.COMMAND, handle_location),  # Handle text
+                MessageHandler(filters.TEXT & ~filters.COMMAND, handle_location),
                 CallbackQueryHandler(handle_location)
             ],
             LOCATION_INPUT: [
-                MessageHandler(filters.LOCATION, handle_location),  # Handle location
-                MessageHandler(filters.TEXT & ~filters.COMMAND, handle_location),  # Handle text
-                CallbackQueryHandler(handle_location)  # Handle buttons
+                MessageHandler(filters.LOCATION, handle_location),
+                MessageHandler(filters.TEXT & ~filters.COMMAND, handle_location),
+                CallbackQueryHandler(handle_location)
+            ],
+            DESCRIPTION: [
+                MessageHandler(filters.TEXT & ~filters.COMMAND, handle_project_details),
+                CallbackQueryHandler(handle_project_details)
             ],
             DETAILS: [
-                MessageHandler(filters.TEXT & ~filters.COMMAND, handle_project_details),  # Handle text
-                CallbackQueryHandler(handle_project_details)  # Handle buttons
+                MessageHandler(filters.TEXT & ~filters.COMMAND, handle_project_details),
+                CallbackQueryHandler(handle_project_details)
             ],
             DETAILS_FILES: [
-                MessageHandler(filters.PHOTO, handle_attachment),  # Handle photos
-                MessageHandler(filters.TEXT & ~filters.COMMAND, handle_attachment),  # Handle text
-                CallbackQueryHandler(handle_attachment)  # Handle buttons
+                MessageHandler(filters.PHOTO, handle_attachment),
+                MessageHandler(filters.TEXT & ~filters.COMMAND, handle_attachment),
+                CallbackQueryHandler(handle_attachment)
             ],
             CHANGE_PHONE: [
-                MessageHandler(filters.TEXT & ~filters.COMMAND, handle_new_phone)  # از phone_handler
+                MessageHandler(filters.TEXT & ~filters.COMMAND, handle_new_phone)
             ],
             VERIFY_CODE: [
-                MessageHandler(filters.TEXT & ~filters.COMMAND, verify_new_phone)  # از phone_handler
+                MessageHandler(filters.TEXT & ~filters.COMMAND, verify_new_phone)
+            ],
+            VIEW_PROJECTS: [
+                CallbackQueryHandler(handle_view_projects)
+            ],
+            PROJECT_ACTIONS: [
+                CallbackQueryHandler(handle_view_projects)
             ]
         },
         fallbacks=[

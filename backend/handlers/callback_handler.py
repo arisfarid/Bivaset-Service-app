@@ -42,9 +42,11 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     try:
         data = query.data
-        current_state = context.user_data.get('state')
+        current_state = context.user_data.get('state', ROLE)
+        previous_state = context.user_data.get('previous_state')
         logger.info(f"Handling callback: {data}")
         logger.info(f"Current state: {current_state}")
+        logger.info(f"Previous state: {previous_state}")
 
         # پردازش دکمه restart با اولویت بالا
         if data == "restart":
@@ -63,20 +65,33 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             )
             return ROLE
 
-        # بازگشت به منوی اصلی
+        # بازگشت به منوی قبلی بر اساس state فعلی
         if data == "back_to_menu":
-            logger.info("Processing back to main menu")
-            context.user_data['state'] = ROLE
-            await query.message.edit_text(
-                "🌟 لطفاً یکی از گزینه‌ها را انتخاب کنید:",
-                reply_markup=MAIN_MENU_KEYBOARD
-            )
-            await query.answer()
-            return ROLE
+            logger.info("Processing back to menu")
+            # اگر در مرحله انتخاب دسته‌بندی هستیم
+            if current_state == CATEGORY:
+                context.user_data['state'] = EMPLOYER_MENU
+                await query.message.edit_text(
+                    "🎉 عالیه! چه کاری برات انجام بدم؟",
+                    reply_markup=EMPLOYER_MENU_KEYBOARD
+                )
+                await query.answer()
+                return EMPLOYER_MENU
+            # اگر در منوی کارفرما هستیم    
+            elif current_state == EMPLOYER_MENU:
+                context.user_data['state'] = ROLE
+                await query.message.edit_text(
+                    "🌟 لطفاً یکی از گزینه‌ها را انتخاب کنید:",
+                    reply_markup=MAIN_MENU_KEYBOARD
+                )
+                await query.answer()
+                return ROLE
 
         # بازگشت به منوی کارفرما
         if data == "back_to_employer_menu":
             logger.info("Processing back to employer menu")
+            # ذخیره state قبلی
+            context.user_data['previous_state'] = current_state
             context.user_data['state'] = EMPLOYER_MENU
             await query.message.edit_text(
                 "🎉 عالیه! چه کاری برات انجام بدم؟",
@@ -85,14 +100,11 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await query.answer()
             return EMPLOYER_MENU
 
-        # پردازش دکمه‌های برگشت به دسته‌بندی‌ها
-        if data == "back_to_categories":
-            logger.info("Processing back to categories")
-            return await handle_category_selection(update, context)
-            
         # پردازش دسته‌بندی
         if data.startswith(('cat_', 'subcat_')):
             logger.info(f"Processing category selection: {data}")
+            from handlers.category_handler import handle_category_selection
+            context.user_data['previous_state'] = EMPLOYER_MENU
             context.user_data['state'] = CATEGORY
             categories = await get_categories()
             if not categories:
