@@ -7,3 +7,4 @@ gunicorn==23.0.0
 requests==2.32.3
 khayyam==3.0.17
 nest_asyncio==1.6.0
+aiohttp==3.9.3
