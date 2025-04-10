@@ -44,6 +44,11 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         data = query.data
         logger.info(f"Handling callback: {data}")
 
+        # اگر callback مربوط به دسته‌بندی است
+        if data.startswith(('cat_', 'subcat_')):
+            from handlers.category_handler import handle_category_selection
+            return await handle_category_selection(update, context)
+
         if data == "restart":
             try:
                 if query.message:
