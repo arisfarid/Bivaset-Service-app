@@ -1,6 +1,6 @@
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, ForceReply
 from telegram.ext import ContextTypes, ConversationHandler
-from keyboards import create_dynamic_keyboard, FILE_MANAGEMENT_MENU_KEYBOARD
+from keyboards import create_dynamic_keyboard, FILE_MANAGEMENT_MENU_KEYBOARD, create_category_keyboard
 from utils import clean_budget, validate_date, validate_deadline, log_chat, format_price
 from khayyam import JalaliDatetime
 from datetime import datetime, timedelta
@@ -18,31 +18,70 @@ from handlers.submission_handler import submit_project
 @require_phone
 async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     await log_chat(update, context)
-    text = update.message.text
+    text = update.message.text if update.message else None
     current_state = context.user_data.get('state', DESCRIPTION)
+    logger.info(f"Processing project details - State: {current_state}, Text: {text}")
 
     if current_state == DESCRIPTION:
         if text == "⬅️ بازگشت":
-            context.user_data['state'] = SUBCATEGORY
-            sub_cats = context.user_data['categories'][context.user_data['category_group']]['children']
-            keyboard = [[InlineKeyboardButton(context.user_data['categories'][cat_id]['name'])] for cat_id in sub_cats] + [[InlineKeyboardButton("⬅️ بازگشت")]]
-            await update.message.reply_text(
-                f"📌 زیرمجموعه '{context.user_data['categories'][context.user_data['category_group']]['name']}' رو انتخاب کن:",
-                reply_markup=InlineKeyboardMarkup(keyboard, resize_keyboard=True)
-            )
-            return SUBCATEGORY
+            logger.info("Back button pressed in description state")
+            context.user_data['state'] = CATEGORY
+            categories = context.user_data.get('categories', {})
+            category_group = context.user_data.get('category_group')
+            
+            if category_group and categories.get(category_group):
+                # برگشت به منوی زیردسته‌ها
+                parent = categories[category_group]
+                keyboard = []
+                for child_id in parent.get('children', []):
+                    child = categories.get(child_id)
+                    if child:
+                        keyboard.append([
+                            InlineKeyboardButton(
+                                child['name'],
+                                callback_data=f"subcat_{child_id}"
+                            )
+                        ])
+                keyboard.append([InlineKeyboardButton("⬅️ بازگشت", callback_data="back_to_categories")])
+                await update.message.reply_text(
+                    f"📋 زیرمجموعه {parent['name']} را انتخاب کنید:",
+                    reply_markup=InlineKeyboardMarkup(keyboard)
+                )
+            else:
+                # برگشت به منوی اصلی دسته‌بندی‌ها
+                keyboard = create_category_keyboard(categories)
+                await update.message.reply_text(
+                    "🌟 دسته‌بندی خدماتت رو انتخاب کن:",
+                    reply_markup=keyboard
+                )
+            return CATEGORY
+
+        # ذخیره توضیحات و رفتن به مرحله بعد
         context.user_data['description'] = text
         context.user_data['state'] = LOCATION_TYPE
         keyboard = [
-            [InlineKeyboardButton("🏠 محل من"), InlineKeyboardButton("🔧 محل مجری")],
-            [InlineKeyboardButton("💻 غیرحضوری"), InlineKeyboardButton("⬅️ بازگشت")],
-            [InlineKeyboardButton("➡️ ادامه")]
+            [InlineKeyboardButton("🏠 محل من", callback_data="location_client")],
+            [InlineKeyboardButton("🔧 محل مجری", callback_data="location_contractor")],
+            [InlineKeyboardButton("💻 غیرحضوری", callback_data="location_remote")],
+            [InlineKeyboardButton("⬅️ بازگشت", callback_data="back_to_description")]
         ]
         await update.message.reply_text(
-            f"🌟 محل انجام خدماتت رو انتخاب کن:",
-            reply_markup=InlineKeyboardMarkup(keyboard, resize_keyboard=True)
+            "🌟 محل انجام خدماتت رو انتخاب کن:",
+            reply_markup=InlineKeyboardMarkup(keyboard)
         )
         return LOCATION_TYPE
+
+    elif current_state == LOCATION_TYPE:
+        if text == "⬅️ بازگشت":
+            logger.info("Back button pressed in location type state")
+            context.user_data['state'] = DESCRIPTION
+            await update.message.reply_text(
+                "🌟 توضیحات خدماتت رو بگو:",
+                reply_markup=InlineKeyboardMarkup([
+                    [InlineKeyboardButton("⬅️ بازگشت", callback_data="back_to_categories")]
+                ])
+            )
+            return DESCRIPTION
 
     elif current_state == DETAILS:
         if text == "⬅️ بازگشت":
