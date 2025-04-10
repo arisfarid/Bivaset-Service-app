@@ -1,16 +1,19 @@
 from functools import wraps
-from telegram import Update
-from telegram.ext import ContextTypes
+from telegram import Update, ReplyKeyboardMarkup, KeyboardButton, ReplyKeyboardRemove, InlineKeyboardMarkup
+from telegram.ext import ContextTypes, ConversationHandler
 from datetime import datetime, timedelta
 import random
 import requests
 import logging
-from utils import BASE_URL, save_user_phone
+import json
+import aiohttp
+from utils import BASE_URL, save_user_phone, log_chat
 from keyboards import MAIN_MENU_KEYBOARD, REGISTER_MENU_KEYBOARD
 
 logger = logging.getLogger(__name__)
 
 ROLE, CHANGE_PHONE, VERIFY_CODE, REGISTER = range(4)
+START, EMPLOYER_MENU, CATEGORY, SUBCATEGORY, DESCRIPTION, LOCATION_TYPE, LOCATION_INPUT, DETAILS = range(4, 12)
 
 SMS_API_KEY = "your-api-key"  # تنظیم بعدی
 SMS_URL = "https://api.sms.ir/v1/send/verify"
@@ -121,226 +124,83 @@ async def verify_new_phone(update: Update, context: ContextTypes.DEFAULT_TYPE) -
         await update.message.reply_text("❌ خطا در ثبت شماره تلفن.\nلطفاً دوباره تلاش کنید.")
     return CHANGE_PHONE
 
-
-logger = logging.getLogger(__name__)
-
-def require_phone(func):
-    """دکوراتور برای اجبار به ثبت شماره تلفن"""
-    @wraps(func)
-    async def wrapper(update: Update, context: ContextTypes.DEFAULT_TYPE, *args, **kwargs):
-        # اگر در حالت REGISTER هستیم یا درخواست CONTACT داریم، مستقیماً اجازه عبور بدهیم
-        current_state = context.user_data.get('state')
-        has_contact = bool(update.message and update.message.contact)
-        
-        if current_state == REGISTER or has_contact:
-            logger.info(f"Bypassing phone check - state: {current_state}, has_contact: {has_contact}")
-            return await func(update, context, *args, **kwargs)
-            
-        if not update.effective_user:
-            return
-
-        telegram_id = str(update.effective_user.id)
-        
-        try:
-            # چک کردن شماره تلفن در دیتابیس
-            response = requests.get(f"{BASE_URL}users/?telegram_id={telegram_id}")
-            
-            if response.status_code == 200 and response.json():
-                user_data = response.json()[0]
-                phone = user_data.get('phone')
-                
-                # اگر شماره معتبر نداشت یا شماره موقت داشت
-                if not phone or phone.startswith('tg_'):
-                    logger.info(f"User {telegram_id} needs to register phone")
-                    if update.callback_query:
-                        await update.callback_query.message.reply_text(
-                            "برای استفاده از امکانات ربات، لطفاً ابتدا شماره تلفن خود را ثبت کنید:",
-                            reply_markup=REGISTER_MENU_KEYBOARD
-                        )
-                    else:
-                        await update.message.reply_text(
-                            "برای استفاده از امکانات ربات، لطفاً ابتدا شماره تلفن خود را ثبت کنید:",
-                            reply_markup=REGISTER_MENU_KEYBOARD
-                        )
-                    context.user_data['state'] = 'REGISTER'
-                    return 'REGISTER'
-                    
-                # اگر شماره معتبر داشت
-                return await func(update, context, *args, **kwargs)
-                
-            else:
-                # کاربر در دیتابیس نیست
-                logger.info(f"User {telegram_id} not found in database")
-                await send_register_prompt(update)
-                context.user_data['state'] = 'REGISTER'
-                return 'REGISTER'
-                
-        except Exception as e:
-            logger.error(f"Error checking phone requirement: {e}")
-            # در صورت خطا اجازه عبور می‌دهیم
-            return await func(update, context, *args, **kwargs)
-            
-    return wrapper
-
-async def send_register_prompt(update: Update):
-    """ارسال پیام درخواست ثبت شماره"""
-    message = (
-        "برای استفاده از امکانات ربات، لطفاً ابتدا شماره تلفن خود را ثبت کنید:"
-    )
-    if update.callback_query:
-        await update.callback_query.message.reply_text(
-            message,
-            reply_markup=REGISTER_MENU_KEYBOARD
-        )
-    else:
-        await update.message.reply_text(
-            message,
-            reply_markup=REGISTER_MENU_KEYBOARD
-        )
-
 async def check_phone(update: Update, context: ContextTypes.DEFAULT_TYPE) -> bool:
-    """فقط بررسی وجود شماره تلفن معتبر برای کاربر"""
-    telegram_id = str(update.effective_user.id)
-    logger.info(f"Checking phone for user {telegram_id}")
+    """Check if user has registered phone number"""
+    logger.info(f"Checking phone for user {update.effective_user.id}")
     
     try:
-        response = requests.get(f"{BASE_URL}users/?telegram_id={telegram_id}")
-        logger.info(f"Check phone response: {response.status_code} - {response.text}")
-        
-        if response.status_code == 200 and response.json():
-            user_data = response.json()[0]
-            phone = user_data.get('phone')
-            
-            if phone and not phone.startswith('tg_'):
-                context.user_data['phone'] = phone
-                logger.info(f"Valid phone found: {phone}")
-                return True
-                
-        logger.info("No valid phone found")
-        return False
-
+        async with aiohttp.ClientSession() as session:
+            async with session.get(f'http://localhost:8000/api/users/?telegram_id={update.effective_user.id}') as response:
+                logger.info(f"Check phone response: {response.status} - {await response.text()}")
+                if response.status == 200:
+                    data = json.loads(await response.text())
+                    if data and len(data) > 0 and data[0].get('phone'):
+                        logger.info(f"Valid phone found: {data[0]['phone']}")
+                        return True
     except Exception as e:
-        logger.error(f"Error checking phone: {e}")
-        return False
+        logger.error(f"Error checking phone requirement: {e}")
+    return False
 
-async def handle_contact(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    """Handle receiving the user's phone number."""
-    logger.info("=== Starting handle_contact function ===")
-    try:
-        contact = update.message.contact
-        telegram_id = str(update.effective_user.id)
-        
-        # اضافه کردن لاگ بیشتر برای دیباگ
-        logger.info(f"Current state: {context.user_data.get('state')}")
-        logger.info(f"Contact info: {contact.phone_number}, user_id: {contact.user_id}")
-        logger.info(f"Telegram ID: {telegram_id}")
-
-        if str(contact.user_id) != telegram_id:
-            logger.warning(f"Phone mismatch - Contact user_id: {contact.user_id}, Sender id: {telegram_id}")
-            await update.message.reply_text(
-                "❌ لطفاً فقط شماره تلفن خودتان را به اشتراک بگذارید!",
-                reply_markup=REGISTER_MENU_KEYBOARD
-            )
-            return REGISTER
-
-        # استفاده از شماره خام تلگرام بدون تغییر
-        phone = contact.phone_number
-        logger.info(f"Using original phone number: {phone}")
-
+def require_phone(func):
+    """دکوراتور برای چک کردن شماره تلفن"""
+    async def wrapper(update: Update, context: ContextTypes.DEFAULT_TYPE, *args, **kwargs):
         try:
-            # ذخیره شماره در دیتابیس با مدیریت خطای بهتر
-            success, status = await save_user_phone(telegram_id, phone, update.effective_user.full_name)
-            logger.info(f"Save phone result - success: {success}, status: {status}")
-
-            if not success:
-                error_messages = {
-                    "duplicate_phone": "❌ این شماره قبلاً توسط کاربر دیگری ثبت شده است.",
-                    "api_error": "❌ خطا در ثبت شماره تلفن. لطفاً دوباره تلاش کنید.",
-                    "server_error": "❌ خطا در ارتباط با سرور. لطفاً دوباره تلاش کنید."
-                }
-                await update.message.reply_text(
-                    error_messages.get(status, "❌ خطای ناشناخته. لطفاً دوباره تلاش کنید."),
+            if not await check_phone(update, context):
+                message = update.callback_query.message if update.callback_query else update.message
+                await message.reply_text(
+                    "⚠️ برای استفاده از ربات، باید شماره تلفن خود را به اشتراک بگذارید.\n"
+                    "لطفاً از دکمه زیر استفاده کنید:",
                     reply_markup=REGISTER_MENU_KEYBOARD
                 )
                 return REGISTER
-
-            # ذخیره موفق
-            context.user_data['phone'] = phone
-            context.user_data['state'] = ROLE
-            welcome_message = (
-                f"👋 سلام {update.effective_user.first_name}! به ربات خدمات بی‌واسط خوش آمدید.\n"
-                "لطفاً یکی از گزینه‌ها را انتخاب کنید:"
-            )
-            await update.message.reply_text(
-                welcome_message,
-                reply_markup=MAIN_MENU_KEYBOARD
-            )
-            logger.info(f"Successfully registered phone {phone} for user {telegram_id}")
-            return ROLE
-
+            return await func(update, context, *args, **kwargs)
         except Exception as e:
-            logger.error(f"Database error in handle_contact: {str(e)}")
-            await update.message.reply_text(
-                "❌ خطا در ارتباط با دیتابیس. لطفاً دوباره تلاش کنید.",
-                reply_markup=REGISTER_MENU_KEYBOARD
-            )
+            logger.error(f"Error in phone requirement decorator: {e}")
             return REGISTER
+    return wrapper
 
-    except Exception as e:
-        logger.error(f"Error in handle_contact: {str(e)}")
+async def handle_contact(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    """Handle received contact for phone registration"""
+    contact = update.message.contact
+    
+    if not contact.phone_number:
         await update.message.reply_text(
-            "❌ خطا در پردازش شماره تلفن. لطفاً دوباره تلاش کنید.",
+            "❌ شماره تلفن دریافت نشد. لطفاً دوباره تلاش کنید.",
             reply_markup=REGISTER_MENU_KEYBOARD
         )
         return REGISTER
 
-async def save_user_phone(telegram_id: str, phone: str, name: str = None) -> tuple[bool, str]:
-    """ذخیره یا آپدیت شماره تلفن کاربر در دیتابیس"""
-    logger.info(f"=== Starting save_user_phone for {telegram_id} with phone {phone} ===")
     try:
-        # چک کردن تکراری نبودن شماره
-        check_response = requests.get(f"{BASE_URL}users/?phone={phone}")
-        logger.info(f"Check phone API response: {check_response.status_code} - {check_response.text}")
-        
-        if check_response.status_code == 200 and check_response.json():
-            existing_user = check_response.json()[0]
-            # اگر شماره متعلق به کاربر دیگری است
-            if existing_user.get('telegram_id') and existing_user['telegram_id'] != telegram_id:
-                logger.warning(f"Phone {phone} belongs to telegram_id {existing_user['telegram_id']}")
-                return False, "duplicate_phone"
-            # اگر شماره متعلق به خود کاربر است
-            elif existing_user['telegram_id'] == telegram_id:
-                logger.info(f"Phone {phone} already registered to this user")
-                return True, "already_registered"
-
-        # آماده‌سازی داده‌های کاربر
+        phone = contact.phone_number.replace('+', '')
         user_data = {
             'phone': phone,
-            'telegram_id': telegram_id,
-            'name': name or 'کاربر',
+            'telegram_id': str(update.effective_user.id),
+            'name': update.effective_user.first_name,
             'role': 'client'
         }
-        logger.info(f"Prepared user data: {user_data}")
-
-        # چک کردن وجود کاربر
-        user_response = requests.get(f"{BASE_URL}users/?telegram_id={telegram_id}")
-        logger.info(f"Check user API response: {user_response.status_code} - {user_response.text}")
         
-        if user_response.status_code == 200 and user_response.json():
-            # آپدیت کاربر موجود
-            user = user_response.json()[0]
-            update_url = f"{BASE_URL}users/{user['id']}/"
-            logger.info(f"Updating existing user at: {update_url}")
-            response = requests.put(update_url, json=user_data)
-        else:
-            # ایجاد کاربر جدید
-            logger.info("Creating new user")
-            response = requests.post(f"{BASE_URL}users/", json=user_data)
-
-        logger.info(f"Final API response: {response.status_code} - {response.text}")
-        success = response.status_code in [200, 201]
-        return success, "success" if success else "api_error"
-
+        async with aiohttp.ClientSession() as session:
+            async with session.post('http://localhost:8000/api/users/', json=user_data) as response:
+                logger.info(f"Register response: {response.status} - {await response.text()}")
+                if response.status in [200, 201]:
+                    await update.message.reply_text(
+                        "✅ ثبت‌نام شما با موفقیت انجام شد!\n"
+                        "به ربات خدمات بی‌واسط خوش آمدید:\n"
+                        "لطفاً یکی از گزینه‌ها را انتخاب کنید:",
+                        reply_markup=MAIN_MENU_KEYBOARD
+                    )
+                    return ROLE
+                else:
+                    await update.message.reply_text(
+                        "❌ خطا در ثبت شماره تلفن. لطفاً دوباره تلاش کنید.",
+                        reply_markup=REGISTER_MENU_KEYBOARD
+                    )
+                    return REGISTER
+                    
     except Exception as e:
-        logger.error(f"Error in save_user_phone: {str(e)}")
-        return False, "server_error"
+        logger.error(f"Error registering phone: {e}")
+        await update.message.reply_text(
+            "❌ خطا در ثبت شماره تلفن. لطفاً دوباره تلاش کنید.",
+            reply_markup=REGISTER_MENU_KEYBOARD
+        )
+        return REGISTER

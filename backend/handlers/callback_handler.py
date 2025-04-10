@@ -57,12 +57,14 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             except Exception as e:
                 logger.warning(f"Could not delete message: {e}")
 
+            # پاک کردن context و شروع مجدد
             context.user_data.clear()
             await query.message.reply_text(
                 f"👋 سلام {update.effective_user.first_name}! به ربات خدمات بی‌واسط خوش آمدید.\n"
                 "لطفاً یکی از گزینه‌ها را انتخاب کنید:",
                 reply_markup=MAIN_MENU_KEYBOARD
             )
+            await query.answer()
             return ROLE
 
         # بازگشت به منوی قبلی بر اساس state فعلی

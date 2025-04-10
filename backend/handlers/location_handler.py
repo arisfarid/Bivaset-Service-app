@@ -2,7 +2,7 @@ from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ContextTypes, ConversationHandler
 from utils import log_chat
 import logging
-from keyboards import create_dynamic_keyboard, LOCATION_TYPE_MENU_KEYBOARD, LOCATION_INPUT_MENU_KEYBOARD
+from keyboards import create_dynamic_keyboard, LOCATION_TYPE_MENU_KEYBOARD, LOCATION_INPUT_MENU_KEYBOARD, create_category_keyboard
 
 logger = logging.getLogger(__name__)
 
@@ -28,7 +28,7 @@ async def handle_location(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
             category_id = context.user_data.get('category_id')
             if category_id:
                 category = categories.get(category_id)
-                if category.get('parent'):
+                if category and category.get('parent'):
                     # برگشت به زیردسته‌ها
                     parent = categories.get(category['parent'])
                     keyboard = []
@@ -70,9 +70,7 @@ async def handle_location(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
                 context.user_data['state'] = DESCRIPTION
                 await query.message.edit_text(
                     "🌟 توضیحات خدماتت رو بگو:",
-                    reply_markup=InlineKeyboardMarkup([
-                        [InlineKeyboardButton("⬅️ بازگشت", callback_data="back_to_location_type")]
-                    ])
+                    reply_markup=LOCATION_TYPE_MENU_KEYBOARD
                 )
                 return DESCRIPTION
             else:
@@ -80,25 +78,16 @@ async def handle_location(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
                 context.user_data['state'] = LOCATION_INPUT
                 await query.message.edit_text(
                     "📍 برای اتصال به نزدیک‌ترین مجری، لطفاً لوکیشن خود را ارسال کنید:",
-                    reply_markup=InlineKeyboardMarkup([
-                        [InlineKeyboardButton("⬅️ بازگشت", callback_data="back_to_location_type")],
-                        [InlineKeyboardButton("➡️ رد کردن", callback_data="skip_location")]
-                    ])
+                    reply_markup=LOCATION_INPUT_MENU_KEYBOARD
                 )
                 return LOCATION_INPUT
 
         # برگشت به انتخاب نوع لوکیشن
         elif data == "back_to_location_type":
             context.user_data['state'] = LOCATION_TYPE
-            keyboard = [
-                [InlineKeyboardButton("🏠 محل من", callback_data="location_client")],
-                [InlineKeyboardButton("🔧 محل مجری", callback_data="location_contractor")],
-                [InlineKeyboardButton("💻 غیرحضوری", callback_data="location_remote")],
-                [InlineKeyboardButton("⬅️ بازگشت", callback_data="back_to_categories")]
-            ]
             await query.message.edit_text(
                 "🌟 محل انجام خدماتت رو انتخاب کن:",
-                reply_markup=InlineKeyboardMarkup(keyboard)
+                reply_markup=LOCATION_TYPE_MENU_KEYBOARD
             )
             return LOCATION_TYPE
 
@@ -107,9 +96,7 @@ async def handle_location(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
             context.user_data['state'] = DESCRIPTION
             await query.message.edit_text(
                 "🌟 توضیحات خدماتت رو بگو:",
-                reply_markup=InlineKeyboardMarkup([
-                    [InlineKeyboardButton("⬅️ بازگشت", callback_data="back_to_location_type")]
-                ])
+                reply_markup=LOCATION_TYPE_MENU_KEYBOARD
             )
             return DESCRIPTION
 
@@ -120,9 +107,7 @@ async def handle_location(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         context.user_data['state'] = DESCRIPTION
         await update.message.reply_text(
             "🌟 توضیحات خدماتت رو بگو:",
-            reply_markup=InlineKeyboardMarkup([
-                [InlineKeyboardButton("⬅️ بازگشت", callback_data="back_to_location_type")]
-            ])
+            reply_markup=LOCATION_TYPE_MENU_KEYBOARD
         )
         return DESCRIPTION
 
@@ -131,15 +116,9 @@ async def handle_location(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         if update.message.text == "⬅️ بازگشت":
             if current_state == LOCATION_INPUT:
                 context.user_data['state'] = LOCATION_TYPE
-                keyboard = [
-                    [InlineKeyboardButton("🏠 محل من", callback_data="location_client")],
-                    [InlineKeyboardButton("🔧 محل مجری", callback_data="location_contractor")],
-                    [InlineKeyboardButton("💻 غیرحضوری", callback_data="location_remote")],
-                    [InlineKeyboardButton("⬅️ بازگشت", callback_data="back_to_categories")]
-                ]
                 await update.message.reply_text(
                     "🌟 محل انجام خدماتت رو انتخاب کن:",
-                    reply_markup=InlineKeyboardMarkup(keyboard)
+                    reply_markup=LOCATION_TYPE_MENU_KEYBOARD
                 )
                 return LOCATION_TYPE
 
