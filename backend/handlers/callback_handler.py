@@ -43,6 +43,7 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
         data = query.data
         logger.info(f"Handling callback: {data}")
+        logger.info(f"Current state: {context.user_data.get('state')}")
 
         # پردازش دکمه restart با اولویت بالا
         if data == "restart":
@@ -59,7 +60,25 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 "لطفاً یکی از گزینه‌ها را انتخاب کنید:",
                 reply_markup=MAIN_MENU_KEYBOARD
             )
-            return START
+            return ROLE
+
+        # بازگشت به منوی اصلی
+        if data == "back_to_menu":
+            context.user_data['state'] = ROLE
+            await query.message.edit_text(
+                "🌟 لطفاً یکی از گزینه‌ها را انتخاب کنید:",
+                reply_markup=MAIN_MENU_KEYBOARD
+            )
+            return ROLE
+
+        # بازگشت به منوی کارفرما
+        if data == "back_to_employer_menu":
+            context.user_data['state'] = EMPLOYER_MENU
+            await query.message.edit_text(
+                "🎉 عالیه! چه کاری برات انجام بدم؟",
+                reply_markup=EMPLOYER_MENU_KEYBOARD
+            )
+            return EMPLOYER_MENU
 
         # پردازش دسته‌بندی
         if data.startswith(('cat_', 'subcat_')):
@@ -73,15 +92,6 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             context.user_data['categories'] = categories
             return await handle_category_selection(update, context)
 
-        # اضافه کردن لاگ بیشتر
-        logger.info(f"Handling callback: {data}")
-        logger.info(f"Current state: {context.user_data.get('state')}")
-
-        if not query.message:
-            logger.warning(f"No message found in callback query. Data: {data}")
-            await query.answer("❌ خطا: پیام قابل دسترسی نیست")
-            return context.user_data.get('state', START)
-
         # بررسی وضعیت ثبت‌نام کاربر
         if not await check_phone(update, context):
             logger.info("User needs to register phone first")
@@ -89,22 +99,14 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             return REGISTER
 
         # ادامه پردازش callback
-        if data == "restart":
-            try:
-                await query.message.delete()
-            except Exception as e:
-                logger.error(f"Error deleting message during restart: {e}")
-            
-            context.user_data.clear()
-            return await start(update, context)
-            
-        # Safely handle message editing
         if data == "employer":
             try:
                 await query.message.edit_text(
                     "🎉 عالیه! چه کاری برات انجام بدم؟",
                     reply_markup=EMPLOYER_MENU_KEYBOARD
                 )
+                context.user_data['state'] = EMPLOYER_MENU
+                return EMPLOYER_MENU
             except Exception as e:
                 logger.error(f"Error editing message for employer menu: {e}")
                 await query.answer("❌ خطا در نمایش منو")
@@ -117,10 +119,11 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 "🌟 دسته‌بندی خدماتت رو انتخاب کن:",
                 reply_markup=keyboard
             )
-            
-        # سایر callback ها...
+            context.user_data['state'] = CATEGORY
+            return CATEGORY
             
         await query.answer()
+        return context.user_data.get('state', START)
         
     except Exception as e:
         logger.error(f"Error in callback handler: {e}")

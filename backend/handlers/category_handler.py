@@ -22,6 +22,15 @@ async def handle_category_selection(update: Update, context: ContextTypes.DEFAUL
         data = query.data
         logger.info(f"Category selection data: {data}")
 
+        # پردازش دکمه بازگشت به منوی کارفرما
+        if data == "back_to_menu":
+            context.user_data['state'] = EMPLOYER_MENU
+            await query.message.edit_text(
+                "🎉 عالیه! چه کاری برات انجام بدم؟",
+                reply_markup=EMPLOYER_MENU_KEYBOARD
+            )
+            return EMPLOYER_MENU
+
         # پردازش انتخاب دسته‌بندی
         if data.startswith("cat_"):
             category_id = int(data.split("_")[1])
@@ -126,26 +135,36 @@ async def handle_category_selection(update: Update, context: ContextTypes.DEFAUL
 
         # برگشت به لیست دسته‌بندی‌ها
         elif data == "back_to_categories":
-            # برگشت به دسته‌بندی قبلی اگر در مسیر زیرمجموعه‌ها هستیم
-            category_path = context.user_data.get('category_path', [])
-            if category_path:
-                category_path.pop()  # حذف آخرین دسته‌بندی
-                if category_path:
-                    # برگشت به دسته‌بندی قبلی
-                    last_category = category_path[-1]
-                    return await handle_category_selection(
-                        update, 
-                        context, 
-                        data=f"cat_{last_category}"
+            categories = context.user_data.get('categories', {})
+            if context.user_data.get('category_group'):
+                # برگشت به دسته‌بندی والد
+                parent_id = context.user_data['category_group']
+                parent = categories.get(parent_id)
+                if parent:
+                    keyboard = []
+                    for child_id in parent.get('children', []):
+                        child = categories.get(child_id)
+                        if child:
+                            keyboard.append([
+                                InlineKeyboardButton(
+                                    child['name'],
+                                    callback_data=f"subcat_{child_id}"
+                                )
+                            ])
+                    keyboard.append([InlineKeyboardButton("⬅️ بازگشت", callback_data="back_to_menu")])
+                    await query.message.edit_text(
+                        f"📋 زیرمجموعه {parent['name']} را انتخاب کنید:",
+                        reply_markup=InlineKeyboardMarkup(keyboard)
                     )
-
+                    return SUBCATEGORY
+            
             # برگشت به لیست اصلی دسته‌بندی‌ها
             keyboard = create_category_keyboard(categories)
             await query.message.edit_text(
                 "🌟 دسته‌بندی خدماتت رو انتخاب کن:",
                 reply_markup=keyboard
             )
-            context.user_data['category_path'] = []
+            context.user_data.pop('category_group', None)
             return CATEGORY
 
     except Exception as e:
