@@ -34,34 +34,40 @@ async def handle_category_selection(update: Update, context: ContextTypes.DEFAUL
         if data.startswith("cat_"):
             category_id = data.split("_")[1]
             
-            # اگر categories در context نباشد، دریافت کن
-            if 'categories' not in context.user_data:
+            # اگر categories در context نباشد یا خالی باشد، دریافت کن
+            if not context.user_data.get('categories'):
                 categories = await get_categories()
                 if not categories:
+                    logger.error("Failed to fetch categories from API")
                     await query.answer("❌ خطا در دریافت دسته‌بندی‌ها")
                     return CATEGORY
                 context.user_data['categories'] = categories
+                logger.info(f"Fetched and stored categories: {categories}")
             
             categories = context.user_data['categories']
-            selected_category = categories.get(str(category_id))
+            # تبدیل category_id به string برای مطابقت با کلیدهای دیکشنری
+            category_id_str = str(category_id)
+            selected_category = categories.get(category_id_str)
             
+            logger.info(f"Looking for category_id: {category_id_str} in categories: {categories}")
             logger.info(f"Selected category: {selected_category}")
             
             if not selected_category:
+                logger.error(f"Invalid category_id: {category_id_str}")
                 await query.answer("❌ دسته‌بندی نامعتبر")
                 return CATEGORY
 
             # بررسی وجود زیرمجموعه‌ها
             subcategories = []
             for cat_id, cat in categories.items():
-                if cat.get('parent') == str(category_id):
+                if cat.get('parent') == category_id_str:
                     subcategories.append(cat_id)
             
             logger.info(f"Found subcategories: {subcategories}")
 
             # اگر زیرمجموعه داشت
             if subcategories:
-                context.user_data['category_group'] = category_id
+                context.user_data['category_group'] = category_id_str
                 keyboard = []
                 
                 # ساخت دکمه‌های زیرمجموعه‌ها
@@ -78,7 +84,7 @@ async def handle_category_selection(update: Update, context: ContextTypes.DEFAUL
                 return SUBCATEGORY
 
             # اگر زیرمجموعه نداشت
-            context.user_data['category_id'] = category_id
+            context.user_data['category_id'] = category_id_str
             await query.message.edit_text(
                 "🌟 توضیحات خدماتت رو بگو:",
                 reply_markup=InlineKeyboardMarkup([
