@@ -22,58 +22,37 @@ async def handle_category_selection(update: Update, context: ContextTypes.DEFAUL
         data = query.data
         logger.info(f"Category selection data: {data}")
 
-        # برگشت به منوی کارفرما
-        if data == "back_to_menu":
-            await query.message.edit_text(
-                "🎉 عالیه! می‌خوای خدمات جدید درخواست کنی یا پیشنهادات رو ببینی؟",
-                reply_markup=EMPLOYER_MENU_KEYBOARD
-            )
-            return EMPLOYER_MENU
+        # دریافت دسته‌بندی‌ها اگر در context نیست
+        if 'categories' not in context.user_data:
+            categories = await get_categories()
+            if not categories:
+                await query.answer("❌ خطا در دریافت دسته‌بندی‌ها")
+                return CATEGORY
+            context.user_data['categories'] = categories
 
-        # پردازش انتخاب دسته‌بندی
+        categories = context.user_data['categories']
+        
         if data.startswith("cat_"):
             category_id = data.split("_")[1]
-            
-            # اگر categories در context نباشد یا خالی باشد، دریافت کن
-            if not context.user_data.get('categories'):
-                categories = await get_categories()
-                if not categories:
-                    logger.error("Failed to fetch categories from API")
-                    await query.answer("❌ خطا در دریافت دسته‌بندی‌ها")
-                    return CATEGORY
-                context.user_data['categories'] = categories
-                logger.info(f"Fetched and stored categories: {categories}")
-            
-            categories = context.user_data['categories']
-            # تبدیل category_id به string برای مطابقت با کلیدهای دیکشنری
-            category_id_str = str(category_id)
-            selected_category = categories.get(category_id_str)
-            
-            logger.info(f"Looking for category_id: {category_id_str} in categories: {categories}")
-            logger.info(f"Selected category: {selected_category}")
+            selected_category = categories.get(category_id)
             
             if not selected_category:
-                logger.error(f"Invalid category_id: {category_id_str}")
                 await query.answer("❌ دسته‌بندی نامعتبر")
+                logger.error(f"Category {category_id} not found in {categories}")
                 return CATEGORY
 
             # بررسی وجود زیرمجموعه‌ها
-            subcategories = []
-            for cat_id, cat in categories.items():
-                if cat.get('parent') == category_id_str:
-                    subcategories.append(cat_id)
+            has_children = bool(selected_category.get('children'))
             
-            logger.info(f"Found subcategories: {subcategories}")
-
-            # اگر زیرمجموعه داشت
-            if subcategories:
-                context.user_data['category_group'] = category_id_str
+            if has_children:
+                # نمایش زیرمجموعه‌ها
                 keyboard = []
-                
-                # ساخت دکمه‌های زیرمجموعه‌ها
-                for sub_id in subcategories:
-                    sub_name = categories[sub_id]['name']
-                    keyboard.append([InlineKeyboardButton(sub_name, callback_data=f"subcat_{sub_id}")])
+                for sub_id in selected_category['children']:
+                    sub_cat = categories.get(str(sub_id))
+                    if sub_cat:
+                        keyboard.append([
+                            InlineKeyboardButton(sub_cat['name'], callback_data=f"subcat_{sub_id}")
+                        ])
                 
                 keyboard.append([InlineKeyboardButton("⬅️ بازگشت", callback_data="back_to_categories")])
                 
@@ -81,22 +60,11 @@ async def handle_category_selection(update: Update, context: ContextTypes.DEFAUL
                     f"📋 زیرمجموعه {selected_category['name']} را انتخاب کنید:",
                     reply_markup=InlineKeyboardMarkup(keyboard)
                 )
+                context.user_data['category_group'] = category_id
                 return SUBCATEGORY
-
+            
             # اگر زیرمجموعه نداشت
-            context.user_data['category_id'] = category_id_str
-            await query.message.edit_text(
-                "🌟 توضیحات خدماتت رو بگو:",
-                reply_markup=InlineKeyboardMarkup([
-                    [InlineKeyboardButton("⬅️ بازگشت", callback_data="back_to_categories")]
-                ])
-            )
-            return DESCRIPTION
-
-        # پردازش انتخاب زیرمجموعه
-        elif data.startswith("subcat_"):
-            subcategory_id = data.split("_")[1]
-            context.user_data['category_id'] = subcategory_id
+            context.user_data['category_id'] = category_id
             await query.message.edit_text(
                 "🌟 توضیحات خدماتت رو بگو:",
                 reply_markup=InlineKeyboardMarkup([

@@ -44,6 +44,41 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         data = query.data
         logger.info(f"Handling callback: {data}")
 
+        if data == "restart":
+            try:
+                await query.message.delete()
+            except Exception as e:
+                logger.warning(f"Could not delete message: {e}")
+
+            context.user_data.clear()
+            
+            # بررسی تلفن و تنظیم منوی مناسب
+            if not await check_phone(update, context):
+                await query.message.reply_text(
+                    "👋 برای استفاده از ربات، لطفاً شماره تلفن خود را ثبت کنید:",
+                    reply_markup=REGISTER_MENU_KEYBOARD
+                )
+                return REGISTER
+                
+            # ارسال منوی اصلی
+            await query.message.reply_text(
+                f"👋 سلام {update.effective_user.first_name}! به ربات خدمات بی‌واسط خوش آمدید.\n"
+                "لطفاً یکی از گزینه‌ها را انتخاب کنید:",
+                reply_markup=MAIN_MENU_KEYBOARD
+            )
+            return ROLE
+
+        # پردازش دسته‌بندی
+        if data.startswith("cat_"):
+            context.user_data['state'] = CATEGORY
+            categories = await get_categories()
+            if not categories:
+                await query.answer("❌ خطا در دریافت دسته‌بندی‌ها")
+                return EMPLOYER_MENU
+            
+            context.user_data['categories'] = categories
+            return await handle_category_selection(update, context)
+
         # اگر callback مربوط به دسته‌بندی است
         if data.startswith(('cat_', 'subcat_')):
             from handlers.category_handler import handle_category_selection
