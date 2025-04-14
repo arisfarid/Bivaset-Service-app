@@ -9,6 +9,7 @@ DEBUG = True
 ALLOWED_HOSTS = ['185.204.171.107', 'service.bivaset.com', 'localhost', '127.0.0.1']
 
 INSTALLED_APPS = [
+    'jazzmin',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
