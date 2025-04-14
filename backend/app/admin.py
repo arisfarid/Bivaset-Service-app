@@ -8,7 +8,7 @@ from .models import User, Project, Proposal, Category, ProjectFile
 class ProjectFileInline(admin.TabularInline):
     model = ProjectFile
     extra = 1 # Number of extra empty forms to display
-    readonly_fields = ('file_preview',) # Optional: Add a preview if you implement it in the model
+    # readonly_fields = ('file_preview',) # Optional: Add a preview if you implement it in the model
 
     # Optional: Preview for images (requires changes in models.py to add this method)
     # def file_preview(self, obj):
