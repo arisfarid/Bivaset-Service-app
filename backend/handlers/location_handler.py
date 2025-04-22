@@ -156,7 +156,7 @@ async def handle_location(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
             
             await update.message.reply_text(
                 f"❌ لطفاً *موقعیت مکانی* خود را ارسال کنید.\n\n"
-                f"برای خدمات {service_location_name} نیاز به دانستن موقعیت مکانی شما داریم تا مجری مناسب را پیدا کنیم.\n\n"
+                f"برای خدمات در {service_location_name} نیاز به دانستن موقعیت مکانی شما داریم تا مجری مناسب را پیدا کنیم.\n\n"
                 f"📱 از دکمه «ارسال موقعیت فعلی» استفاده کنید یا\n"
                 f"📎 روی آیکون پیوست (📎) کلیک کرده و گزینه «Location» را انتخاب کنید.",
                 parse_mode="Markdown",
