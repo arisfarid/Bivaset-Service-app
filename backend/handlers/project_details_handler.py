@@ -6,14 +6,12 @@ from khayyam import JalaliDatetime
 from datetime import datetime, timedelta
 import logging
 from handlers.phone_handler import require_phone
-
+from handlers.submission_handler import submit_project
 
 logger = logging.getLogger(__name__)
 
 START, REGISTER, ROLE, EMPLOYER_MENU, CATEGORY, SUBCATEGORY, DESCRIPTION, LOCATION_TYPE, LOCATION_INPUT, DETAILS, DETAILS_FILES, DETAILS_DATE, DETAILS_DEADLINE, DETAILS_BUDGET, DETAILS_QUANTITY, SUBMIT, VIEW_PROJECTS, PROJECT_ACTIONS = range(18)
 CHANGE_PHONE, VERIFY_CODE = range(20, 22)  # states جدید
-
-from handlers.submission_handler import submit_project
 
 @require_phone
 async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
@@ -58,7 +56,242 @@ async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_T
             # برگشت به مرحله توضیحات با پیام راهنمای کامل
             context.user_data['state'] = DESCRIPTION
             await send_description_guidance(query.message, context)
-            return DESCRIPTION            
+            return DESCRIPTION
+        
+        # پردازش انتخاب مدیریت عکس‌ها
+        elif data == "photo_management" or data == "📸 تصاویر یا فایل":
+            context.user_data['state'] = DETAILS_FILES
+            files = context.user_data.get('files', [])
+            if files:
+                await query.message.edit_text(
+                    f"📸 تا الان {len(files)} عکس فرستادی. می‌تونی عکس جدید بفرستی یا مدیریت کنی.",
+                    reply_markup=FILE_MANAGEMENT_MENU_KEYBOARD
+                )
+            else:
+                await query.message.edit_text(
+                    "📸 لطفاً تصاویر رو یکی‌یکی بفرست (حداکثر ۵ تا). فقط عکس قبول می‌شه!",
+                    reply_markup=FILE_MANAGEMENT_MENU_KEYBOARD
+                )
+            return DETAILS_FILES
+        
+        # پردازش بازگشت از مدیریت فایل‌ها
+        elif data == "back_to_details":
+            context.user_data['state'] = DETAILS
+            await query.message.edit_text(
+                "📋 جزئیات درخواست:\nاگه بخوای می‌تونی برای راهنمایی بهتر مجری‌ها این اطلاعات رو هم وارد کنی:",
+                reply_markup=create_dynamic_keyboard(context)
+            )
+            return DETAILS
+        
+        # پردازش ورود تاریخ نیاز
+        elif data == "need_date" or data == "📅 تاریخ نیاز":
+            context.user_data['state'] = DETAILS_DATE
+            today = JalaliDatetime(datetime.now()).strftime('%Y/%m/%d')
+            tomorrow = JalaliDatetime(datetime.now() + timedelta(days=1)).strftime('%Y/%m/%d')
+            day_after = JalaliDatetime(datetime.now() + timedelta(days=2)).strftime('%Y/%m/%d')
+            keyboard = [
+                [InlineKeyboardButton(f"📅 امروز ({today})", callback_data=f"date_today_{today}")],
+                [InlineKeyboardButton(f"📅 فردا ({tomorrow})", callback_data=f"date_tomorrow_{tomorrow}")],
+                [InlineKeyboardButton(f"📅 پس‌فردا ({day_after})", callback_data=f"date_day_after_{day_after}")],
+                [InlineKeyboardButton("✏️ تاریخ دلخواه", callback_data="date_custom")],
+                [InlineKeyboardButton("⬅️ بازگشت", callback_data="back_to_details")]
+            ]
+            await query.message.edit_text(
+                "📅 تاریخ نیاز رو انتخاب کن یا دستی وارد کن (مثلاً 1403/10/15):",
+                reply_markup=InlineKeyboardMarkup(keyboard)
+            )
+            return DETAILS_DATE
+        
+        # پردازش انتخاب تاریخ‌های پیش‌فرض
+        elif data.startswith("date_"):
+            parts = data.split("_")
+            if len(parts) >= 3:
+                date_type = parts[1]
+                
+                if date_type == "custom":
+                    # نمایش پیام برای ورود تاریخ دستی
+                    await query.message.edit_text(
+                        "📅 لطفاً تاریخ مورد نظر خود را به فرمت 1403/10/15 وارد کنید:",
+                        reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("⬅️ بازگشت", callback_data="back_to_details")]])
+                    )
+                    return DETAILS_DATE
+                
+                # استخراج تاریخ از callback data
+                date_str = '_'.join(parts[2:])
+                context.user_data['need_date'] = date_str
+                context.user_data['state'] = DETAILS
+                
+                await query.message.edit_text(
+                    f"📅 تاریخ نیاز ثبت شد: {date_str}",
+                    reply_markup=create_dynamic_keyboard(context)
+                )
+                return DETAILS
+        
+        # پردازش ورود مهلت انجام
+        elif data == "deadline" or data == "⏳ مهلت انجام":
+            context.user_data['state'] = DETAILS_DEADLINE
+            keyboard = [
+                [
+                    InlineKeyboardButton("1 روز", callback_data="deadline_1"),
+                    InlineKeyboardButton("2 روز", callback_data="deadline_2"),
+                    InlineKeyboardButton("3 روز", callback_data="deadline_3")
+                ],
+                [
+                    InlineKeyboardButton("5 روز", callback_data="deadline_5"),
+                    InlineKeyboardButton("7 روز", callback_data="deadline_7"),
+                    InlineKeyboardButton("10 روز", callback_data="deadline_10")
+                ],
+                [
+                    InlineKeyboardButton("14 روز", callback_data="deadline_14"),
+                    InlineKeyboardButton("30 روز", callback_data="deadline_30")
+                ],
+                [InlineKeyboardButton("✏️ مقدار دلخواه", callback_data="deadline_custom")],
+                [InlineKeyboardButton("⬅️ بازگشت", callback_data="back_to_details")]
+            ]
+            await query.message.edit_text(
+                "⏳ مهلت انجام (برحسب روز) را انتخاب کنید:",
+                reply_markup=InlineKeyboardMarkup(keyboard)
+            )
+            return DETAILS_DEADLINE
+        
+        # پردازش انتخاب مهلت انجام
+        elif data.startswith("deadline_"):
+            parts = data.split("_")
+            if len(parts) == 2:
+                if parts[1] == "custom":
+                    # نمایش پیام برای ورود مهلت دستی
+                    await query.message.edit_text(
+                        "⏳ لطفاً مهلت انجام مورد نظر خود را به روز وارد کنید (مثلاً: 7):",
+                        reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("⬅️ بازگشت", callback_data="back_to_details")]])
+                    )
+                    return DETAILS_DEADLINE
+                
+                # استخراج مهلت از callback data
+                deadline = validate_deadline(parts[1])
+                if deadline:
+                    context.user_data['deadline'] = deadline
+                    context.user_data['state'] = DETAILS
+                    
+                    await query.message.edit_text(
+                        f"⏳ مهلت انجام ثبت شد: {deadline} روز",
+                        reply_markup=create_dynamic_keyboard(context)
+                    )
+                    return DETAILS
+        
+        # پردازش ورود بودجه
+        elif data == "budget" or data == "💰 بودجه":
+            context.user_data['state'] = DETAILS_BUDGET
+            keyboard = [
+                [
+                    InlineKeyboardButton("100,000 تومان", callback_data="budget_100000"),
+                    InlineKeyboardButton("200,000 تومان", callback_data="budget_200000")
+                ],
+                [
+                    InlineKeyboardButton("500,000 تومان", callback_data="budget_500000"),
+                    InlineKeyboardButton("1,000,000 تومان", callback_data="budget_1000000")
+                ],
+                [
+                    InlineKeyboardButton("2,000,000 تومان", callback_data="budget_2000000"),
+                    InlineKeyboardButton("5,000,000 تومان", callback_data="budget_5000000")
+                ],
+                [InlineKeyboardButton("✏️ مبلغ دلخواه", callback_data="budget_custom")],
+                [InlineKeyboardButton("⬅️ بازگشت", callback_data="back_to_details")]
+            ]
+            await query.message.edit_text(
+                "💰 بودجه‌ای که برای این خدمات در نظر دارید را انتخاب کنید:",
+                reply_markup=InlineKeyboardMarkup(keyboard)
+            )
+            return DETAILS_BUDGET
+        
+        # پردازش انتخاب بودجه
+        elif data.startswith("budget_"):
+            parts = data.split("_")
+            if len(parts) == 2:
+                if parts[1] == "custom":
+                    # نمایش پیام برای ورود بودجه دستی
+                    await query.message.edit_text(
+                        "💰 لطفاً بودجه مورد نظر خود را به تومان وارد کنید (مثلاً: 500000):",
+                        reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("⬅️ بازگشت", callback_data="back_to_details")]])
+                    )
+                    return DETAILS_BUDGET
+                
+                # استخراج بودجه از callback data
+                budget = clean_budget(parts[1])
+                if budget:
+                    formatted_budget = format_price(budget)
+                    context.user_data['budget'] = budget
+                    context.user_data['state'] = DETAILS
+                    
+                    await query.message.edit_text(
+                        f"💰 بودجه ثبت شد: {formatted_budget} تومان",
+                        reply_markup=create_dynamic_keyboard(context)
+                    )
+                    return DETAILS
+        
+        # پردازش ورود مقدار و واحد
+        elif data == "quantity" or data == "📏 مقدار و واحد":
+            context.user_data['state'] = DETAILS_QUANTITY
+            keyboard = [
+                [
+                    InlineKeyboardButton("1 عدد", callback_data="quantity_1_عدد"),
+                    InlineKeyboardButton("2 عدد", callback_data="quantity_2_عدد"),
+                    InlineKeyboardButton("3 عدد", callback_data="quantity_3_عدد")
+                ],
+                [
+                    InlineKeyboardButton("1 متر", callback_data="quantity_1_متر"),
+                    InlineKeyboardButton("5 متر", callback_data="quantity_5_متر"),
+                    InlineKeyboardButton("10 متر", callback_data="quantity_10_متر")
+                ],
+                [
+                    InlineKeyboardButton("1 روز", callback_data="quantity_1_روز"),
+                    InlineKeyboardButton("1 ساعت", callback_data="quantity_1_ساعت")
+                ],
+                [InlineKeyboardButton("✏️ مقدار دلخواه", callback_data="quantity_custom")],
+                [InlineKeyboardButton("⬅️ بازگشت", callback_data="back_to_details")]
+            ]
+            await query.message.edit_text(
+                "📏 مقدار و واحد مورد نیاز را انتخاب کنید:",
+                reply_markup=InlineKeyboardMarkup(keyboard)
+            )
+            return DETAILS_QUANTITY
+        
+        # پردازش انتخاب مقدار و واحد
+        elif data.startswith("quantity_"):
+            parts = data.split("_")
+            if len(parts) >= 2:
+                if parts[1] == "custom":
+                    # نمایش پیام برای ورود مقدار و واحد دستی
+                    await query.message.edit_text(
+                        "📏 لطفاً مقدار و واحد مورد نظر خود را وارد کنید (مثلاً: 2 عدد، 5 متر مربع، 3 ساعت):",
+                        reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("⬅️ بازگشت", callback_data="back_to_details")]])
+                    )
+                    return DETAILS_QUANTITY
+                
+                # استخراج مقدار و واحد از callback data
+                quantity = '_'.join(parts[1:])
+                context.user_data['quantity'] = quantity
+                context.user_data['state'] = DETAILS
+                
+                await query.message.edit_text(
+                    f"📏 مقدار و واحد ثبت شد: {quantity}",
+                    reply_markup=create_dynamic_keyboard(context)
+                )
+                return DETAILS
+        
+        # پردازش دکمه ثبت درخواست
+        elif data == "submit_project" or data == "✅ ثبت درخواست":
+            if not 'description' in context.user_data:
+                await query.answer("⚠️ لطفاً ابتدا توضیحات خدمات را وارد کنید!")
+                return DETAILS
+            
+            # ارسال پیام تأیید به کاربر
+            await query.answer("در حال ثبت درخواست شما...")
+            
+            # اگر کاربر از inline button استفاده کرده باشد، نیاز است تا متن مناسب برای submit_project ارسال کنیم
+            # ساخت یک پیام مجازی
+            await query.message.reply_text("✅ ثبت درخواست")
+            # فراخوانی تابع ثبت پروژه
+            return await submit_project(update, context)
 
     # پردازش پیام‌های متنی
     if message:
@@ -141,6 +374,223 @@ async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_T
                     ])
                 )
                 return DESCRIPTION
+            elif text == "✅ ثبت درخواست":
+                return await submit_project(update, context)
+            elif text == "📸 تصاویر یا فایل":
+                # کاربر از متن به جای دکمه استفاده کرده - تغییر وضعیت به DETAILS_FILES
+                context.user_data['state'] = DETAILS_FILES
+                files = context.user_data.get('files', [])
+                if files:
+                    await message.reply_text(
+                        f"📸 تا الان {len(files)} عکس فرستادی. می‌تونی عکس جدید بفرستی یا مدیریت کنی.",
+                        reply_markup=FILE_MANAGEMENT_MENU_KEYBOARD
+                    )
+                else:
+                    await message.reply_text(
+                        "📸 لطفاً تصاویر رو یکی‌یکی بفرست (حداکثر ۵ تا). فقط عکس قبول می‌شه!",
+                        reply_markup=FILE_MANAGEMENT_MENU_KEYBOARD
+                    )
+                return DETAILS_FILES
+            elif text == "📅 تاریخ نیاز":
+                # کاربر از متن به جای دکمه استفاده کرده - تغییر وضعیت به DETAILS_DATE
+                context.user_data['state'] = DETAILS_DATE
+                today = JalaliDatetime(datetime.now()).strftime('%Y/%m/%d')
+                tomorrow = JalaliDatetime(datetime.now() + timedelta(days=1)).strftime('%Y/%m/%d')
+                day_after = JalaliDatetime(datetime.now() + timedelta(days=2)).strftime('%Y/%m/%d')
+                keyboard = [
+                    [InlineKeyboardButton(f"📅 امروز ({today})", callback_data=f"date_today_{today}")],
+                    [InlineKeyboardButton(f"📅 فردا ({tomorrow})", callback_data=f"date_tomorrow_{tomorrow}")],
+                    [InlineKeyboardButton(f"📅 پس‌فردا ({day_after})", callback_data=f"date_day_after_{day_after}")],
+                    [InlineKeyboardButton("✏️ تاریخ دلخواه", callback_data="date_custom")],
+                    [InlineKeyboardButton("⬅️ بازگشت", callback_data="back_to_details")]
+                ]
+                await message.reply_text(
+                    "📅 تاریخ نیاز رو انتخاب کن یا دستی وارد کن (مثلاً 1403/10/15):",
+                    reply_markup=InlineKeyboardMarkup(keyboard)
+                )
+                return DETAILS_DATE
+            elif text == "⏳ مهلت انجام":
+                # کاربر از متن به جای دکمه استفاده کرده - تغییر وضعیت به DETAILS_DEADLINE
+                context.user_data['state'] = DETAILS_DEADLINE
+                keyboard = [
+                    [
+                        InlineKeyboardButton("1 روز", callback_data="deadline_1"),
+                        InlineKeyboardButton("2 روز", callback_data="deadline_2"),
+                        InlineKeyboardButton("3 روز", callback_data="deadline_3")
+                    ],
+                    [
+                        InlineKeyboardButton("5 روز", callback_data="deadline_5"),
+                        InlineKeyboardButton("7 روز", callback_data="deadline_7"),
+                        InlineKeyboardButton("10 روز", callback_data="deadline_10")
+                    ],
+                    [
+                        InlineKeyboardButton("14 روز", callback_data="deadline_14"),
+                        InlineKeyboardButton("30 روز", callback_data="deadline_30")
+                    ],
+                    [InlineKeyboardButton("✏️ مقدار دلخواه", callback_data="deadline_custom")],
+                    [InlineKeyboardButton("⬅️ بازگشت", callback_data="back_to_details")]
+                ]
+                await message.reply_text(
+                    "⏳ مهلت انجام (برحسب روز) را انتخاب کنید:",
+                    reply_markup=InlineKeyboardMarkup(keyboard)
+                )
+                return DETAILS_DEADLINE
+            elif text == "💰 بودجه":
+                # کاربر از متن به جای دکمه استفاده کرده - تغییر وضعیت به DETAILS_BUDGET
+                context.user_data['state'] = DETAILS_BUDGET
+                keyboard = [
+                    [
+                        InlineKeyboardButton("100,000 تومان", callback_data="budget_100000"),
+                        InlineKeyboardButton("200,000 تومان", callback_data="budget_200000")
+                    ],
+                    [
+                        InlineKeyboardButton("500,000 تومان", callback_data="budget_500000"),
+                        InlineKeyboardButton("1,000,000 تومان", callback_data="budget_1000000")
+                    ],
+                    [
+                        InlineKeyboardButton("2,000,000 تومان", callback_data="budget_2000000"),
+                        InlineKeyboardButton("5,000,000 تومان", callback_data="budget_5000000")
+                    ],
+                    [InlineKeyboardButton("✏️ مبلغ دلخواه", callback_data="budget_custom")],
+                    [InlineKeyboardButton("⬅️ بازگشت", callback_data="back_to_details")]
+                ]
+                await message.reply_text(
+                    "💰 بودجه‌ای که برای این خدمات در نظر دارید را انتخاب کنید:",
+                    reply_markup=InlineKeyboardMarkup(keyboard)
+                )
+                return DETAILS_BUDGET
+            elif text == "📏 مقدار و واحد":
+                # کاربر از متن به جای دکمه استفاده کرده - تغییر وضعیت به DETAILS_QUANTITY
+                context.user_data['state'] = DETAILS_QUANTITY
+                keyboard = [
+                    [
+                        InlineKeyboardButton("1 عدد", callback_data="quantity_1_عدد"),
+                        InlineKeyboardButton("2 عدد", callback_data="quantity_2_عدد"),
+                        InlineKeyboardButton("3 عدد", callback_data="quantity_3_عدد")
+                    ],
+                    [
+                        InlineKeyboardButton("1 متر", callback_data="quantity_1_متر"),
+                        InlineKeyboardButton("5 متر", callback_data="quantity_5_متر"),
+                        InlineKeyboardButton("10 متر", callback_data="quantity_10_متر")
+                    ],
+                    [
+                        InlineKeyboardButton("1 روز", callback_data="quantity_1_روز"),
+                        InlineKeyboardButton("1 ساعت", callback_data="quantity_1_ساعت")
+                    ],
+                    [InlineKeyboardButton("✏️ مقدار دلخواه", callback_data="quantity_custom")],
+                    [InlineKeyboardButton("⬅️ بازگشت", callback_data="back_to_details")]
+                ]
+                await message.reply_text(
+                    "📏 مقدار و واحد مورد نیاز را انتخاب کنید:",
+                    reply_markup=InlineKeyboardMarkup(keyboard)
+                )
+                return DETAILS_QUANTITY
+            else:
+                await message.reply_text("❌ گزینه نامعتبر! لطفاً یکی از دکمه‌ها رو انتخاب کن.")
+                return DETAILS
+        
+        elif current_state == DETAILS_DATE:
+            if text == "⬅️ بازگشت":
+                context.user_data['state'] = DETAILS
+                await message.reply_text(
+                    "📋 جزئیات درخواست:\nاگه بخوای می‌تونی برای راهنمایی بهتر مجری‌ها این اطلاعات رو هم وارد کنی:",
+                    reply_markup=create_dynamic_keyboard(context)
+                )
+                return DETAILS
+            
+            # بررسی صحت تاریخ وارد شده
+            if validate_date(text):
+                input_date = JalaliDatetime.strptime(text, '%Y/%m/%d')
+                if input_date < JalaliDatetime(datetime.now()):
+                    await message.reply_text(
+                        "❌ تاریخ باید از امروز به بعد باشه!",
+                        reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("⬅️ بازگشت", callback_data="back_to_details")]])
+                    )
+                else:
+                    context.user_data['need_date'] = text
+                    context.user_data['state'] = DETAILS
+                    await message.reply_text(
+                        f"📅 تاریخ نیاز ثبت شد: {text}",
+                        reply_markup=create_dynamic_keyboard(context)
+                    )
+                    return DETAILS
+            else:
+                await message.reply_text(
+                    "❌ تاریخ نامعتبر! لطفاً به فرمت 1403/10/15 وارد کن و از امروز به بعد باشه.",
+                    reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("⬅️ بازگشت", callback_data="back_to_details")]])
+                )
+            return DETAILS_DATE
+        
+        elif current_state == DETAILS_DEADLINE:
+            if text == "⬅️ بازگشت":
+                context.user_data['state'] = DETAILS
+                await message.reply_text(
+                    "📋 جزئیات درخواست:\nاگه بخوای می‌تونی برای راهنمایی بهتر مجری‌ها این اطلاعات رو هم وارد کنی:",
+                    reply_markup=create_dynamic_keyboard(context)
+                )
+                return DETAILS
+            
+            # بررسی صحت مهلت وارد شده
+            deadline = validate_deadline(text)
+            if deadline:
+                context.user_data['deadline'] = deadline
+                context.user_data['state'] = DETAILS
+                await message.reply_text(
+                    f"⏳ مهلت انجام ثبت شد: {deadline} روز",
+                    reply_markup=create_dynamic_keyboard(context)
+                )
+                return DETAILS
+            else:
+                await message.reply_text(
+                    "❌ مهلت نامعتبر! لطفاً یه عدد وارد کن (مثلاً 7).",
+                    reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("⬅️ بازگشت", callback_data="back_to_details")]])
+                )
+            return DETAILS_DEADLINE
+        
+        elif current_state == DETAILS_BUDGET:
+            if text == "⬅️ بازگشت":
+                context.user_data['state'] = DETAILS
+                await message.reply_text(
+                    "📋 جزئیات درخواست:\nاگه بخوای می‌تونی برای راهنمایی بهتر مجری‌ها این اطلاعات رو هم وارد کنی:",
+                    reply_markup=create_dynamic_keyboard(context)
+                )
+                return DETAILS
+            
+            # بررسی صحت بودجه وارد شده
+            budget = clean_budget(text)
+            if budget:
+                formatted_budget = format_price(budget)
+                context.user_data['budget'] = budget
+                context.user_data['state'] = DETAILS
+                await message.reply_text(
+                    f"💰 بودجه ثبت شد: {formatted_budget} تومان",
+                    reply_markup=create_dynamic_keyboard(context)
+                )
+                return DETAILS
+            else:
+                await message.reply_text(
+                    "❌ بودجه نامعتبر! لطفاً فقط عدد وارد کن (مثلاً 500000).",
+                    reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("⬅️ بازگشت", callback_data="back_to_details")]])
+                )
+            return DETAILS_BUDGET
+        
+        elif current_state == DETAILS_QUANTITY:
+            if text == "⬅️ بازگشت":
+                context.user_data['state'] = DETAILS
+                await message.reply_text(
+                    "📋 جزئیات درخواست:\nاگه بخوای می‌تونی برای راهنمایی بهتر مجری‌ها این اطلاعات رو هم وارد کنی:",
+                    reply_markup=create_dynamic_keyboard(context)
+                )
+                return DETAILS
+            
+            # ذخیره مقدار و واحد
+            context.user_data['quantity'] = text
+            context.user_data['state'] = DETAILS
+            await message.reply_text(
+                f"📏 مقدار و واحد ثبت شد: {text}",
+                reply_markup=create_dynamic_keyboard(context)
+            )
+            return DETAILS
 
     # اگر وارد حالت توضیحات شدیم، پیام راهنما نمایش بده
     if context.user_data.get('state') == DESCRIPTION and not (message or query):
