@@ -1,6 +1,6 @@
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, ForceReply
 from telegram.ext import ContextTypes, ConversationHandler
-from keyboards import create_dynamic_keyboard, FILE_MANAGEMENT_MENU_KEYBOARD, create_category_keyboard
+from keyboards import create_dynamic_keyboard, FILE_MANAGEMENT_MENU_KEYBOARD, create_category_keyboard, MAIN_MENU_KEYBOARD
 from utils import clean_budget, validate_date, validate_deadline, log_chat, format_price
 from khayyam import JalaliDatetime
 from datetime import datetime, timedelta
@@ -28,6 +28,31 @@ async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_T
     if query:
         data = query.data
         logger.info(f"Project details callback: {data}")
+
+        # پردازش دکمه restart با اولویت بالا
+        if data == "restart":
+            logger.info("Processing restart button in project_details_handler")
+            try:
+                # حذف پیام قبلی
+                if query.message:
+                    await query.message.delete()
+            except Exception as e:
+                logger.warning(f"Could not delete message: {e}")
+
+            # پاک کردن context و شروع مجدد
+            context.user_data.clear()
+            context.user_data['state'] = ROLE
+            
+            # ارسال پیام جدید با منوی اصلی
+            await query.message.reply_text(
+                f"👋 سلام {update.effective_user.first_name}! به ربات خدمات بی‌واسط خوش آمدید.\n"
+                "لطفاً یکی از گزینه‌ها را انتخاب کنید:",
+                reply_markup=MAIN_MENU_KEYBOARD
+            )
+            
+            # تأیید به کاربر
+            await query.answer("ربات راه‌اندازی مجدد شد!")
+            return ROLE
 
         if data == "back_to_location_type":
             # برگشت به انتخاب نوع لوکیشن
@@ -97,7 +122,5 @@ async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_T
                     ])
                 )
                 return DESCRIPTION
-
-        # ادامه کد برای سایر حالت‌های DETAILS
 
     return current_state
