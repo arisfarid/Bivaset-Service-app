@@ -141,5 +141,52 @@ async def handle_location(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
                     reply_markup=LOCATION_TYPE_MENU_KEYBOARD
                 )
                 return LOCATION_TYPE
+        
+        # اگر هر پیام متنی دیگری به جز "بازگشت" ارسال شد و در مرحله ورود لوکیشن هستیم
+        elif current_state == LOCATION_INPUT:
+            # ثبت لاگ
+            logger.info(f"Received text instead of location: {update.message.text}")
+            
+            # ارسال پیام راهنما به کاربر
+            service_location_type = context.user_data.get('service_location')
+            service_location_name = {
+                'client_site': 'محل کارفرما',
+                'contractor_site': 'محل مجری'
+            }.get(service_location_type, 'حضوری')
+            
+            await update.message.reply_text(
+                f"❌ لطفاً *موقعیت مکانی* خود را ارسال کنید.\n\n"
+                f"برای خدمات {service_location_name} نیاز به دانستن موقعیت مکانی شما داریم تا مجری مناسب را پیدا کنیم.\n\n"
+                f"📱 از دکمه «ارسال موقعیت فعلی» استفاده کنید یا\n"
+                f"📎 روی آیکون پیوست (📎) کلیک کرده و گزینه «Location» را انتخاب کنید.",
+                parse_mode="Markdown",
+                reply_markup=LOCATION_INPUT_KEYBOARD
+            )
+            # حالت را تغییر نمی‌دهیم تا کاربر دوباره فرصت ارسال لوکیشن داشته باشد
+            return LOCATION_INPUT
+
+    # بررسی سایر نوع پیام‌ها (عکس، فایل، استیکر و غیره)
+    if update.message and current_state == LOCATION_INPUT:
+        # بررسی انواع پیام غیر متنی و غیر لوکیشن
+        if any([
+            update.message.photo,
+            update.message.video,
+            update.message.audio,
+            update.message.document,
+            update.message.sticker,
+            update.message.voice
+        ]):
+            logger.info(f"Received non-location content in location input step")
+            
+            # ارسال پیام راهنما
+            await update.message.reply_text(
+                "❌ نوع پیام ارسالی قابل پذیرش نیست.\n\n"
+                "لطفاً *فقط موقعیت مکانی* خود را ارسال کنید. این اطلاعات برای یافتن نزدیک‌ترین مجری به شما ضروری است.\n\n"
+                "📱 از دکمه «ارسال موقعیت فعلی» استفاده کنید یا\n"
+                "📎 روی آیکون پیوست (📎) کلیک کرده و گزینه «Location» را انتخاب کنید.",
+                parse_mode="Markdown",
+                reply_markup=LOCATION_INPUT_KEYBOARD
+            )
+            return LOCATION_INPUT
 
     return current_state
