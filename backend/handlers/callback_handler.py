@@ -48,31 +48,6 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         logger.info(f"Current state: {current_state}")
         logger.info(f"Previous state: {previous_state}")
 
-        # پردازش دکمه restart با اولویت بالا
-        if data == "restart":
-            logger.info("Processing restart button")
-            try:
-                # حذف پیام قبلی
-                if query.message:
-                    await query.message.delete()
-            except Exception as e:
-                logger.warning(f"Could not delete message: {e}")
-
-            # پاک کردن context و شروع مجدد
-            context.user_data.clear()
-            context.user_data['state'] = ROLE
-            
-            # ارسال پیام جدید با منوی اصلی
-            await query.message.reply_text(
-                f"👋 سلام {update.effective_user.first_name}! به ربات خدمات بی‌واسط خوش آمدید.\n"
-                "لطفاً یکی از گزینه‌ها را انتخاب کنید:",
-                reply_markup=MAIN_MENU_KEYBOARD
-            )
-            
-            # تأیید به کاربر
-            await query.answer("ربات راه‌اندازی مجدد شد!")
-            return ROLE
-
         # بازگشت به منوی قبلی بر اساس state فعلی
         if data == "back_to_menu":
             logger.info("Processing back to menu")

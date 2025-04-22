@@ -86,9 +86,9 @@ BACK_INLINE_MENU_KEYBOARD = InlineKeyboardMarkup([
     [InlineKeyboardButton("⬅️ برگشت به ارسال", callback_data="back_to_upload")]
 ])
 
-# منوی راه‌اندازی مجدد
+# منوی راه‌اندازی مجدد - تغییر به URL دستور برای فراخوانی مستقیم /start
 RESTART_INLINE_MENU_KEYBOARD = InlineKeyboardMarkup([
-    [InlineKeyboardButton("🔄 راه‌اندازی مجدد", callback_data="restart")]
+    [InlineKeyboardButton("🔄 راه‌اندازی مجدد", url="https://t.me/BivasetBot?start=restart")]
 ])
 
 # منوی بازگشت به توضیحات
