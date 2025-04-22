@@ -124,7 +124,10 @@ def build_application():
     return app
 
 async def reset_conversation(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    """Reset conversation state and start over"""
     chat_id = update.effective_chat.id
+    
+    # اضافه کردن به لیست چت‌های فعال
     bot_data = context.bot_data
     if 'active_chats' not in bot_data:
         bot_data['active_chats'] = []
@@ -132,12 +135,18 @@ async def reset_conversation(update: Update, context: ContextTypes.DEFAULT_TYPE)
         bot_data['active_chats'].append(chat_id)
         await context.application.persistence.update_bot_data(bot_data)
         logger.info(f"Added {chat_id} to active chats from reset_conversation")
+    
+    # پاک کردن context کاربر
     context.user_data.clear()
+    context.user_data['state'] = 2  # ROLE
+    
+    # ارسال پیام خوش‌آمدگویی و منوی اصلی
     await update.message.reply_text(
-        "👋 سلام! دوباره خوش آمدید.\nلطفاً /start را برای شروع مجدد ارسال کنید.",
+        f"👋 سلام {update.effective_user.first_name}! به ربات خدمات بی‌واسط خوش آمدید.\n"
+        "لطفاً یکی از گزینه‌ها را انتخاب کنید:",
         reply_markup=MAIN_MENU_KEYBOARD
     )
-    return ConversationHandler.END
+    return 2  # ROLE
 
 def main():
     if not TOKEN:

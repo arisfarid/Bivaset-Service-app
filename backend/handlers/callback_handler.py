@@ -6,7 +6,7 @@ from handlers.category_handler import handle_category_callback
 from handlers.edit_handler import handle_edit_callback
 from handlers.view_handler import handle_view_callback
 from handlers.attachment_handler import show_photo_management, handle_photos_command
-from utils import log_chat,get_categories, ensure_active_chat
+from utils import log_chat, get_categories, ensure_active_chat, restart_chat
 from keyboards import create_category_keyboard, EMPLOYER_MENU_KEYBOARD, FILE_MANAGEMENT_MENU_KEYBOARD, RESTART_INLINE_MENU_KEYBOARD, BACK_INLINE_MENU_KEYBOARD, MAIN_MENU_KEYBOARD
 import asyncio  # برای استفاده از sleep
 from asyncio import Lock
@@ -52,6 +52,7 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if data == "restart":
             logger.info("Processing restart button")
             try:
+                # حذف پیام قبلی
                 if query.message:
                     await query.message.delete()
             except Exception as e:
@@ -59,12 +60,17 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
             # پاک کردن context و شروع مجدد
             context.user_data.clear()
+            context.user_data['state'] = ROLE
+            
+            # ارسال پیام جدید با منوی اصلی
             await query.message.reply_text(
                 f"👋 سلام {update.effective_user.first_name}! به ربات خدمات بی‌واسط خوش آمدید.\n"
                 "لطفاً یکی از گزینه‌ها را انتخاب کنید:",
                 reply_markup=MAIN_MENU_KEYBOARD
             )
-            await query.answer()
+            
+            # تأیید به کاربر
+            await query.answer("ربات راه‌اندازی مجدد شد!")
             return ROLE
 
         # بازگشت به منوی قبلی بر اساس state فعلی

@@ -1,8 +1,8 @@
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardMarkup, KeyboardButton
 from telegram.ext import ContextTypes, ConversationHandler
 from utils import log_chat
 import logging
-from keyboards import create_dynamic_keyboard, LOCATION_TYPE_MENU_KEYBOARD, LOCATION_INPUT_MENU_KEYBOARD, create_category_keyboard
+from keyboards import create_category_keyboard, LOCATION_TYPE_MENU_KEYBOARD, LOCATION_INPUT_KEYBOARD, LOCATION_INPUT_MENU_KEYBOARD, BACK_TO_DESCRIPTION_KEYBOARD, REMOVE_KEYBOARD
 
 logger = logging.getLogger(__name__)
 
@@ -70,15 +70,19 @@ async def handle_location(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
                 context.user_data['state'] = DESCRIPTION
                 await query.message.edit_text(
                     "🌟 توضیحات خدماتت رو بگو:",
-                    reply_markup=LOCATION_TYPE_MENU_KEYBOARD
+                    reply_markup=BACK_TO_DESCRIPTION_KEYBOARD
                 )
                 return DESCRIPTION
             else:
-                # برای خدمات حضوری درخواست لوکیشن
+                # برای خدمات حضوری درخواست لوکیشن با کیبورد معمولی
                 context.user_data['state'] = LOCATION_INPUT
-                await query.message.edit_text(
-                    "📍 برای اتصال به نزدیک‌ترین مجری، لطفاً لوکیشن خود را ارسال کنید:",
-                    reply_markup=LOCATION_INPUT_MENU_KEYBOARD
+                
+                # حذف پیام قبلی و ارسال پیام جدید با کیبورد مناسب
+                await query.message.delete()
+                await query.message.reply_text(
+                    "📍 برای اتصال به نزدیک‌ترین مجری، لطفاً لوکیشن خود را ارسال کنید:"
+                    "\n\nشما می‌توانید از دکمه ارسال موقعیت فعلی استفاده کنید یا با استفاده از آیکون 📎 (پیوست) لوکیشن دلخواه خود را از نقشه انتخاب کنید.",
+                    reply_markup=LOCATION_INPUT_KEYBOARD
                 )
                 return LOCATION_INPUT
 
@@ -96,18 +100,26 @@ async def handle_location(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
             context.user_data['state'] = DESCRIPTION
             await query.message.edit_text(
                 "🌟 توضیحات خدماتت رو بگو:",
-                reply_markup=LOCATION_TYPE_MENU_KEYBOARD
+                reply_markup=BACK_TO_DESCRIPTION_KEYBOARD
             )
             return DESCRIPTION
 
     # اگر لوکیشن دریافت شد
     if update.message and update.message.location:
         location = update.message.location
-        context.user_data['location'] = [location.longitude, location.latitude]
+        context.user_data['location'] = {'longitude': location.longitude, 'latitude': location.latitude}
+        logger.info(f"Received location: {context.user_data['location']}")
         context.user_data['state'] = DESCRIPTION
+        
+        # بازگشت به کیبورد اینلاین
+        await update.message.reply_text(
+            "✅ موقعیت مکانی شما با موفقیت دریافت شد!",
+            reply_markup=REMOVE_KEYBOARD
+        )
+        
         await update.message.reply_text(
             "🌟 توضیحات خدماتت رو بگو:",
-            reply_markup=LOCATION_TYPE_MENU_KEYBOARD
+            reply_markup=BACK_TO_DESCRIPTION_KEYBOARD
         )
         return DESCRIPTION
 
@@ -116,6 +128,14 @@ async def handle_location(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         if update.message.text == "⬅️ بازگشت":
             if current_state == LOCATION_INPUT:
                 context.user_data['state'] = LOCATION_TYPE
+                
+                # حذف کیبورد مخصوص لوکیشن
+                await update.message.reply_text(
+                    "برگشت به مرحله قبل...",
+                    reply_markup=REMOVE_KEYBOARD
+                )
+                
+                # نمایش منوی انتخاب نوع لوکیشن
                 await update.message.reply_text(
                     "🌟 محل انجام خدماتت رو انتخاب کن:",
                     reply_markup=LOCATION_TYPE_MENU_KEYBOARD

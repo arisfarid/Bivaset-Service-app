@@ -2,14 +2,14 @@ import os
 import requests
 import re
 import sys
-import logging  # اضافه شده
+import logging
 from datetime import datetime, timedelta
 from khayyam import JalaliDatetime
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 from telegram import Update
 from telegram.ext import ContextTypes
 
-logger = logging.getLogger(__name__)  # اضافه شده
+logger = logging.getLogger(__name__)
 
 BASE_URL = 'http://185.204.171.107:8000/api/'
 BOT_FILE = os.path.abspath(__file__)
@@ -74,14 +74,22 @@ async def save_user_phone(telegram_id: str, phone: str, name: str = None) -> tup
         return False, "server_error"
 
 async def get_categories():
+    """دریافت دسته‌بندی‌ها از API"""
     try:
         response = requests.get(f"{BASE_URL}categories/")
         if response.status_code == 200:
-            categories = response.json()
-            cat_dict = {cat['id']: {'name': cat['name'], 'parent': cat['parent'], 'children': cat['children']} for cat in categories}
-            return cat_dict
+            categories = {}
+            for cat in response.json():
+                categories[cat['id']] = {
+                    'name': cat['name'],
+                    'description': cat['description'],
+                    'parent': cat['parent'],
+                    'children': cat['children']
+                }
+            return categories
         return {}
-    except requests.exceptions.ConnectionError:
+    except Exception as e:
+        logger.error(f"Error getting categories: {e}")
         return {}
 
 async def upload_files(file_ids, context):
@@ -112,7 +120,6 @@ async def upload_attachments(files, context):
         logger.error(f"Error in upload_attachments: {e}")
         return []
 
-# بقیه توابع بدون تغییر
 def persian_to_english(text):
     persian_digits = '۰۱۲۳۴۵۶۷۸۹'
     english_digits = '0123456789'
@@ -179,43 +186,21 @@ def generate_title(context):
     return title.strip()
 
 async def log_chat(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user = update.effective_user
-    if update.message:  # برای پیام‌های معمولی
-        timestamp = update.message.date.strftime('%d/%m/%Y %H:%M:%S')
-        if update.message.text:
-            logger.info(f"{user.first_name}, [{timestamp}] - Text: {update.message.text}")
-        elif update.message.photo:
-            logger.info(f"{user.first_name}, [{timestamp}] - Sent {len(update.message.photo)} photo(s)")
-        elif update.message.location:
-            logger.info(f"{user.first_name}, [{timestamp}] - Location: {update.message.location.latitude}, {update.message.location.longitude}")
-    elif update.callback_query:  # برای callback‌ها
-        timestamp = datetime.now().strftime('%d/%m/%Y %H:%M:%S')
-        logger.info(f"{user.first_name}, [{timestamp}] - Callback: {update.callback_query.data}")
+    """ثبت لاگ تعامل با کاربر"""
+    if update.message:
+        logger.info(f"Message from user {update.effective_user.id}: {update.message.text}")
+    elif update.callback_query:
+        logger.info(f"Callback from user {update.effective_user.id}: {update.callback_query.data}")
 
 async def ensure_active_chat(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """اطمینان از ثبت چت در لیست چت‌های فعال"""
+    """اطمینان از افزودن چت به لیست چت‌های فعال"""
     chat_id = update.effective_chat.id
-    
-    try:
-        # اطمینان از وجود لیست active_chats
-        if 'active_chats' not in context.bot_data:
-            context.bot_data['active_chats'] = []
-            
-        # اضافه کردن چت جدید
-        if chat_id not in context.bot_data['active_chats']:
-            context.bot_data['active_chats'].append(chat_id)
-            logger.info(f"Added {chat_id} to active chats. Total active chats: {len(context.bot_data['active_chats'])}")
-            
-            # ذخیره فوری در persistence
-            if context.application and context.application.persistence:
-                await context.application.persistence.update_bot_data(context.bot_data)
-                logger.debug(f"Persisted active_chats update for chat {chat_id}")
-                
-        return True
-            
-    except Exception as e:
-        logger.error(f"Error in ensure_active_chat for {chat_id}: {e}")
-        return False
+    if 'active_chats' not in context.bot_data:
+        context.bot_data['active_chats'] = []
+    if chat_id not in context.bot_data['active_chats']:
+        context.bot_data['active_chats'].append(chat_id)
+        logger.info(f"Added {chat_id} to active chats")
+    return True
 
 def format_price(number):
     """تبدیل اعداد مبلغ به فرمت هزارگان با کاما"""
@@ -224,26 +209,24 @@ def format_price(number):
     except (ValueError, TypeError):
         return number
 
-async def restart_chat(application, chat_id):
-    """
-    راه‌اندازی مجدد چت کاربر
-    """
+async def restart_chat(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """راه‌اندازی مجدد گفتگو با کاربر"""
     try:
-        # پاک کردن داده‌های قبلی کاربر
-        await application.bot.get_chat(chat_id)
-        user_data = await application.persistence.get_user_data()
-        if str(chat_id) in user_data:
-            user_data[str(chat_id)].clear()
-            await application.persistence.update_user_data(chat_id, user_data[str(chat_id)])
-
-        # ارسال کامند start به صورت خودکار
-        await application.bot.send_message(
-            chat_id=chat_id,
-            text="/start",
-            disable_notification=True
+        # پاک کردن داده‌های کاربر
+        context.user_data.clear()
+        context.user_data['state'] = 2  # ROLE
+        
+        # ارسال پیام خوش‌آمدگویی و منوی اصلی
+        await update.message.reply_text(
+            f"👋 سلام {update.effective_user.first_name}! به ربات خدمات بی‌واسط خوش آمدید.\n"
+            "لطفاً یکی از گزینه‌ها را انتخاب کنید:",
+            reply_markup=InlineKeyboardMarkup([
+                [InlineKeyboardButton("درخواست خدمات | کارفرما 👔", callback_data="employer")],
+                [InlineKeyboardButton("پیشنهاد قیمت | مجری 🦺", callback_data="contractor")],
+            ])
         )
+        logger.info(f"Chat restarted for user {update.effective_user.id}")
         return True
-
     except Exception as e:
-        logger.error(f"Error restarting chat {chat_id}: {e}")
+        logger.error(f"Error restarting chat: {e}")
         return False
