@@ -177,13 +177,17 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             
         elif data == "new_request":
             logger.info("Processing new request")
+            # Clear user data to ensure no previous data persists
+            context.user_data.clear()
+            context.user_data['files'] = []
+            context.user_data['state'] = CATEGORY
+            
             categories = await get_categories()
             keyboard = create_category_keyboard(categories)
             await query.edit_message_text(
                 "🌟 دسته‌بندی خدماتت رو انتخاب کن:",
                 reply_markup=keyboard
             )
-            context.user_data['state'] = CATEGORY
             await query.answer()
             return CATEGORY
             

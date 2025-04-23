@@ -118,8 +118,17 @@ async def handle_location(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         )
         
         # ارسال پیام با کیبورد اینلاین برای وارد کردن توضیحات
-        from handlers.project_details_handler import send_description_guidance
-        await send_description_guidance(update.message, context)
+        try:
+            from handlers.project_details_handler import send_description_guidance
+            await send_description_guidance(update.message, context)
+            logger.info("Successfully sent description guidance")
+        except Exception as e:
+            # در صورت خطا، یک پیام ساده دستورالعمل ارسال کنیم
+            logger.error(f"Error sending description guidance: {e}")
+            await update.message.reply_text(
+                "🌟 حالا لطفاً توضیحات کاملی از خدمات درخواستی خود بنویسید:",
+                reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("⬅️ بازگشت", callback_data="back_to_location_type")]])
+            )
         
         return DESCRIPTION
 
