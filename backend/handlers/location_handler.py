@@ -66,12 +66,21 @@ async def handle_location(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
             }[location_type]
 
             if location_type == 'remote':
-                # اگر غیرحضوری بود مستقیم به مرحله توضیحات برو
+                # اگر غیرحضوری بود مستقیم به مرحله توضیحات برو با راهنمای کامل
                 context.user_data['state'] = DESCRIPTION
-                await query.message.edit_text(
-                    "🌟 توضیحات خدماتت رو بگو:",
-                    reply_markup=BACK_TO_DESCRIPTION_KEYBOARD
-                )
+                
+                try:
+                    # استفاده از تابع send_description_guidance برای نمایش راهنمای کامل
+                    from handlers.project_details_handler import send_description_guidance
+                    await send_description_guidance(query.message, context)
+                except Exception as e:
+                    logger.error(f"Error sending description guidance for remote service: {e}")
+                    # اگر خطا رخ داد، همان پیام ساده قبلی نمایش داده شود
+                    await query.message.edit_text(
+                        "🌟 توضیحات خدماتت رو بگو:",
+                        reply_markup=BACK_TO_DESCRIPTION_KEYBOARD
+                    )
+                
                 return DESCRIPTION
             else:
                 # برای خدمات حضوری درخواست لوکیشن با کیبورد معمولی
