@@ -117,10 +117,10 @@ async def handle_location(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
             reply_markup=REMOVE_KEYBOARD
         )
         
-        await update.message.reply_text(
-            "🌟 توضیحات خدماتت رو بگو:",
-            reply_markup=BACK_TO_DESCRIPTION_KEYBOARD
-        )
+        # ارسال پیام با کیبورد اینلاین برای وارد کردن توضیحات
+        from handlers.project_details_handler import send_description_guidance
+        await send_description_guidance(update.message, context)
+        
         return DESCRIPTION
 
     # اگر پیام متنی دریافت شد (مثلاً برگشت)

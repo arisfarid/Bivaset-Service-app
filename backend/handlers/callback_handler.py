@@ -48,6 +48,43 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         logger.info(f"Current state: {current_state}")
         logger.info(f"Previous state: {previous_state}")
 
+        # پردازش برای دکمه اتمام ارسال تصاویر
+        if data == "finish_files":
+            logger.info("User clicked finish_files button")
+            context.user_data['state'] = DETAILS
+            # ویرایش پیام موجود و نمایش منوی جزئیات
+            from keyboards import create_dynamic_keyboard
+            await query.message.edit_text(
+                "📋 جزئیات درخواست:",
+                reply_markup=create_dynamic_keyboard(context)
+            )
+            await query.answer()
+            return DETAILS
+            
+        # پردازش برای دکمه مدیریت عکس‌ها
+        if data == "manage_photos":
+            logger.info("User clicked manage_photos button")
+            await show_photo_management(update, context)
+            await query.answer()
+            return DETAILS_FILES
+            
+        # پردازش برای بازگشت به آپلود
+        if data == "back_to_upload":
+            logger.info("User returning to file upload")
+            await query.message.edit_text(
+                "📸 می‌تونی تا ۵ تا عکس ارسال کنی یا یکی از گزینه‌ها رو انتخاب کنی:",
+                reply_markup=FILE_MANAGEMENT_MENU_KEYBOARD
+            )
+            await query.answer()
+            return DETAILS_FILES
+            
+        # پردازش برای بازگشت به مدیریت عکس‌ها
+        if data == "back_to_management":
+            logger.info("User returning to photo management")
+            await show_photo_management(update, context)
+            await query.answer()
+            return DETAILS_FILES
+
         # بازگشت به منوی قبلی بر اساس state فعلی
         if data == "back_to_menu":
             logger.info("Processing back to menu")
