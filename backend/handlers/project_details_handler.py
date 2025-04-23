@@ -65,8 +65,18 @@ async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_T
             await send_description_guidance(query.message, context)
             return DESCRIPTION
         
+        # پردازش مدیریت فایل ها و بازگشت به جزئیات
+        elif data == "finish_files" or data == "manage_photos" or data == "back_to_details":
+            context.user_data['state'] = DETAILS
+            await query.message.edit_text(
+                "📋 جزئیات درخواست:\nاگه بخوای می‌تونی برای راهنمایی بهتر مجری‌ها این اطلاعات رو هم وارد کنی:",
+                reply_markup=create_dynamic_keyboard(context)
+            )
+            await query.answer("بازگشت به منوی جزئیات")
+            return DETAILS
+        
         # پردازش انتخاب مدیریت عکس‌ها
-        elif data == "photo_management" or data == "📸 تصاویر یا فایل":
+        elif data == "photo_management" or data == "📸 تصاویر یا فایل" or data == "manage_photos":
             context.user_data['state'] = DETAILS_FILES
             files = context.user_data.get('files', [])
             if files:
@@ -80,15 +90,6 @@ async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_T
                     reply_markup=FILE_MANAGEMENT_MENU_KEYBOARD
                 )
             return DETAILS_FILES
-        
-        # پردازش بازگشت از مدیریت فایل‌ها
-        elif data == "back_to_details":
-            context.user_data['state'] = DETAILS
-            await query.message.edit_text(
-                "📋 جزئیات درخواست:\nاگه بخوای می‌تونی برای راهنمایی بهتر مجری‌ها این اطلاعات رو هم وارد کنی:",
-                reply_markup=create_dynamic_keyboard(context)
-            )
-            return DETAILS
         
         # پردازش ورود تاریخ نیاز
         elif data == "need_date" or data == "📅 تاریخ نیاز":
@@ -657,12 +658,13 @@ async def send_description_guidance(message, context):
         # اطمینان از اینکه state درست تنظیم شده
         context.user_data['state'] = DESCRIPTION
         
-        # ارسال پیام راهنما با ForceReply برای تشویق کاربر به نوشتن
+        # ارسال پیام راهنما با کیبورد بازگشت و شروع مجدد
         await message.reply_text(
             guidance_text,
             parse_mode='Markdown',
             reply_markup=InlineKeyboardMarkup([
-                [InlineKeyboardButton("⬅️ بازگشت", callback_data="back_to_location_type")]
+                [InlineKeyboardButton("⬅️ بازگشت", callback_data="back_to_location_type")],
+                [InlineKeyboardButton("🔄 شروع مجدد", callback_data="restart")]
             ])
         )
         
@@ -675,7 +677,8 @@ async def send_description_guidance(message, context):
             await message.reply_text(
                 "🌟 لطفاً توضیحات کاملی از خدمات درخواستی خود بنویسید:",
                 reply_markup=InlineKeyboardMarkup([
-                    [InlineKeyboardButton("⬅️ بازگشت", callback_data="back_to_location_type")]
+                    [InlineKeyboardButton("⬅️ بازگشت", callback_data="back_to_location_type")],
+                    [InlineKeyboardButton("🔄 شروع مجدد", callback_data="restart")]
                 ])
             )
             return True

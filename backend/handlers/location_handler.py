@@ -120,14 +120,34 @@ async def handle_location(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         # ارسال پیام با کیبورد اینلاین برای وارد کردن توضیحات
         try:
             from handlers.project_details_handler import send_description_guidance
-            await send_description_guidance(update.message, context)
+            from keyboards import create_restart_keyboard
+            
+            # ارسال راهنمای توضیحات با دکمه‌های بازگشت و راه‌اندازی مجدد
+            success = await send_description_guidance(update.message, context)
+            
+            # اگر ارسال راهنما موفق نبود، یک پیام ساده با دکمه راه‌اندازی مجدد ارسال کنیم
+            if not success:
+                restart_keyboard = create_restart_keyboard()
+                await update.message.reply_text(
+                    "🌟 حالا لطفاً توضیحات کاملی از خدمات درخواستی خود بنویسید:\n\n"
+                    "اگر با مشکلی مواجه شدید، می‌توانید از دکمه شروع مجدد استفاده کنید.",
+                    reply_markup=InlineKeyboardMarkup([
+                        [InlineKeyboardButton("⬅️ بازگشت", callback_data="back_to_location_type")],
+                        [InlineKeyboardButton("🔄 شروع مجدد", callback_data="restart")]
+                    ])
+                )
+            
             logger.info("Successfully sent description guidance")
         except Exception as e:
-            # در صورت خطا، یک پیام ساده دستورالعمل ارسال کنیم
+            # در صورت خطا، یک پیام ساده دستورالعمل با دکمه راه‌اندازی مجدد ارسال کنیم
             logger.error(f"Error sending description guidance: {e}")
             await update.message.reply_text(
-                "🌟 حالا لطفاً توضیحات کاملی از خدمات درخواستی خود بنویسید:",
-                reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("⬅️ بازگشت", callback_data="back_to_location_type")]])
+                "🌟 حالا لطفاً توضیحات کاملی از خدمات درخواستی خود بنویسید:\n\n"
+                "اگر با مشکلی مواجه شدید، می‌توانید از دکمه شروع مجدد استفاده کنید.",
+                reply_markup=InlineKeyboardMarkup([
+                    [InlineKeyboardButton("⬅️ بازگشت", callback_data="back_to_location_type")],
+                    [InlineKeyboardButton("🔄 شروع مجدد", callback_data="restart")]
+                ])
             )
         
         return DESCRIPTION

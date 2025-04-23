@@ -102,6 +102,13 @@ REGISTER_INLINE_KEYBOARD = InlineKeyboardMarkup([
     [InlineKeyboardButton("🔄 شروع مجدد", callback_data="restart")]
 ])
 
+# تابع ایجاد یک دکمه راه‌اندازی مجدد برای کاربران جدید
+def create_restart_keyboard():
+    """ایجاد کیبورد راه‌اندازی مجدد برای کاربران"""
+    return InlineKeyboardMarkup([
+        [InlineKeyboardButton("🔄 شروع مجدد", callback_data="restart")],
+    ])
+
 def create_dynamic_keyboard(context):
     buttons = []
     # همیشه دکمه تصاویر رو نشون بده
