@@ -102,6 +102,27 @@ def get_conversation_handler() -> ConversationHandler:
                 MessageHandler(filters.TEXT & ~filters.COMMAND, handle_attachment),
                 CallbackQueryHandler(handle_attachment)
             ],
+            # اضافه کردن هندلرهای مربوط به جزئیات درخواست
+            DETAILS_DATE: [
+                MessageHandler(filters.TEXT & ~filters.COMMAND, handle_project_details),
+                CallbackQueryHandler(handle_project_details)
+            ],
+            DETAILS_DEADLINE: [
+                MessageHandler(filters.TEXT & ~filters.COMMAND, handle_project_details),
+                CallbackQueryHandler(handle_project_details)
+            ],
+            DETAILS_BUDGET: [
+                MessageHandler(filters.TEXT & ~filters.COMMAND, handle_project_details),
+                CallbackQueryHandler(handle_project_details)
+            ],
+            DETAILS_QUANTITY: [
+                MessageHandler(filters.TEXT & ~filters.COMMAND, handle_project_details),
+                CallbackQueryHandler(handle_project_details)
+            ],
+            SUBMIT: [
+                MessageHandler(filters.TEXT & ~filters.COMMAND, submit_project),
+                CallbackQueryHandler(submit_project)
+            ],
             CHANGE_PHONE: [
                 MessageHandler(filters.TEXT & ~filters.COMMAND, handle_new_phone)
             ],

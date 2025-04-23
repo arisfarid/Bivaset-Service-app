@@ -7,7 +7,7 @@ from handlers.edit_handler import handle_edit_callback
 from handlers.view_handler import handle_view_callback
 from handlers.attachment_handler import show_photo_management, handle_photos_command
 from utils import log_chat, get_categories, ensure_active_chat, restart_chat
-from keyboards import create_category_keyboard, EMPLOYER_MENU_KEYBOARD, FILE_MANAGEMENT_MENU_KEYBOARD, RESTART_INLINE_MENU_KEYBOARD, BACK_INLINE_MENU_KEYBOARD, MAIN_MENU_KEYBOARD
+from keyboards import create_category_keyboard, EMPLOYER_MENU_KEYBOARD, FILE_MANAGEMENT_MENU_KEYBOARD, RESTART_INLINE_MENU_KEYBOARD, BACK_INLINE_MENU_KEYBOARD, MAIN_MENU_KEYBOARD, create_dynamic_keyboard
 import asyncio  # برای استفاده از sleep
 from asyncio import Lock
 
@@ -47,13 +47,23 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         logger.info(f"Handling callback: {data}")
         logger.info(f"Current state: {current_state}")
         logger.info(f"Previous state: {previous_state}")
+        
+        # پردازش بازگشت به جزئیات
+        if data == "back_to_details":
+            logger.info("User returning to details menu")
+            context.user_data['state'] = DETAILS
+            await query.message.edit_text(
+                "📋 جزئیات درخواست:",
+                reply_markup=create_dynamic_keyboard(context)
+            )
+            await query.answer()
+            return DETAILS
 
         # پردازش برای دکمه اتمام ارسال تصاویر
         if data == "finish_files":
             logger.info("User clicked finish_files button")
             context.user_data['state'] = DETAILS
             # ویرایش پیام موجود و نمایش منوی جزئیات
-            from keyboards import create_dynamic_keyboard
             await query.message.edit_text(
                 "📋 جزئیات درخواست:",
                 reply_markup=create_dynamic_keyboard(context)
@@ -67,6 +77,56 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await show_photo_management(update, context)
             await query.answer()
             return DETAILS_FILES
+        
+        # پردازش برای دکمه تاریخ نیاز
+        if data == "need_date":
+            logger.info("User clicked need_date button")
+            context.user_data['state'] = DETAILS_DATE
+            await query.message.edit_text(
+                "📅 تاریخ نیاز خود را به صورت 'ماه/روز' وارد کنید (مثال: 05/15):",
+                reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("⬅️ بازگشت", callback_data="back_to_details")]])
+            )
+            await query.answer()
+            return DETAILS_DATE
+            
+        # پردازش برای دکمه مهلت انجام
+        if data == "deadline":
+            logger.info("User clicked deadline button")
+            context.user_data['state'] = DETAILS_DEADLINE
+            await query.message.edit_text(
+                "⏳ مهلت انجام خدمات را به صورت 'ماه/روز' وارد کنید (مثال: 06/20):",
+                reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("⬅️ بازگشت", callback_data="back_to_details")]])
+            )
+            await query.answer()
+            return DETAILS_DEADLINE
+            
+        # پردازش برای دکمه بودجه
+        if data == "budget":
+            logger.info("User clicked budget button")
+            context.user_data['state'] = DETAILS_BUDGET
+            await query.message.edit_text(
+                "💰 بودجه مورد نظر خود را به تومان وارد کنید (فقط عدد):",
+                reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("⬅️ بازگشت", callback_data="back_to_details")]])
+            )
+            await query.answer()
+            return DETAILS_BUDGET
+            
+        # پردازش برای دکمه مقدار و واحد
+        if data == "quantity":
+            logger.info("User clicked quantity button")
+            context.user_data['state'] = DETAILS_QUANTITY
+            await query.message.edit_text(
+                "📏 مقدار و واحد مورد نظر را وارد کنید (مثال: 5 متر، 2 عدد):",
+                reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("⬅️ بازگشت", callback_data="back_to_details")]])
+            )
+            await query.answer()
+            return DETAILS_QUANTITY
+        
+        # پردازش برای دکمه ثبت نهایی
+        if data == "submit_final":
+            logger.info("User clicked submit_final button")
+            from handlers.submission_handler import submit_project
+            return await submit_project(update, context)
             
         # پردازش برای بازگشت به آپلود
         if data == "back_to_upload":
