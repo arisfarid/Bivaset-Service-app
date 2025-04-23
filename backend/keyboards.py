@@ -96,21 +96,27 @@ BACK_TO_DESCRIPTION_KEYBOARD = InlineKeyboardMarkup([
     [InlineKeyboardButton("⬅️ بازگشت", callback_data="back_to_location_type")]
 ])
 
+# منوی اینلاین ثبت شماره تلفن
+REGISTER_INLINE_KEYBOARD = InlineKeyboardMarkup([
+    [InlineKeyboardButton("📱 ثبت شماره تلفن", callback_data="register_phone")],
+    [InlineKeyboardButton("🔄 شروع مجدد", callback_data="restart")]
+])
+
 def create_dynamic_keyboard(context):
     buttons = []
     # همیشه دکمه تصاویر رو نشون بده
-    buttons.append([InlineKeyboardButton("📸 تصاویر یا فایل")])
+    buttons.append([InlineKeyboardButton("📸 تصاویر یا فایل", callback_data="photo_management")])
     
     if 'need_date' not in context.user_data:
-        buttons.append([InlineKeyboardButton("📅 تاریخ نیاز")])
+        buttons.append([InlineKeyboardButton("📅 تاریخ نیاز", callback_data="need_date")])
     if 'deadline' not in context.user_data:
-        buttons.append([InlineKeyboardButton("⏳ مهلت انجام")])
+        buttons.append([InlineKeyboardButton("⏳ مهلت انجام", callback_data="deadline")])
     if 'budget' not in context.user_data:
-        buttons.append([InlineKeyboardButton("💰 بودجه")])
+        buttons.append([InlineKeyboardButton("💰 بودجه", callback_data="budget")])
     if 'quantity' not in context.user_data:
-        buttons.append([InlineKeyboardButton("📏 مقدار و واحد")])
-    buttons.append([InlineKeyboardButton("⬅️ بازگشت"), InlineKeyboardButton("✅ ثبت درخواست")])
-    return InlineKeyboardMarkup(buttons, resize_keyboard=True)
+        buttons.append([InlineKeyboardButton("📏 مقدار و واحد", callback_data="quantity")])
+    buttons.append([InlineKeyboardButton("⬅️ بازگشت", callback_data="back_to_description"), InlineKeyboardButton("✅ ثبت درخواست", callback_data="submit_project")])
+    return InlineKeyboardMarkup(buttons)
 
 def create_category_keyboard(categories):
     """ساخت کیبورد دسته‌بندی‌ها"""

@@ -143,19 +143,43 @@ async def check_phone(update: Update, context: ContextTypes.DEFAULT_TYPE) -> boo
 
 def require_phone(func):
     """دکوراتور برای چک کردن شماره تلفن"""
+    @wraps(func)
     async def wrapper(update: Update, context: ContextTypes.DEFAULT_TYPE, *args, **kwargs):
         try:
             if not await check_phone(update, context):
-                message = update.callback_query.message if update.callback_query else update.message
-                await message.reply_text(
-                    "⚠️ برای استفاده از ربات، باید شماره تلفن خود را به اشتراک بگذارید.\n"
-                    "لطفاً از دکمه زیر استفاده کنید:",
-                    reply_markup=REGISTER_MENU_KEYBOARD
-                )
+                if update.callback_query:
+                    # استفاده از InlineKeyboardMarkup برای callback_query
+                    from keyboards import REGISTER_INLINE_KEYBOARD
+                    message = update.callback_query.message
+                    await update.callback_query.answer("برای ادامه نیاز به ثبت شماره تلفن است")
+                    # ارسال پیام با کیبورد اینلاین
+                    await message.reply_text(
+                        "⚠️ برای استفاده از ربات، باید شماره تلفن خود را به اشتراک بگذارید.\n"
+                        "لطفاً دکمه زیر را انتخاب کنید:",
+                        reply_markup=REGISTER_INLINE_KEYBOARD
+                    )
+                    # جداگانه ارسال کیبورد ReplyKeyboardMarkup برای دریافت شماره تلفن
+                    await message.reply_text(
+                        "یا از دکمه زیر برای به اشتراک‌گذاری مستقیم شماره استفاده کنید:",
+                        reply_markup=REGISTER_MENU_KEYBOARD
+                    )
+                else:
+                    # استفاده مستقیم از ReplyKeyboardMarkup برای پیام‌های معمولی
+                    await update.message.reply_text(
+                        "⚠️ برای استفاده از ربات، باید شماره تلفن خود را به اشتراک بگذارید.\n"
+                        "لطفاً از دکمه زیر استفاده کنید:",
+                        reply_markup=REGISTER_MENU_KEYBOARD
+                    )
+                context.user_data['state'] = REGISTER
                 return REGISTER
             return await func(update, context, *args, **kwargs)
         except Exception as e:
             logger.error(f"Error in phone requirement decorator: {e}")
+            if update.callback_query:
+                try:
+                    await update.callback_query.answer("خطایی رخ داد. لطفاً دوباره تلاش کنید.")
+                except Exception:
+                    pass
             return REGISTER
     return wrapper
 

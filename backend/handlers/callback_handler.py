@@ -103,6 +103,25 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             logger.info("User needs to register phone first")
             await query.answer("لطفا ابتدا شماره تلفن خود را ثبت کنید")
             return REGISTER
+            
+        # پردازش دکمه ثبت شماره تلفن از طریق کیبورد اینلاین
+        if data == "register_phone":
+            logger.info("User clicked register_phone button")
+            await query.answer("لطفا شماره تلفن خود را به اشتراک بگذارید")
+            from keyboards import REGISTER_MENU_KEYBOARD
+            await query.message.reply_text(
+                "📱 برای ثبت شماره تلفن، لطفا روی دکمه زیر کلیک کنید:",
+                reply_markup=REGISTER_MENU_KEYBOARD
+            )
+            context.user_data['state'] = REGISTER
+            return REGISTER
+            
+        # دکمه شروع مجدد
+        if data == "restart":
+            logger.info("User requested restart")
+            await query.answer("در حال راه‌اندازی مجدد...")
+            await restart_chat(update, context)
+            return START
 
         # ادامه پردازش callback
         if data == "employer":

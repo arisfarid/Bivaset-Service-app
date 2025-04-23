@@ -44,6 +44,13 @@ async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_T
             
         elif data == "continue_to_details":
             # ادامه به جزئیات
+            
+            # اگر توضیحات موقت داریم، آن را به عنوان توضیحات اصلی ذخیره کنیم
+            if 'temp_description' in context.user_data:
+                context.user_data['description'] = context.user_data['temp_description']
+                # حذف توضیحات موقت بعد از ذخیره
+                del context.user_data['temp_description']
+            
             context.user_data['state'] = DETAILS
             await query.message.edit_text(
                 "📋 جزئیات درخواست:\nاگه بخوای می‌تونی برای راهنمایی بهتر مجری‌ها این اطلاعات رو هم وارد کنی:",
