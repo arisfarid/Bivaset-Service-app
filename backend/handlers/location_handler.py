@@ -132,12 +132,6 @@ async def handle_location(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
                     reply_markup=LOCATION_INPUT_KEYBOARD
                 )
                 
-                # پیام راهنمای بیشتر با کیبورد inline
-                await query.message.reply_text(
-                    "همچنین می‌توانید با استفاده از دکمه زیر، موقعیت را از روی نقشه انتخاب کنید:",
-                    reply_markup=LOCATION_INPUT_MENU_KEYBOARD
-                )
-                
                 return LOCATION_INPUT
 
         # برگشت به انتخاب نوع لوکیشن
