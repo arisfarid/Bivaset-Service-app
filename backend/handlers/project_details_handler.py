@@ -7,6 +7,7 @@ from datetime import datetime, timedelta
 import logging
 from handlers.phone_handler import require_phone
 from handlers.submission_handler import submit_project
+from handlers.attachment_handler import handle_photo_navigation, init_photo_management
 
 logger = logging.getLogger(__name__)
 
@@ -67,29 +68,11 @@ async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_T
         
         # پردازش مدیریت فایل ها و بازگشت به جزئیات
         elif data == "finish_files" or data == "manage_photos" or data == "back_to_details":
-            context.user_data['state'] = DETAILS
-            await query.message.edit_text(
-                "📋 جزئیات درخواست:\nاگه بخوای می‌تونی برای راهنمایی بهتر مجری‌ها این اطلاعات رو هم وارد کنی:",
-                reply_markup=create_dynamic_keyboard(context)
-            )
-            await query.answer("بازگشت به منوی جزئیات")
-            return DETAILS
+            return await handle_photo_navigation(update, context, data)
         
         # پردازش انتخاب مدیریت عکس‌ها
         elif data == "photo_management" or data == "📸 تصاویر یا فایل" or data == "manage_photos":
-            context.user_data['state'] = DETAILS_FILES
-            files = context.user_data.get('files', [])
-            if files:
-                await query.message.edit_text(
-                    f"📸 تا الان {len(files)} عکس فرستادی. می‌تونی عکس جدید بفرستی یا مدیریت کنی.",
-                    reply_markup=FILE_MANAGEMENT_MENU_KEYBOARD
-                )
-            else:
-                await query.message.edit_text(
-                    "📸 لطفاً تصاویر رو یکی‌یکی بفرست (حداکثر ۵ تا). فقط عکس قبول می‌شه!",
-                    reply_markup=FILE_MANAGEMENT_MENU_KEYBOARD
-                )
-            return DETAILS_FILES
+            return await init_photo_management(update, context)
         
         # پردازش ورود تاریخ نیاز
         elif data == "need_date" or data == "📅 تاریخ نیاز":
@@ -393,20 +376,8 @@ async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_T
             elif text == "✅ ثبت درخواست":
                 return await submit_project(update, context)
             elif text == "📸 تصاویر یا فایل":
-                # کاربر از متن به جای دکمه استفاده کرده - تغییر وضعیت به DETAILS_FILES
-                context.user_data['state'] = DETAILS_FILES
-                files = context.user_data.get('files', [])
-                if files:
-                    await message.reply_text(
-                        f"📸 تا الان {len(files)} عکس فرستادی. می‌تونی عکس جدید بفرستی یا مدیریت کنی.",
-                        reply_markup=FILE_MANAGEMENT_MENU_KEYBOARD
-                    )
-                else:
-                    await message.reply_text(
-                        "📸 لطفاً تصاویر رو یکی‌یکی بفرست (حداکثر ۵ تا). فقط عکس قبول می‌شه!",
-                        reply_markup=FILE_MANAGEMENT_MENU_KEYBOARD
-                    )
-                return DETAILS_FILES
+                # Using the centralized photo management function
+                return await init_photo_management(update, context)
             elif text == "📅 تاریخ نیاز":
                 # کاربر از متن به جای دکمه استفاده کرده - تغییر وضعیت به DETAILS_DATE
                 context.user_data['state'] = DETAILS_DATE

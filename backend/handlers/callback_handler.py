@@ -167,6 +167,17 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 await query.answer()
                 return ROLE
 
+        # بازگشت به منوی اصلی (از منوی کارفرما به انتخاب نقش)
+        if data == "main_menu":
+            logger.info("Processing main_menu callback - returning to role selection")
+            context.user_data['state'] = ROLE
+            await query.message.edit_text(
+                "🌟 لطفاً یکی از گزینه‌ها را انتخاب کنید:",
+                reply_markup=MAIN_MENU_KEYBOARD
+            )
+            await query.answer()
+            return ROLE
+
         # بازگشت به منوی کارفرما
         if data == "back_to_employer_menu":
             logger.info("Processing back to employer menu")

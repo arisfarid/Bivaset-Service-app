@@ -12,6 +12,42 @@ logger = logging.getLogger(__name__)
 START, REGISTER, ROLE, EMPLOYER_MENU, CATEGORY, SUBCATEGORY, DESCRIPTION, LOCATION_TYPE, LOCATION_INPUT, DETAILS, DETAILS_FILES, DETAILS_DATE, DETAILS_DEADLINE, DETAILS_BUDGET, DETAILS_QUANTITY, SUBMIT, VIEW_PROJECTS, PROJECT_ACTIONS = range(18)
 CHANGE_PHONE, VERIFY_CODE = range(20, 22)  # states جدید
 
+# New interface functions for project_details_handler to use
+async def init_photo_management(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    """Initialize photo management - centralized entry point for photo operations"""
+    context.user_data['state'] = DETAILS_FILES
+    files = context.user_data.get('files', [])
+    message = update.message or update.callback_query.message
+    
+    if files:
+        await message.reply_text(
+            f"📸 تا الان {len(files)} عکس فرستادی. می‌تونی عکس جدید بفرستی یا مدیریت کنی.",
+            reply_markup=FILE_MANAGEMENT_MENU_KEYBOARD
+        )
+    else:
+        await message.reply_text(
+            "📸 لطفاً تصاویر رو یکی‌یکی بفرست (حداکثر ۵ تا). فقط عکس قبول می‌شه!",
+            reply_markup=FILE_MANAGEMENT_MENU_KEYBOARD
+        )
+    return DETAILS_FILES
+
+async def handle_photo_navigation(update: Update, context: ContextTypes.DEFAULT_TYPE, action: str) -> int:
+    """Handle navigation actions for photo management"""
+    if action in ["finish_files", "back_to_details"]:
+        context.user_data['state'] = DETAILS
+        message = update.message or update.callback_query.message
+        await message.reply_text(
+            "📋 جزئیات درخواست:\nاگه بخوای می‌تونی برای راهنمایی بهتر مجری‌ها این اطلاعات رو هم وارد کنی:",
+            reply_markup=create_dynamic_keyboard(context)
+        )
+        if update.callback_query:
+            await update.callback_query.answer("بازگشت به منوی جزئیات")
+        return DETAILS
+    elif action == "manage_photos":
+        return await init_photo_management(update, context)
+    
+    return DETAILS_FILES
+
 async def handle_attachment(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     current_state = context.user_data.get('state', DETAILS_FILES)
     telegram_id = str(update.effective_user.id)
