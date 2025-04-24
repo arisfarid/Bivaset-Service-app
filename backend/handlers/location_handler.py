@@ -214,15 +214,9 @@ async def handle_location(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
             # ثبت لاگ
             logger.info(f"Received text instead of location: {update.message.text}")
             
-            # ارسال پیام راهنما به کاربر
-            service_location_type = context.user_data.get('service_location')
-            service_location_name = {
-                'client_site': 'محل کارفرما',
-                'contractor_site': 'محل مجری'
-            }.get(service_location_type, 'حضوری')
-            
+            # ارسال پیام اخطار به کاربر - استفاده از پیام خطای استاندارد برای همه موارد
             await update.message.reply_text(
-                get_location_input_guidance_text(service_location_name),
+                LOCATION_ERROR_GUIDANCE_TEXT,
                 parse_mode="Markdown",
                 reply_markup=LOCATION_INPUT_KEYBOARD
             )
