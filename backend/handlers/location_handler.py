@@ -2,15 +2,52 @@ from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, ReplyKe
 from telegram.ext import ContextTypes, ConversationHandler
 from utils import log_chat
 import logging
-from keyboards import create_category_keyboard, LOCATION_TYPE_MENU_KEYBOARD, LOCATION_INPUT_KEYBOARD, LOCATION_INPUT_MENU_KEYBOARD, BACK_TO_DESCRIPTION_KEYBOARD, REMOVE_KEYBOARD
+from keyboards import (
+    create_category_keyboard, LOCATION_TYPE_MENU_KEYBOARD, LOCATION_INPUT_KEYBOARD, 
+    LOCATION_INPUT_MENU_KEYBOARD, BACK_TO_DESCRIPTION_KEYBOARD, REMOVE_KEYBOARD,
+    create_location_type_keyboard, LOCATION_TYPE_GUIDANCE_TEXT, 
+    get_location_input_guidance_text, LOCATION_ERROR_GUIDANCE_TEXT
+)
+from handlers.phone_handler import require_phone
 
 logger = logging.getLogger(__name__)
 
 START, REGISTER, ROLE, EMPLOYER_MENU, CATEGORY, SUBCATEGORY, DESCRIPTION, LOCATION_TYPE, LOCATION_INPUT, DETAILS, DETAILS_FILES, DETAILS_DATE, DETAILS_DEADLINE, DETAILS_BUDGET, DETAILS_QUANTITY, SUBMIT, VIEW_PROJECTS, PROJECT_ACTIONS = range(18)
 CHANGE_PHONE, VERIFY_CODE = range(20, 22)  # states جدید
 
+@require_phone
+async def show_location_type_selection(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    """نمایش منوی انتخاب نوع محل خدمات (محل من، محل مجری، غیرحضوری)"""
+    message = update.message
+    query = update.callback_query
+    
+    # تنظیم پیام و منوی انتخاب محل
+    keyboard = create_location_type_keyboard()
+    context.user_data['state'] = LOCATION_TYPE
+    
+    # اگر callback داریم، edit message میکنیم
+    if query:
+        await query.message.edit_text(
+            LOCATION_TYPE_GUIDANCE_TEXT,
+            parse_mode='Markdown',
+            reply_markup=keyboard
+        )
+        await query.answer()
+    # اگر پیام معمولی داریم، reply میکنیم
+    elif message:
+        await message.reply_text(
+            LOCATION_TYPE_GUIDANCE_TEXT,
+            parse_mode='Markdown',
+            reply_markup=keyboard
+        )
+    
+    logger.info(f"Showed location type selection to user {update.effective_user.id}")
+    return LOCATION_TYPE
+
+@require_phone
 async def handle_location(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Handle location selection and input"""
+    await log_chat(update, context)
     query = update.callback_query
     message = update.message
     current_state = context.user_data.get('state', LOCATION_TYPE)
@@ -85,24 +122,27 @@ async def handle_location(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
             else:
                 # برای خدمات حضوری درخواست لوکیشن با کیبورد معمولی
                 context.user_data['state'] = LOCATION_INPUT
+                service_location_name = "محل شما" if location_type == "client" else "محل مجری"
                 
                 # حذف پیام قبلی و ارسال پیام جدید با کیبورد مناسب
                 await query.message.delete()
                 await query.message.reply_text(
-                    "📍 برای اتصال به نزدیک‌ترین مجری، لطفاً لوکیشن (موقعیت) خود را ارسال کنید:"
-                    "\n\nاگر هم اکنون در محل مورد نظرتان برای دریافت خدمات قرار دارید، از دکمه ارسال موقعیت فعلی استفاده کنید یا با استفاده از آیکون 📎 (پیوست) موقعیت دلخواه خود را از نقشه انتخاب کنید.",
+                    get_location_input_guidance_text(service_location_name),
+                    parse_mode="Markdown",
                     reply_markup=LOCATION_INPUT_KEYBOARD
                 )
+                
+                # پیام راهنمای بیشتر با کیبورد inline
+                await query.message.reply_text(
+                    "همچنین می‌توانید با استفاده از دکمه زیر، موقعیت را از روی نقشه انتخاب کنید:",
+                    reply_markup=LOCATION_INPUT_MENU_KEYBOARD
+                )
+                
                 return LOCATION_INPUT
 
         # برگشت به انتخاب نوع لوکیشن
         elif data == "back_to_location_type":
-            context.user_data['state'] = LOCATION_TYPE
-            await query.message.edit_text(
-                "🌟 محل انجام خدماتت رو انتخاب کن:",
-                reply_markup=LOCATION_TYPE_MENU_KEYBOARD
-            )
-            return LOCATION_TYPE
+            return await show_location_type_selection(update, context)
 
         # رد کردن ارسال لوکیشن
         elif data == "skip_location":
@@ -152,15 +192,15 @@ async def handle_location(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
             logger.error(f"Error sending description guidance: {e}")
             await update.message.reply_text(
                 "🌟 حالا لطفاً توضیحات کاملی از خدمات درخواستی خود بنویسید:\n\n"
-                "اگر با مشکلی مواجه شدید، می‌توانید از دکمه شروع مجدد استفاده کنید.",
+                "توضیحات دقیق به ما کمک می‌کند تا مجری مناسب را برای شما پیدا کنیم.",
                 reply_markup=InlineKeyboardMarkup([
                     [InlineKeyboardButton("⬅️ بازگشت", callback_data="back_to_location_type")],
                     [InlineKeyboardButton("🔄 شروع مجدد", callback_data="restart")]
                 ])
             )
-        
+            
         return DESCRIPTION
-
+    
     # اگر پیام متنی دریافت شد (مثلاً برگشت)
     if update.message and update.message.text:
         if update.message.text == "⬅️ بازگشت":
@@ -174,11 +214,7 @@ async def handle_location(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
                 )
                 
                 # نمایش منوی انتخاب نوع لوکیشن
-                await update.message.reply_text(
-                    "🌟 محل انجام خدماتت رو انتخاب کن:",
-                    reply_markup=LOCATION_TYPE_MENU_KEYBOARD
-                )
-                return LOCATION_TYPE
+                return await show_location_type_selection(update, context)
         
         # اگر هر پیام متنی دیگری به جز "بازگشت" ارسال شد و در مرحله ورود لوکیشن هستیم
         elif current_state == LOCATION_INPUT:
@@ -193,10 +229,7 @@ async def handle_location(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
             }.get(service_location_type, 'حضوری')
             
             await update.message.reply_text(
-                f"❌ لطفاً *موقعیت مکانی* خود را ارسال کنید.\n\n"
-                f"برای خدمات در {service_location_name} نیاز به دانستن موقعیت مکانی شما داریم تا مجری مناسب را پیدا کنیم.\n\n"
-                f"📱 از دکمه «ارسال موقعیت فعلی» استفاده کنید یا\n"
-                f"📎 روی آیکون پیوست (📎) کلیک کرده و گزینه «Location» را انتخاب کنید.",
+                get_location_input_guidance_text(service_location_name),
                 parse_mode="Markdown",
                 reply_markup=LOCATION_INPUT_KEYBOARD
             )
@@ -218,13 +251,10 @@ async def handle_location(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
             
             # ارسال پیام راهنما
             await update.message.reply_text(
-                "❌ نوع پیام ارسالی قابل پذیرش نیست.\n\n"
-                "لطفاً *فقط موقعیت مکانی* خود را ارسال کنید. این اطلاعات برای یافتن نزدیک‌ترین مجری به شما ضروری است.\n\n"
-                "📱 از دکمه «ارسال موقعیت فعلی» استفاده کنید یا\n"
-                "📎 روی آیکون پیوست (📎) کلیک کرده و گزینه «Location» را انتخاب کنید.",
+                LOCATION_ERROR_GUIDANCE_TEXT,
                 parse_mode="Markdown",
                 reply_markup=LOCATION_INPUT_KEYBOARD
             )
             return LOCATION_INPUT
 
-    return current_state
+    return context.user_data.get('state', LOCATION_TYPE)

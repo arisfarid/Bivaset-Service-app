@@ -1,10 +1,11 @@
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ContextTypes, ConversationHandler
 from utils import get_categories, log_chat
 import logging
 from handlers.start_handler import start
-from keyboards import EMPLOYER_MENU_KEYBOARD,MAIN_MENU_KEYBOARD, create_category_keyboard # اضافه شده برای بازگشت به منوی اصلی
+from keyboards import EMPLOYER_MENU_KEYBOARD, MAIN_MENU_KEYBOARD, create_category_keyboard
 from handlers.phone_handler import require_phone
+from handlers.location_handler import show_location_type_selection
 
 logger = logging.getLogger(__name__)
 
@@ -69,18 +70,8 @@ async def handle_category_selection(update: Update, context: ContextTypes.DEFAUL
 
             # اگر زیرمجموعه نداشت، رفتن به مرحله انتخاب نوع مکان
             context.user_data['category_id'] = category_id
-            context.user_data['state'] = LOCATION_TYPE
-            keyboard = [
-                [InlineKeyboardButton("🏠 محل من", callback_data="location_client")],
-                [InlineKeyboardButton("🔧 محل مجری", callback_data="location_contractor")],
-                [InlineKeyboardButton("💻 غیرحضوری", callback_data="location_remote")],
-                [InlineKeyboardButton("⬅️ بازگشت", callback_data="back_to_categories")]
-            ]
-            await query.message.edit_text(
-                "🌟 محل انجام خدماتت رو انتخاب کن:",
-                reply_markup=InlineKeyboardMarkup(keyboard)
-            )
-            return LOCATION_TYPE
+            # استفاده از تابع متمرکز نمایش منوی انتخاب محل از location_handler
+            return await show_location_type_selection(update, context)
 
         # پردازش انتخاب زیرمجموعه
         elif data.startswith("subcat_"):
@@ -117,18 +108,8 @@ async def handle_category_selection(update: Update, context: ContextTypes.DEFAUL
 
             # اگر زیرمجموعه نداشت، رفتن به مرحله انتخاب نوع مکان
             context.user_data['category_id'] = subcategory_id
-            context.user_data['state'] = LOCATION_TYPE
-            keyboard = [
-                [InlineKeyboardButton("🏠 محل من", callback_data="location_client")],
-                [InlineKeyboardButton("🔧 محل مجری", callback_data="location_contractor")],
-                [InlineKeyboardButton("💻 غیرحضوری", callback_data="location_remote")],
-                [InlineKeyboardButton("⬅️ بازگشت", callback_data="back_to_categories")]
-            ]
-            await query.message.edit_text(
-                "🌟 محل انجام خدماتت رو انتخاب کن:",
-                reply_markup=InlineKeyboardMarkup(keyboard)
-            )
-            return LOCATION_TYPE
+            # استفاده از تابع متمرکز نمایش منوی انتخاب محل از location_handler
+            return await show_location_type_selection(update, context)
 
         # برگشت به لیست دسته‌بندی‌ها
         elif data == "back_to_categories":
