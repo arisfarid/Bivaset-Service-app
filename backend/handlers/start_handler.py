@@ -26,12 +26,16 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
             chat_id = str(update.effective_chat.id)
             bot_data = context.bot_data
             
+            # اضافه کردن لاگ برای دیباگ
+            logger.info(f"Checking update_messages in bot_data: {bot_data.get('update_messages', 'Not found')}")
+            
             # اگر پیام اطلاع رسانی آپدیت برای این کاربر وجود دارد، آن را حذف کن
             if 'update_messages' in bot_data and chat_id in bot_data['update_messages']:
                 message_id = bot_data['update_messages'][chat_id]
                 logger.info(f"Deleting update notification message ID {message_id} for chat {chat_id} via /start restart")
                 
                 try:
+                    # حذف پیام به صورت مستقیم با استفاده از chat_id عددی
                     await context.bot.delete_message(
                         chat_id=int(chat_id),
                         message_id=message_id
@@ -43,6 +47,35 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
                     logger.info(f"Deleted update notification message for chat {chat_id} via /start restart")
                 except Exception as e:
                     logger.warning(f"Could not delete update message in chat {chat_id}: {e}")
+            else:
+                logger.warning(f"No update message found for chat {chat_id} in update_messages dictionary")
+                
+                # نمایش کلیدهای update_messages برای دیباگ
+                if 'update_messages' in bot_data:
+                    logger.info(f"Available keys in update_messages: {list(bot_data['update_messages'].keys())}")
+                    
+                # تلاش برای پاک کردن پیام‌های اخیر بات
+                try:
+                    # شناسایی پیام‌های اخیر بات و حذف آنها
+                    last_messages = []
+                    async for msg in context.bot.get_chat_history(chat_id=int(chat_id), limit=5):
+                        if msg.from_user and msg.from_user.id == context.bot.id:
+                            last_messages.append(msg.message_id)
+                            
+                    logger.info(f"Found {len(last_messages)} recent bot messages in chat {chat_id}")
+                    
+                    # حذف پیام‌های یافت‌شده
+                    for msg_id in last_messages:
+                        try:
+                            await context.bot.delete_message(
+                                chat_id=int(chat_id),
+                                message_id=msg_id
+                            )
+                            logger.info(f"Deleted message {msg_id} from chat {chat_id}")
+                        except Exception as e:
+                            logger.warning(f"Could not delete message {msg_id} in chat {chat_id}: {e}")
+                except Exception as e:
+                    logger.error(f"Error searching for recent messages: {e}")
         except Exception as e:
             logger.error(f"Error deleting update notification via /start restart: {e}")
     
