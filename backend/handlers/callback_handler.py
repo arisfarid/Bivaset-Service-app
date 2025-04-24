@@ -48,6 +48,44 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         logger.info(f"Current state: {current_state}")
         logger.info(f"Previous state: {previous_state}")
         
+        # پردازش دکمه‌های ادامه برای ناوبری بین مراحل
+        if data.startswith("continue_to_"):
+            target_state = data.replace("continue_to_", "")
+            logger.info(f"User requested to continue to state: {target_state}")
+            
+            # بررسی اجازه ادامه به مراحل بعدی
+            if target_state == "location" and context.user_data.get('category_id'):
+                # ادامه از دسته‌بندی به لوکیشن
+                context.user_data['state'] = LOCATION_TYPE
+                from handlers.location_handler import show_location_type_selection
+                return await show_location_type_selection(update, context)
+                
+            elif target_state == "description" and context.user_data.get('service_location'):
+                # ادامه از لوکیشن به توضیحات
+                context.user_data['state'] = DESCRIPTION
+                from handlers.project_details_handler import send_description_guidance
+                await send_description_guidance(query.message, context)
+                return DESCRIPTION
+                
+            elif target_state == "details" and context.user_data.get('description'):
+                # ادامه از توضیحات به جزئیات
+                context.user_data['state'] = DETAILS
+                await query.message.edit_text(
+                    "📋 جزئیات درخواست:\nاگه بخوای می‌تونی برای راهنمایی بهتر مجری‌ها این اطلاعات رو هم وارد کنی:",
+                    reply_markup=create_dynamic_keyboard(context)
+                )
+                return DETAILS
+                
+            elif target_state == "submit" and context.user_data.get('description'):
+                # ادامه مستقیم به ثبت نهایی
+                from handlers.submission_handler import submit_project
+                return await submit_project(update, context)
+            
+            else:
+                # اطلاعات کافی برای انتقال به مرحله بعد وجود ندارد
+                await query.answer("❌ لطفاً ابتدا اطلاعات مورد نیاز این مرحله را تکمیل کنید.")
+                return current_state
+        
         # پردازش بازگشت به جزئیات
         if data == "back_to_details":
             logger.info("User returning to details menu")

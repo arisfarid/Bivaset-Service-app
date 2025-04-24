@@ -68,10 +68,22 @@ async def handle_category_selection(update: Update, context: ContextTypes.DEFAUL
                 )
                 return SUBCATEGORY
 
-            # اگر زیرمجموعه نداشت، رفتن به مرحله انتخاب نوع مکان
+            # اگر زیرمجموعه نداشت، ذخیره دسته بندی و ادامه به مرحله بعدی
             context.user_data['category_id'] = category_id
-            # استفاده از تابع متمرکز نمایش منوی انتخاب محل از location_handler
-            return await show_location_type_selection(update, context)
+            context.user_data['category_name'] = selected_category['name']
+            
+            # نمایش پیام تایید با دکمه‌های بازگشت و ادامه
+            from keyboards import create_navigation_keyboard
+            await query.message.edit_text(
+                f"✅ دسته‌بندی «{selected_category['name']}» انتخاب شد.\n\n"
+                "می‌توانید به مرحله بعدی (انتخاب محل خدمات) بروید یا برای تغییر دسته‌بندی به مرحله قبل بازگردید.",
+                reply_markup=create_navigation_keyboard(
+                    back_callback="back_to_categories", 
+                    continue_callback="continue_to_location", 
+                    continue_enabled=True
+                )
+            )
+            return CATEGORY
 
         # پردازش انتخاب زیرمجموعه
         elif data.startswith("subcat_"):
@@ -106,10 +118,22 @@ async def handle_category_selection(update: Update, context: ContextTypes.DEFAUL
                 )
                 return SUBCATEGORY
 
-            # اگر زیرمجموعه نداشت، رفتن به مرحله انتخاب نوع مکان
+            # اگر زیرمجموعه نداشت، ذخیره دسته بندی و ادامه به مرحله بعدی
             context.user_data['category_id'] = subcategory_id
-            # استفاده از تابع متمرکز نمایش منوی انتخاب محل از location_handler
-            return await show_location_type_selection(update, context)
+            context.user_data['category_name'] = selected_subcategory['name']
+            
+            # نمایش پیام تایید با دکمه‌های بازگشت و ادامه
+            from keyboards import create_navigation_keyboard
+            await query.message.edit_text(
+                f"✅ دسته‌بندی «{selected_subcategory['name']}» انتخاب شد.\n\n"
+                "می‌توانید به مرحله بعدی (انتخاب محل خدمات) بروید یا برای تغییر دسته‌بندی به مرحله قبل بازگردید.",
+                reply_markup=create_navigation_keyboard(
+                    back_callback="back_to_categories", 
+                    continue_callback="continue_to_location", 
+                    continue_enabled=True
+                )
+            )
+            return CATEGORY
 
         # برگشت به لیست دسته‌بندی‌ها
         elif data == "back_to_categories":

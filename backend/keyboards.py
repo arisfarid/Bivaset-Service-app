@@ -134,6 +134,22 @@ def create_restart_keyboard():
         [InlineKeyboardButton("🔄 شروع مجدد", callback_data="restart")],
     ])
 
+# تابع ایجاد کیبورد دکمه‌های ادامه و بازگشت
+def create_navigation_keyboard(back_callback, continue_callback=None, continue_enabled=False, continue_text="▶️ ادامه"):
+    """ایجاد کیبورد حاوی دکمه‌های بازگشت و ادامه برای ناوبری بین مراحل"""
+    keyboard = []
+    
+    # اگر دکمه ادامه فعال باشد و آدرس کالبک آن مشخص شده باشد
+    if continue_enabled and continue_callback:
+        keyboard.append([
+            InlineKeyboardButton("⬅️ بازگشت", callback_data=back_callback),
+            InlineKeyboardButton(continue_text, callback_data=continue_callback)
+        ])
+    else:
+        keyboard.append([InlineKeyboardButton("⬅️ بازگشت", callback_data=back_callback)])
+    
+    return InlineKeyboardMarkup(keyboard)
+
 def create_dynamic_keyboard(context):
     buttons = []
     # همیشه دکمه تصاویر رو نشون بده

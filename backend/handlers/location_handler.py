@@ -151,7 +151,6 @@ async def handle_location(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         location = update.message.location
         context.user_data['location'] = {'longitude': location.longitude, 'latitude': location.latitude}
         logger.info(f"Received location: {context.user_data['location']}")
-        context.user_data['state'] = DESCRIPTION
         
         # بازگشت به کیبورد اینلاین
         await update.message.reply_text(
@@ -159,41 +158,29 @@ async def handle_location(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
             reply_markup=REMOVE_KEYBOARD
         )
         
-        # ارسال پیام با کیبورد اینلاین برای وارد کردن توضیحات
-        try:
-            from handlers.project_details_handler import send_description_guidance
-            from keyboards import create_restart_keyboard
-            
-            # ارسال راهنمای توضیحات با دکمه‌های بازگشت و راه‌اندازی مجدد
-            success = await send_description_guidance(update.message, context)
-            
-            # اگر ارسال راهنما موفق نبود، یک پیام ساده با دکمه راه‌اندازی مجدد ارسال کنیم
-            if not success:
-                restart_keyboard = create_restart_keyboard()
-                await update.message.reply_text(
-                    "🌟 حالا لطفاً توضیحات کاملی از خدمات درخواستی خود بنویسید:\n\n"
-                    "اگر با مشکلی مواجه شدید، می‌توانید از دکمه شروع مجدد استفاده کنید.",
-                    reply_markup=InlineKeyboardMarkup([
-                        [InlineKeyboardButton("⬅️ بازگشت", callback_data="back_to_location_type")],
-                        [InlineKeyboardButton("🔄 شروع مجدد", callback_data="restart")]
-                    ])
-                )
-            
-            logger.info("Successfully sent description guidance")
-        except Exception as e:
-            # در صورت خطا، یک پیام ساده دستورالعمل با دکمه راه‌اندازی مجدد ارسال کنیم
-            logger.error(f"Error sending description guidance: {e}")
-            await update.message.reply_text(
-                "🌟 حالا لطفاً توضیحات کاملی از خدمات درخواستی خود بنویسید:\n\n"
-                "توضیحات دقیق به ما کمک می‌کند تا مجری مناسب را برای شما پیدا کنیم.",
-                reply_markup=InlineKeyboardMarkup([
-                    [InlineKeyboardButton("⬅️ بازگشت", callback_data="back_to_location_type")],
-                    [InlineKeyboardButton("🔄 شروع مجدد", callback_data="restart")]
-                ])
+        # نمایش پیام تایید با دکمه‌های بازگشت و ادامه
+        from keyboards import create_navigation_keyboard
+        service_location_type = context.user_data.get('service_location')
+        service_location_name = {
+            'client_site': 'محل کارفرما',
+            'contractor_site': 'محل مجری'
+        }.get(service_location_type, 'حضوری')
+        
+        # تنظیم state برای آماده سازی مرحله بعدی
+        context.user_data['state'] = LOCATION_INPUT
+        
+        await update.message.reply_text(
+            f"📍 موقعیت مکانی شما برای خدمات در {service_location_name} با موفقیت ثبت شد.\n\n"
+            "اکنون می‌توانید به مرحله بعدی (وارد کردن توضیحات درخواست) بروید یا در صورت نیاز به تغییر موقعیت، به مرحله قبل بازگردید.",
+            reply_markup=create_navigation_keyboard(
+                back_callback="back_to_location_type", 
+                continue_callback="continue_to_description", 
+                continue_enabled=True
             )
-            
-        return DESCRIPTION
-    
+        )
+        
+        return LOCATION_INPUT
+
     # اگر پیام متنی دریافت شد (مثلاً برگشت)
     if update.message and update.message.text:
         if update.message.text == "⬅️ بازگشت":
