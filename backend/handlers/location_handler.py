@@ -3,8 +3,7 @@ from telegram.ext import ContextTypes, ConversationHandler
 from utils import log_chat
 import logging
 from keyboards import (
-    create_category_keyboard, LOCATION_TYPE_MENU_KEYBOARD, LOCATION_INPUT_KEYBOARD, 
-    LOCATION_INPUT_MENU_KEYBOARD, BACK_TO_DESCRIPTION_KEYBOARD, REMOVE_KEYBOARD,
+    create_category_keyboard, LOCATION_INPUT_KEYBOARD, BACK_TO_DESCRIPTION_KEYBOARD, REMOVE_KEYBOARD,
     create_location_type_keyboard, LOCATION_TYPE_GUIDANCE_TEXT, 
     get_location_input_guidance_text, LOCATION_ERROR_GUIDANCE_TEXT
 )

@@ -42,14 +42,6 @@ LOCATION_TYPE_GUIDANCE_TEXT = (
     "      مانند: مشاوره، آموزش، تایپ و ترجمه، برنامه‌نویسی"
 )
 
-# منوی انتخاب محل خدمات - برای حفظ سازگاری با کد فعلی
-LOCATION_TYPE_MENU_KEYBOARD = InlineKeyboardMarkup([
-    [InlineKeyboardButton("🏠 محل من", callback_data="location_client")],
-    [InlineKeyboardButton("🔧 محل مجری", callback_data="location_contractor")],
-    [InlineKeyboardButton("💻 غیرحضوری", callback_data="location_remote")],
-    [InlineKeyboardButton("⬅️ بازگشت", callback_data="back_to_categories")]
-])
-
 # منوی ارسال لوکیشن با دکمه درخواست موقعیت مکانی
 LOCATION_INPUT_KEYBOARD = ReplyKeyboardMarkup([
     [KeyboardButton("📲 ارسال موقعیت فعلی", request_location=True)],
@@ -66,12 +58,6 @@ def get_location_input_guidance_text(service_location_name):
         f"📎 روی آیکون پیوست (📎) کلیک کرده و با گزینه «Location» موقعیت دلخواه خود را از نقشه انتخاب کنید."
     )
 
-# منوی inline ارسال لوکیشن
-LOCATION_INPUT_MENU_KEYBOARD = InlineKeyboardMarkup([
-    [InlineKeyboardButton("📍 انتخاب از نقشه", callback_data="send_location")],
-    [InlineKeyboardButton("⬅️ بازگشت", callback_data="back_to_location_type")]
-])
-
 # کیبورد حذف (برای برداشتن کیبوردهای معمولی)
 REMOVE_KEYBOARD = ReplyKeyboardRemove()
 
@@ -82,7 +68,7 @@ BACK_TO_LOCATION_KEYBOARD = InlineKeyboardMarkup([
 
 # متن راهنمای خطا در ارسال لوکیشن
 LOCATION_ERROR_GUIDANCE_TEXT = (
-    "❌ نوع پیام ارسالی قابل پذیرش نیست.\n\n"
+    "❌ پیام ارسالی مربوط به موقعیت نیست.\n\n"
     "لطفاً *فقط موقعیت مکانی* خود را ارسال کنید. این اطلاعات برای یافتن نزدیک‌ترین مجری به شما ضروری است.\n\n"
     "📱 از دکمه «ارسال موقعیت فعلی» استفاده کنید یا\n"
     "📎 روی آیکون پیوست (📎) کلیک کرده و گزینه «Location» را انتخاب کنید."
