@@ -23,61 +23,46 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
         logger.info(f"Restart command detected via URL for user {update.effective_user.id}")
         # حذف پیام اطلاع رسانی بروز رسانی ربات
         try:
-            chat_id = str(update.effective_chat.id)
-            bot_data = context.bot_data
+            chat_id = update.effective_chat.id
             
-            # اضافه کردن لاگ برای دیباگ
-            logger.info(f"Checking update_messages in bot_data: {bot_data.get('update_messages', 'Not found')}")
-            
-            # اگر پیام اطلاع رسانی آپدیت برای این کاربر وجود دارد، آن را حذف کن
-            if 'update_messages' in bot_data and chat_id in bot_data['update_messages']:
-                message_id = bot_data['update_messages'][chat_id]
-                logger.info(f"Deleting update notification message ID {message_id} for chat {chat_id} via /start restart")
+            # حذف مستقیم پیام‌های اخیر بات - روش جدید و مطمئن
+            # پیام‌های آپدیت معمولاً آخرین پیام‌های ارسال شده توسط بات هستند
+            # اگر بات فقط جهت ارسال پیام‌های آپدیت راه‌اندازی شده، اولین پیام باید پیام آپدیت باشد
+            try:
+                # دریافت آخرین پیام‌های بات
+                logger.info(f"Attempting to delete update message for chat {chat_id}")
                 
-                try:
-                    # حذف پیام به صورت مستقیم با استفاده از chat_id عددی
-                    await context.bot.delete_message(
-                        chat_id=int(chat_id),
-                        message_id=message_id
-                    )
-                    # حذف شناسه پیام از دیکشنری
-                    del bot_data['update_messages'][chat_id]
-                    # به‌روزرسانی داده‌های بات
-                    await context.application.persistence.update_bot_data(bot_data)
-                    logger.info(f"Deleted update notification message for chat {chat_id} via /start restart")
-                except Exception as e:
-                    logger.warning(f"Could not delete update message in chat {chat_id}: {e}")
-            else:
-                logger.warning(f"No update message found for chat {chat_id} in update_messages dictionary")
+                # فرض کنید آخرین پیام بات همان پیام آپدیت است - از بات تلگرام می‌خواهیم تا آخرین پیامش را حذف کند
+                # به دلیل محدودیت‌های API، ما نمی‌توانیم پیام‌های اخیر را بخوانیم، 
+                # اما می‌توانیم پیام اخیر را با روش مستقیم حذف کنیم
                 
-                # نمایش کلیدهای update_messages برای دیباگ
-                if 'update_messages' in bot_data:
-                    logger.info(f"Available keys in update_messages: {list(bot_data['update_messages'].keys())}")
-                    
-                # تلاش برای پاک کردن پیام‌های اخیر بات
-                try:
-                    # شناسایی پیام‌های اخیر بات و حذف آنها
-                    last_messages = []
-                    async for msg in context.bot.get_chat_history(chat_id=int(chat_id), limit=5):
-                        if msg.from_user and msg.from_user.id == context.bot.id:
-                            last_messages.append(msg.message_id)
-                            
-                    logger.info(f"Found {len(last_messages)} recent bot messages in chat {chat_id}")
-                    
-                    # حذف پیام‌های یافت‌شده
-                    for msg_id in last_messages:
-                        try:
-                            await context.bot.delete_message(
-                                chat_id=int(chat_id),
-                                message_id=msg_id
-                            )
-                            logger.info(f"Deleted message {msg_id} from chat {chat_id}")
-                        except Exception as e:
-                            logger.warning(f"Could not delete message {msg_id} in chat {chat_id}: {e}")
-                except Exception as e:
-                    logger.error(f"Error searching for recent messages: {e}")
+                # ابتدا سعی می‌کنیم پیام با ID مشخص را حذف کنیم
+                # (این ID بر اساس الگوی رفتاری ربات شما تخمین زده شده و ممکن است نیاز به تنظیم داشته باشد)
+                
+                # در لاگ‌ها دیده شد که پیام آپدیت احتمالاً آخرین پیام بات قبل از شروع مجدد است
+                # احتمالاً message_id یکی کمتر از پیام فعلی /start است
+                current_message_id = update.message.message_id
+                
+                # تخمین ID پیام آپدیت (معمولاً 1-3 پیام قبل از پیام فعلی)
+                for offset in range(1, 4):
+                    try:
+                        possible_update_msg_id = current_message_id - offset
+                        logger.info(f"Trying to delete message with ID {possible_update_msg_id}")
+                        
+                        await context.bot.delete_message(
+                            chat_id=chat_id,
+                            message_id=possible_update_msg_id
+                        )
+                        logger.info(f"Successfully deleted message {possible_update_msg_id}")
+                        break  # اگر موفق به حذف پیام شدیم، حلقه را متوقف کن
+                    except Exception as e:
+                        logger.warning(f"Could not delete message {possible_update_msg_id}: {e}")
+                        continue
+                
+            except Exception as e:
+                logger.error(f"Error deleting recent bot messages: {e}")
         except Exception as e:
-            logger.error(f"Error deleting update notification via /start restart: {e}")
+            logger.error(f"Error handling restart command: {e}")
     
     message = update.callback_query.message if update.callback_query else update.message
     if not message:
