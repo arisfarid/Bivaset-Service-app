@@ -3,6 +3,7 @@ from telegram.ext import ContextTypes, ConversationHandler
 from utils import BASE_URL, log_chat, ensure_active_chat
 from keyboards import MAIN_MENU_KEYBOARD, REGISTER_MENU_KEYBOARD, EMPLOYER_MENU_KEYBOARD
 from handlers.phone_handler import check_phone
+from helpers.menu_manager import MenuManager
 import logging
 
 logger = logging.getLogger(__name__)
@@ -14,33 +15,46 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Start the conversation with the bot."""
     logger.info(f"=== Entering start function - User: {update.effective_user.id} ===")
     logger.info(f"Current context state: {context.user_data.get('state')}")
-    await ensure_active_chat(update, context)
-    context.user_data['state'] = REGISTER
     
-    # بررسی آیا این یک شروع مجدد است (از طریق URL)
+    # بررسی وضعیت فعلی
+    current_state = context.user_data.get('state')
+    
+    # اگر کاربر در وسط یک فرآیند است (به جز حالت‌های اولیه)
+    # اما اگر درخواست restart داشته باشیم، فرآیند را مجدد شروع می‌کنیم
+    is_restart = False
     args = context.args
     if args and args[0] == "restart":
+        is_restart = True
         logger.info(f"Restart command detected via URL for user {update.effective_user.id}")
-        # حذف پیام اطلاع رسانی بروز رسانی ربات
+    
+    if not is_restart and current_state not in [None, START, REGISTER, ROLE]:
+        # پاک کردن منوهای قبلی و غیرفعال کردن آنها
+        await MenuManager.disable_previous_menus(update, context)
+        
+        # ارسال پیام هشدار
+        confirmation_text = (
+            "⚠️ شما در حال حاضر در یک فرآیند فعال هستید.\n"
+            "آیا مایل به خروج از فرآیند فعلی و شروع مجدد هستید؟"
+        )
+        keyboard = InlineKeyboardMarkup([
+            [InlineKeyboardButton("✅ بله، شروع مجدد", callback_data="confirm_restart")],
+            [InlineKeyboardButton("❌ خیر، ادامه فرآیند فعلی", callback_data="continue_current")]
+        ])
+        
+        await update.message.reply_text(confirmation_text, reply_markup=keyboard)
+        return current_state
+    
+    # اگر این یک restart است یا در مرحله اولیه هستیم
+    await ensure_active_chat(update, context)
+    
+    # اگر این یک restart است، پیام update را پاک کن
+    if is_restart:
         try:
             chat_id = update.effective_chat.id
             
-            # حذف مستقیم پیام‌های اخیر بات - روش جدید و مطمئن
-            # پیام‌های آپدیت معمولاً آخرین پیام‌های ارسال شده توسط بات هستند
-            # اگر بات فقط جهت ارسال پیام‌های آپدیت راه‌اندازی شده، اولین پیام باید پیام آپدیت باشد
+            # حذف مستقیم پیام‌های اخیر بات
             try:
-                # دریافت آخرین پیام‌های بات
-                logger.info(f"Attempting to delete update message for chat {chat_id}")
-                
-                # فرض کنید آخرین پیام بات همان پیام آپدیت است - از بات تلگرام می‌خواهیم تا آخرین پیامش را حذف کند
-                # به دلیل محدودیت‌های API، ما نمی‌توانیم پیام‌های اخیر را بخوانیم، 
-                # اما می‌توانیم پیام اخیر را با روش مستقیم حذف کنیم
-                
-                # ابتدا سعی می‌کنیم پیام با ID مشخص را حذف کنیم
-                # (این ID بر اساس الگوی رفتاری ربات شما تخمین زده شده و ممکن است نیاز به تنظیم داشته باشد)
-                
                 # در لاگ‌ها دیده شد که پیام آپدیت احتمالاً آخرین پیام بات قبل از شروع مجدد است
-                # احتمالاً message_id یکی کمتر از پیام فعلی /start است
                 current_message_id = update.message.message_id
                 
                 # تخمین ID پیام آپدیت (معمولاً 1-3 پیام قبل از پیام فعلی)
@@ -64,6 +78,9 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
         except Exception as e:
             logger.error(f"Error handling restart command: {e}")
     
+    # پاک کردن تمام منوهای قبلی
+    await MenuManager.clear_menus(update, context)
+    
     message = update.callback_query.message if update.callback_query else update.message
     if not message:
         logger.error("No message object found in update")
@@ -72,6 +89,11 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     # بررسی وجود شماره تلفن
     has_phone = await check_phone(update, context)
     
+    # پاک کردن context کاربر در هنگام راه‌اندازی مجدد یا شروع جدید
+    if is_restart:
+        context.user_data.clear()
+        context.user_data['state'] = REGISTER
+    
     if (has_phone):
         # اگر شماره داشت، نمایش منوی اصلی
         context.user_data['state'] = ROLE
@@ -79,7 +101,15 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
             f"👋 سلام {update.effective_user.first_name}! به ربات خدمات بی‌واسط خوش آمدید.\n"
             "لطفاً یکی از گزینه‌ها را انتخاب کنید:"
         )
-        await message.reply_text(welcome_message, reply_markup=MAIN_MENU_KEYBOARD)
+        
+        # استفاده از MenuManager برای نمایش منو
+        await MenuManager.show_menu(
+            update, 
+            context, 
+            welcome_message,
+            MAIN_MENU_KEYBOARD
+        )
+        
         return ROLE
     else:
         # اگر شماره نداشت، درخواست ثبت شماره
@@ -88,6 +118,43 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
             reply_markup=REGISTER_MENU_KEYBOARD
         )
         return REGISTER
+
+async def handle_confirm_restart(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    """Handle restart confirmation"""
+    query = update.callback_query
+    await query.answer()
+    
+    if query.data == "confirm_restart":
+        # پاک کردن وضعیت قبلی
+        context.user_data.clear()
+        await query.message.delete()
+        
+        # پاک کردن تمام منوهای قبلی
+        await MenuManager.clear_menus(update, context)
+        
+        # نمایش منوی اصلی
+        welcome_message = (
+            f"👋 سلام {update.effective_user.first_name}! به ربات خدمات بی‌واسط خوش آمدید.\n"
+            "لطفاً یکی از گزینه‌ها را انتخاب کنید:"
+        )
+        
+        # استفاده از MenuManager برای نمایش منو
+        await MenuManager.show_menu(
+            update, 
+            context, 
+            welcome_message,
+            MAIN_MENU_KEYBOARD
+        )
+        
+        context.user_data['state'] = ROLE
+        return ROLE
+        
+    elif query.data == "continue_current":
+        # ادامه فرآیند فعلی
+        await query.message.delete()
+        
+        # بازگشت به وضعیت فعلی
+        return context.user_data.get('state')
 
 async def handle_role(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Handle role selection."""
@@ -98,17 +165,30 @@ async def handle_role(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int
     
     if text == "درخواست خدمات | کارفرما 👔":
         context.user_data['state'] = EMPLOYER_MENU
-        await update.message.reply_text(
-            "🎉 عالیه، {}! می‌خوای خدمات جدید درخواست کنی یا پیشنهادات رو ببینی؟".format(
-                update.effective_user.full_name
-            ),
-            reply_markup=EMPLOYER_MENU_KEYBOARD
+        
+        # پاک کردن منوهای قبلی
+        await MenuManager.clear_menus(update, context)
+        
+        employer_message = "🎉 عالیه، {}! می‌خوای خدمات جدید درخواست کنی یا پیشنهادات رو ببینی؟".format(
+            update.effective_user.full_name
         )
+        
+        # استفاده از MenuManager برای نمایش منو
+        await MenuManager.show_menu(
+            update, 
+            context, 
+            employer_message,
+            EMPLOYER_MENU_KEYBOARD
+        )
+        
         return EMPLOYER_MENU
     
     return ROLE
 
 async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    # پاک کردن تمام منوهای قبلی
+    await MenuManager.clear_menus(update, context)
+    
     context.user_data.clear()
     await update.message.reply_text("عملیات لغو شد. دوباره شروع کن!")
     return ConversationHandler.END

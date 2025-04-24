@@ -4,7 +4,7 @@ from telegram.ext import (
     ConversationHandler, filters, ContextTypes
 )
 import logging
-from handlers.start_handler import start, handle_role, cancel
+from handlers.start_handler import start, handle_role, cancel, handle_confirm_restart
 from handlers.phone_handler import handle_contact
 from handlers.message_handler import handle_message
 from handlers.category_handler import handle_category_selection
@@ -55,6 +55,10 @@ async def handle_non_contact(update: Update, context: ContextTypes.DEFAULT_TYPE)
 def get_conversation_handler() -> ConversationHandler:
     """ایجاد مدیریت کننده مکالمه با ترتیب جدید مراحل"""
     logger.info("=== Initializing ConversationHandler ===")
+    
+    # هندلر دکمه‌های تأیید/رد شروع مجدد
+    restart_handler = CallbackQueryHandler(handle_confirm_restart, pattern="^(confirm_restart|continue_current)$")
+    
     return ConversationHandler(
         entry_points=[CommandHandler("start", start)],
         states={
@@ -62,77 +66,96 @@ def get_conversation_handler() -> ConversationHandler:
                 MessageHandler(filters.CONTACT, handle_contact),
                 MessageHandler(~filters.CONTACT & ~filters.COMMAND, handle_non_contact),
                 CommandHandler("start", start),
+                restart_handler,
                 CallbackQueryHandler(handle_callback)
             ],
             ROLE: [
                 MessageHandler(filters.TEXT, handle_role),
+                restart_handler,
                 CallbackQueryHandler(handle_callback)
             ],
             EMPLOYER_MENU: [
                 MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message),
+                restart_handler,
                 CallbackQueryHandler(handle_callback)
             ],
             CATEGORY: [
                 MessageHandler(filters.TEXT & ~filters.COMMAND, handle_category_selection),
+                restart_handler,
                 CallbackQueryHandler(handle_category_selection)
             ],
             SUBCATEGORY: [
                 MessageHandler(filters.TEXT & ~filters.COMMAND, handle_category_selection),
+                restart_handler,
                 CallbackQueryHandler(handle_category_selection)
             ],
             LOCATION_TYPE: [
                 MessageHandler(filters.TEXT & ~filters.COMMAND, handle_location),
+                restart_handler,
                 CallbackQueryHandler(handle_location)
             ],
             LOCATION_INPUT: [
                 MessageHandler(filters.LOCATION, handle_location),
                 MessageHandler(filters.TEXT & ~filters.COMMAND, handle_location),
+                restart_handler,
                 CallbackQueryHandler(handle_location)
             ],
             DESCRIPTION: [
                 MessageHandler(filters.TEXT & ~filters.COMMAND, handle_project_details),
+                restart_handler,
                 CallbackQueryHandler(handle_project_details)
             ],
             DETAILS: [
                 MessageHandler(filters.TEXT & ~filters.COMMAND, handle_project_details),
+                restart_handler,
                 CallbackQueryHandler(handle_project_details)
             ],
             DETAILS_FILES: [
                 MessageHandler(filters.PHOTO, handle_attachment),
                 MessageHandler(filters.TEXT & ~filters.COMMAND, handle_attachment),
+                restart_handler,
                 CallbackQueryHandler(handle_attachment)
             ],
             # اضافه کردن هندلرهای مربوط به جزئیات درخواست
             DETAILS_DATE: [
                 MessageHandler(filters.TEXT & ~filters.COMMAND, handle_project_details),
+                restart_handler,
                 CallbackQueryHandler(handle_project_details)
             ],
             DETAILS_DEADLINE: [
                 MessageHandler(filters.TEXT & ~filters.COMMAND, handle_project_details),
+                restart_handler,
                 CallbackQueryHandler(handle_project_details)
             ],
             DETAILS_BUDGET: [
                 MessageHandler(filters.TEXT & ~filters.COMMAND, handle_project_details),
+                restart_handler,
                 CallbackQueryHandler(handle_project_details)
             ],
             DETAILS_QUANTITY: [
                 MessageHandler(filters.TEXT & ~filters.COMMAND, handle_project_details),
+                restart_handler,
                 CallbackQueryHandler(handle_project_details)
             ],
             SUBMIT: [
                 MessageHandler(filters.TEXT & ~filters.COMMAND, submit_project),
+                restart_handler,
                 CallbackQueryHandler(submit_project)
             ],
             CHANGE_PHONE: [
-                MessageHandler(filters.TEXT & ~filters.COMMAND, handle_new_phone)
+                MessageHandler(filters.TEXT & ~filters.COMMAND, handle_new_phone),
+                restart_handler
             ],
             VERIFY_CODE: [
-                MessageHandler(filters.TEXT & ~filters.COMMAND, verify_new_phone)
+                MessageHandler(filters.TEXT & ~filters.COMMAND, verify_new_phone),
+                restart_handler
             ],
             VIEW_PROJECTS: [
+                restart_handler,
                 CallbackQueryHandler(handle_view_projects)
             ],
             PROJECT_ACTIONS: [
+                restart_handler,
                 CallbackQueryHandler(handle_view_projects)
             ]
         },

@@ -8,6 +8,7 @@ from handlers.view_handler import handle_view_callback
 from handlers.attachment_handler import show_photo_management, handle_photos_command
 from utils import log_chat, get_categories, ensure_active_chat, restart_chat
 from keyboards import create_category_keyboard, EMPLOYER_MENU_KEYBOARD, FILE_MANAGEMENT_MENU_KEYBOARD, RESTART_INLINE_MENU_KEYBOARD, BACK_INLINE_MENU_KEYBOARD, MAIN_MENU_KEYBOARD, create_dynamic_keyboard
+from helpers.menu_manager import MenuManager
 import asyncio  # برای استفاده از sleep
 from asyncio import Lock
 
@@ -70,9 +71,12 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             elif target_state == "details" and context.user_data.get('description'):
                 # ادامه از توضیحات به جزئیات
                 context.user_data['state'] = DETAILS
-                await query.message.edit_text(
+                # استفاده از MenuManager
+                await MenuManager.show_menu(
+                    update,
+                    context,
                     "📋 جزئیات درخواست:\nاگه بخوای می‌تونی برای راهنمایی بهتر مجری‌ها این اطلاعات رو هم وارد کنی:",
-                    reply_markup=create_dynamic_keyboard(context)
+                    create_dynamic_keyboard(context)
                 )
                 return DETAILS
                 
@@ -90,9 +94,12 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if data == "back_to_details":
             logger.info("User returning to details menu")
             context.user_data['state'] = DETAILS
-            await query.message.edit_text(
+            # استفاده از MenuManager
+            await MenuManager.show_menu(
+                update,
+                context,
                 "📋 جزئیات درخواست:",
-                reply_markup=create_dynamic_keyboard(context)
+                create_dynamic_keyboard(context)
             )
             await query.answer()
             return DETAILS
@@ -101,10 +108,12 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if data == "finish_files":
             logger.info("User clicked finish_files button")
             context.user_data['state'] = DETAILS
-            # ویرایش پیام موجود و نمایش منوی جزئیات
-            await query.message.edit_text(
+            # استفاده از MenuManager
+            await MenuManager.show_menu(
+                update,
+                context,
                 "📋 جزئیات درخواست:",
-                reply_markup=create_dynamic_keyboard(context)
+                create_dynamic_keyboard(context)
             )
             await query.answer()
             return DETAILS
@@ -120,9 +129,12 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if data == "need_date":
             logger.info("User clicked need_date button")
             context.user_data['state'] = DETAILS_DATE
-            await query.message.edit_text(
+            # استفاده از MenuManager
+            await MenuManager.show_menu(
+                update,
+                context,
                 "📅 تاریخ نیاز خود را به صورت 'ماه/روز' وارد کنید (مثال: 05/15):",
-                reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("⬅️ بازگشت", callback_data="back_to_details")]])
+                InlineKeyboardMarkup([[InlineKeyboardButton("⬅️ بازگشت", callback_data="back_to_details")]])
             )
             await query.answer()
             return DETAILS_DATE
@@ -131,9 +143,12 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if data == "deadline":
             logger.info("User clicked deadline button")
             context.user_data['state'] = DETAILS_DEADLINE
-            await query.message.edit_text(
+            # استفاده از MenuManager
+            await MenuManager.show_menu(
+                update,
+                context,
                 "⏳ مهلت انجام خدمات را به صورت 'ماه/روز' وارد کنید (مثال: 06/20):",
-                reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("⬅️ بازگشت", callback_data="back_to_details")]])
+                InlineKeyboardMarkup([[InlineKeyboardButton("⬅️ بازگشت", callback_data="back_to_details")]])
             )
             await query.answer()
             return DETAILS_DEADLINE
@@ -142,9 +157,12 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if data == "budget":
             logger.info("User clicked budget button")
             context.user_data['state'] = DETAILS_BUDGET
-            await query.message.edit_text(
+            # استفاده از MenuManager
+            await MenuManager.show_menu(
+                update,
+                context,
                 "💰 بودجه مورد نظر خود را به تومان وارد کنید (فقط عدد):",
-                reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("⬅️ بازگشت", callback_data="back_to_details")]])
+                InlineKeyboardMarkup([[InlineKeyboardButton("⬅️ بازگشت", callback_data="back_to_details")]])
             )
             await query.answer()
             return DETAILS_BUDGET
@@ -153,9 +171,12 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if data == "quantity":
             logger.info("User clicked quantity button")
             context.user_data['state'] = DETAILS_QUANTITY
-            await query.message.edit_text(
+            # استفاده از MenuManager
+            await MenuManager.show_menu(
+                update,
+                context,
                 "📏 مقدار و واحد مورد نظر را وارد کنید (مثال: 5 متر، 2 عدد):",
-                reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("⬅️ بازگشت", callback_data="back_to_details")]])
+                InlineKeyboardMarkup([[InlineKeyboardButton("⬅️ بازگشت", callback_data="back_to_details")]])
             )
             await query.answer()
             return DETAILS_QUANTITY
@@ -169,9 +190,12 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         # پردازش برای بازگشت به آپلود
         if data == "back_to_upload":
             logger.info("User returning to file upload")
-            await query.message.edit_text(
+            # استفاده از MenuManager
+            await MenuManager.show_menu(
+                update,
+                context,
                 "📸 می‌تونی تا ۵ تا عکس ارسال کنی یا یکی از گزینه‌ها رو انتخاب کنی:",
-                reply_markup=FILE_MANAGEMENT_MENU_KEYBOARD
+                FILE_MANAGEMENT_MENU_KEYBOARD
             )
             await query.answer()
             return DETAILS_FILES
@@ -189,18 +213,24 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             # اگر در مرحله انتخاب دسته‌بندی هستیم
             if current_state == CATEGORY:
                 context.user_data['state'] = EMPLOYER_MENU
-                await query.message.edit_text(
+                # استفاده از MenuManager
+                await MenuManager.show_menu(
+                    update,
+                    context,
                     "🎉 عالیه! چه کاری برات انجام بدم؟",
-                    reply_markup=EMPLOYER_MENU_KEYBOARD
+                    EMPLOYER_MENU_KEYBOARD
                 )
                 await query.answer()
                 return EMPLOYER_MENU
             # اگر در منوی کارفرما هستیم    
             elif current_state == EMPLOYER_MENU:
                 context.user_data['state'] = ROLE
-                await query.message.edit_text(
+                # استفاده از MenuManager
+                await MenuManager.show_menu(
+                    update,
+                    context,
                     "🌟 لطفاً یکی از گزینه‌ها را انتخاب کنید:",
-                    reply_markup=MAIN_MENU_KEYBOARD
+                    MAIN_MENU_KEYBOARD
                 )
                 await query.answer()
                 return ROLE
@@ -209,9 +239,12 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if data == "main_menu":
             logger.info("Processing main_menu callback - returning to role selection")
             context.user_data['state'] = ROLE
-            await query.message.edit_text(
+            # استفاده از MenuManager
+            await MenuManager.show_menu(
+                update,
+                context,
                 "🌟 لطفاً یکی از گزینه‌ها را انتخاب کنید:",
-                reply_markup=MAIN_MENU_KEYBOARD
+                MAIN_MENU_KEYBOARD
             )
             await query.answer()
             return ROLE
@@ -222,9 +255,12 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             # ذخیره state قبلی
             context.user_data['previous_state'] = current_state
             context.user_data['state'] = EMPLOYER_MENU
-            await query.message.edit_text(
+            # استفاده از MenuManager
+            await MenuManager.show_menu(
+                update,
+                context,
                 "🎉 عالیه! چه کاری برات انجام بدم؟",
-                reply_markup=EMPLOYER_MENU_KEYBOARD
+                EMPLOYER_MENU_KEYBOARD
             )
             await query.answer()
             return EMPLOYER_MENU
@@ -265,11 +301,14 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         # ادامه پردازش callback
         if data == "employer":
             try:
-                await query.message.edit_text(
-                    "🎉 عالیه! چه کاری برات انجام بدم؟",
-                    reply_markup=EMPLOYER_MENU_KEYBOARD
-                )
                 context.user_data['state'] = EMPLOYER_MENU
+                # استفاده از MenuManager
+                await MenuManager.show_menu(
+                    update,
+                    context,
+                    "🎉 عالیه! چه کاری برات انجام بدم؟",
+                    EMPLOYER_MENU_KEYBOARD
+                )
                 await query.answer()
                 return EMPLOYER_MENU
             except Exception as e:
@@ -286,9 +325,13 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             
             categories = await get_categories()
             keyboard = create_category_keyboard(categories)
-            await query.edit_message_text(
+            
+            # استفاده از MenuManager
+            await MenuManager.show_menu(
+                update,
+                context,
                 "🌟 دسته‌بندی خدماتت رو انتخاب کن:",
-                reply_markup=keyboard
+                keyboard
             )
             await query.answer()
             return CATEGORY
