@@ -124,14 +124,14 @@ BACK_TO_DESCRIPTION_KEYBOARD = InlineKeyboardMarkup([
 # منوی اینلاین ثبت شماره تلفن
 REGISTER_INLINE_KEYBOARD = InlineKeyboardMarkup([
     [InlineKeyboardButton("📱 ثبت شماره تلفن", callback_data="register_phone")],
-    [InlineKeyboardButton("🔄 شروع مجدد", callback_data="restart")]
+    [InlineKeyboardButton("🔄 شروع مجدد", url="https://t.me/BivasetBot?start=restart")]
 ])
 
 # تابع ایجاد یک دکمه راه‌اندازی مجدد برای کاربران جدید
 def create_restart_keyboard():
     """ایجاد کیبورد راه‌اندازی مجدد برای کاربران"""
     return InlineKeyboardMarkup([
-        [InlineKeyboardButton("🔄 شروع مجدد", callback_data="restart")],
+        [InlineKeyboardButton("🔄 شروع مجدد", url="https://t.me/BivasetBot?start=restart")],
     ])
 
 # تابع ایجاد کیبورد دکمه‌های ادامه و بازگشت

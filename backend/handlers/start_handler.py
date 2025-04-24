@@ -17,6 +17,35 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     await ensure_active_chat(update, context)
     context.user_data['state'] = REGISTER
     
+    # بررسی آیا این یک شروع مجدد است (از طریق URL)
+    args = context.args
+    if args and args[0] == "restart":
+        logger.info(f"Restart command detected via URL for user {update.effective_user.id}")
+        # حذف پیام اطلاع رسانی بروز رسانی ربات
+        try:
+            chat_id = str(update.effective_chat.id)
+            bot_data = context.bot_data
+            
+            # اگر پیام اطلاع رسانی آپدیت برای این کاربر وجود دارد، آن را حذف کن
+            if 'update_messages' in bot_data and chat_id in bot_data['update_messages']:
+                message_id = bot_data['update_messages'][chat_id]
+                logger.info(f"Deleting update notification message ID {message_id} for chat {chat_id} via /start restart")
+                
+                try:
+                    await context.bot.delete_message(
+                        chat_id=int(chat_id),
+                        message_id=message_id
+                    )
+                    # حذف شناسه پیام از دیکشنری
+                    del bot_data['update_messages'][chat_id]
+                    # به‌روزرسانی داده‌های بات
+                    await context.application.persistence.update_bot_data(bot_data)
+                    logger.info(f"Deleted update notification message for chat {chat_id} via /start restart")
+                except Exception as e:
+                    logger.warning(f"Could not delete update message in chat {chat_id}: {e}")
+        except Exception as e:
+            logger.error(f"Error deleting update notification via /start restart: {e}")
+    
     message = update.callback_query.message if update.callback_query else update.message
     if not message:
         logger.error("No message object found in update")
