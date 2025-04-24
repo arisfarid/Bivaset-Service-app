@@ -98,6 +98,46 @@ class MenuManager:
             context.user_data['menu_history'] = []
     
     @staticmethod
+    async def clear_chat_history(update: Update, context: ContextTypes.DEFAULT_TYPE, message_count=30) -> None:
+        """
+        پاک کردن تعداد زیادی از پیام‌های قبلی در گفتگو
+        
+        پارامترها:
+        update - آبجکت Update تلگرام
+        context - آبجکت Context تلگرام
+        message_count - تعداد پیام‌هایی که باید پاک شوند (به صورت پیش‌فرض 30 پیام)
+        """
+        chat_id = update.effective_chat.id
+        current_message_id = update.message.message_id if update.message else (
+            update.callback_query.message.message_id if update.callback_query else None
+        )
+        
+        if not current_message_id:
+            logger.warning("No message ID found to start clearing history")
+            return
+        
+        # پاک کردن پیام‌های قبلی با استفاده از شناسه پیام فعلی به عنوان نقطه شروع
+        deleted_count = 0
+        for offset in range(1, message_count + 1):
+            try:
+                msg_id = current_message_id - offset
+                if msg_id <= 0:  # اطمینان از اینکه ID پیام معتبر است
+                    continue
+                    
+                await context.bot.delete_message(chat_id=chat_id, message_id=msg_id)
+                deleted_count += 1
+                logger.info(f"Deleted message {msg_id} during chat history cleanup")
+            except (BadRequest, TelegramError) as e:
+                logger.debug(f"Could not delete message {current_message_id - offset}: {e}")
+                # اگر به خطای "پیام برای حذف خیلی قدیمی است" یا "پیام یافت نشد" برخوردیم، ادامه می‌دهیم
+                continue
+        
+        logger.info(f"Cleared {deleted_count} messages from chat history")
+        
+        # همچنین منوهای ذخیره شده در تاریخچه را پاک کنیم
+        await MenuManager.clear_menus(update, context)
+    
+    @staticmethod
     async def disable_previous_menus(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         """غیرفعال کردن منوهای قبلی بدون پاک کردن آنها"""
         if 'menu_history' not in context.user_data:

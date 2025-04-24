@@ -47,39 +47,17 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     # اگر این یک restart است یا در مرحله اولیه هستیم
     await ensure_active_chat(update, context)
     
-    # اگر این یک restart است، پیام update را پاک کن
+    # اگر این یک restart است، پیام‌های قبلی را پاک کن
     if is_restart:
         try:
-            chat_id = update.effective_chat.id
-            
-            # حذف مستقیم پیام‌های اخیر بات
-            try:
-                # در لاگ‌ها دیده شد که پیام آپدیت احتمالاً آخرین پیام بات قبل از شروع مجدد است
-                current_message_id = update.message.message_id
-                
-                # تخمین ID پیام آپدیت (معمولاً 1-3 پیام قبل از پیام فعلی)
-                for offset in range(1, 4):
-                    try:
-                        possible_update_msg_id = current_message_id - offset
-                        logger.info(f"Trying to delete message with ID {possible_update_msg_id}")
-                        
-                        await context.bot.delete_message(
-                            chat_id=chat_id,
-                            message_id=possible_update_msg_id
-                        )
-                        logger.info(f"Successfully deleted message {possible_update_msg_id}")
-                        break  # اگر موفق به حذف پیام شدیم، حلقه را متوقف کن
-                    except Exception as e:
-                        logger.warning(f"Could not delete message {possible_update_msg_id}: {e}")
-                        continue
-                
-            except Exception as e:
-                logger.error(f"Error deleting recent bot messages: {e}")
+            # با استفاده از متد جدید، پاک کردن پیام‌های قبلی
+            await MenuManager.clear_chat_history(update, context)
+            logger.info(f"Cleared chat history for user {update.effective_user.id} during restart")
         except Exception as e:
-            logger.error(f"Error handling restart command: {e}")
-    
-    # پاک کردن تمام منوهای قبلی
-    await MenuManager.clear_menus(update, context)
+            logger.error(f"Error cleaning chat history during restart: {e}")
+    else:
+        # پاک کردن تمام منوهای قبلی
+        await MenuManager.clear_menus(update, context)
     
     message = update.callback_query.message if update.callback_query else update.message
     if not message:
@@ -129,8 +107,14 @@ async def handle_confirm_restart(update: Update, context: ContextTypes.DEFAULT_T
         context.user_data.clear()
         await query.message.delete()
         
-        # پاک کردن تمام منوهای قبلی
-        await MenuManager.clear_menus(update, context)
+        try:
+            # پاک کردن تاریخچه چت با استفاده از متد جدید
+            await MenuManager.clear_chat_history(update, context)
+            logger.info(f"Cleared chat history for user {update.effective_user.id} during confirmed restart")
+        except Exception as e:
+            logger.error(f"Error cleaning chat history during confirmed restart: {e}")
+            # در صورت خطا، از روش قبلی استفاده کنیم
+            await MenuManager.clear_menus(update, context)
         
         # نمایش منوی اصلی
         welcome_message = (
@@ -166,8 +150,14 @@ async def handle_role(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int
     if text == "درخواست خدمات | کارفرما 👔":
         context.user_data['state'] = EMPLOYER_MENU
         
-        # پاک کردن منوهای قبلی
-        await MenuManager.clear_menus(update, context)
+        # پاک کردن تاریخچه چت با استفاده از متد جدید
+        try:
+            await MenuManager.clear_chat_history(update, context, message_count=15)  # تعداد کمتری پیام را پاک می‌کنیم
+            logger.info(f"Cleared partial chat history for user {update.effective_user.id} during role change")
+        except Exception as e:
+            logger.error(f"Error cleaning chat history during role change: {e}")
+            # در صورت خطا، از روش قبلی استفاده کنیم
+            await MenuManager.clear_menus(update, context)
         
         employer_message = "🎉 عالیه، {}! می‌خوای خدمات جدید درخواست کنی یا پیشنهادات رو ببینی؟".format(
             update.effective_user.full_name
@@ -186,8 +176,14 @@ async def handle_role(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int
     return ROLE
 
 async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    # پاک کردن تمام منوهای قبلی
-    await MenuManager.clear_menus(update, context)
+    # پاک کردن تاریخچه چت با استفاده از متد جدید
+    try:
+        await MenuManager.clear_chat_history(update, context)
+        logger.info(f"Cleared chat history for user {update.effective_user.id} during cancel")
+    except Exception as e:
+        logger.error(f"Error cleaning chat history during cancel: {e}")
+        # در صورت خطا، از روش قبلی استفاده کنیم
+        await MenuManager.clear_menus(update, context)
     
     context.user_data.clear()
     await update.message.reply_text("عملیات لغو شد. دوباره شروع کن!")
