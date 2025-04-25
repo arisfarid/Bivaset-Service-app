@@ -171,34 +171,28 @@ async def handle_location(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         context.user_data['location'] = {'longitude': location.longitude, 'latitude': location.latitude}
         logger.info(f"Received location: {context.user_data['location']}")
         
-        # بازگشت به کیبورد اینلاین
+        # نمایش پیام پاپ‌آپ موقت برای تأیید دریافت لوکیشن
         await update.message.reply_text(
-            "✅ موقعیت مکانی شما با موفقیت دریافت شد!",
+            "✅ موقعیت مکانی با موفقیت دریافت شد!",
             reply_markup=REMOVE_KEYBOARD
         )
         
-        # نمایش پیام تایید با دکمه‌های بازگشت و ادامه
-        from keyboards import create_navigation_keyboard
-        service_location_type = context.user_data.get('service_location')
-        service_location_name = {
-            'client_site': 'محل کارفرما',
-            'contractor_site': 'محل مجری'
-        }.get(service_location_type, 'حضوری')
+        # تنظیم state برای مرحله بعدی (توضیحات)
+        context.user_data['state'] = DESCRIPTION
         
-        # تنظیم state برای آماده سازی مرحله بعدی
-        context.user_data['state'] = LOCATION_INPUT
-        
-        await update.message.reply_text(
-            f"📍 موقعیت مکانی شما برای خدمات در {service_location_name} با موفقیت ثبت شد.\n\n"
-            "اکنون می‌توانید به مرحله بعدی (وارد کردن توضیحات درخواست) بروید یا در صورت نیاز به تغییر موقعیت، به مرحله قبل بازگردید.",
-            reply_markup=create_navigation_keyboard(
-                back_callback="back_to_location_type", 
-                continue_callback="continue_to_description", 
-                continue_enabled=True
+        try:
+            # استفاده از تابع send_description_guidance برای نمایش راهنمای کامل
+            from handlers.project_details_handler import send_description_guidance
+            await send_description_guidance(update.message, context)
+        except Exception as e:
+            logger.error(f"Error sending description guidance after location: {e}")
+            # اگر خطا رخ داد، همان پیام ساده قبلی نمایش داده شود
+            await update.message.reply_text(
+                "🌟 توضیحات خدماتت رو بگو:",
+                reply_markup=BACK_TO_DESCRIPTION_KEYBOARD
             )
-        )
         
-        return LOCATION_INPUT
+        return DESCRIPTION
 
     # اگر پیام متنی دریافت شد (مثلاً برگشت)
     if update.message and update.message.text:
