@@ -9,6 +9,30 @@ logger = logging.getLogger(__name__)
 START, REGISTER, ROLE, EMPLOYER_MENU, CATEGORY, SUBCATEGORY, DESCRIPTION, LOCATION_TYPE, LOCATION_INPUT, DETAILS, DETAILS_FILES, DETAILS_DATE, DETAILS_DEADLINE, DETAILS_BUDGET, DETAILS_QUANTITY, SUBMIT, VIEW_PROJECTS, PROJECT_ACTIONS = range(18)
 CHANGE_PHONE, VERIFY_CODE = range(20, 22)  # states جدید
 
+async def show_location_type_selection(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    """Show the location type selection menu with inline keyboard"""
+    query = update.callback_query
+    
+    # Set the state
+    context.user_data['state'] = LOCATION_TYPE
+    
+    # Get the current message or query message
+    message = query.message if query else update.message
+    
+    # Show location type selection menu
+    await message.edit_text(
+        LOCATION_TYPE_GUIDANCE_TEXT,
+        reply_markup=create_location_type_keyboard()
+    ) if query else await message.reply_text(
+        LOCATION_TYPE_GUIDANCE_TEXT,
+        reply_markup=create_location_type_keyboard()
+    )
+    
+    # Log the action
+    logger.info(f"Showing location type selection for user: {update.effective_user.id}")
+    
+    return LOCATION_TYPE
+
 async def handle_location(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Handle location selection and input"""
     query = update.callback_query
