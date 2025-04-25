@@ -35,6 +35,18 @@ async def handle_category_selection(update: Update, context: ContextTypes.DEFAUL
             )
             return EMPLOYER_MENU
 
+        # رفتن به مرحله بعد (انتخاب لوکیشن)
+        if data == "continue_to_location":
+            logger.info(f"Processing continue to location. Category ID: {context.user_data.get('category_id')}")
+            if context.user_data.get('category_id'):
+                context.user_data['state'] = LOCATION_TYPE
+                await query.answer()  # پاسخ به callback
+                return await show_location_type_selection(update, context)
+            else:
+                logger.warning("Cannot proceed to location: No category selected")
+                await query.answer("❌ لطفاً ابتدا یک دسته‌بندی انتخاب کنید.")
+                return CATEGORY
+
         # پردازش انتخاب دسته‌بندی اصلی
         if data.startswith("cat_"):
             category_id = int(data.split("_")[1])
