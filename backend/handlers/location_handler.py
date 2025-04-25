@@ -218,7 +218,19 @@ async def handle_location(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
                     reply_markup=REMOVE_KEYBOARD
                 )
                 
-                # نمایش منوی انتخاب نوع لوکیشن
+                # نمایش منوی انتخاب نوع لوکیشن با متن راهنمای کامل
+                return await show_location_type_selection(update, context)
+            elif current_state == DESCRIPTION:
+                # کاربر از مرحله توضیحات به مرحله انتخاب نوع لوکیشن برگشته
+                context.user_data['state'] = LOCATION_TYPE
+                
+                # حذف کیبورد قبلی (اگر وجود دارد)
+                await update.message.reply_text(
+                    "برگشت به مرحله انتخاب محل خدمات...",
+                    reply_markup=REMOVE_KEYBOARD
+                )
+                
+                # نمایش منوی انتخاب نوع لوکیشن با متن راهنمای کامل
                 return await show_location_type_selection(update, context)
         
         # اگر هر پیام متنی دیگری به جز "بازگشت" ارسال شد و در مرحله ورود لوکیشن هستیم
