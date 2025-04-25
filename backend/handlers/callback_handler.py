@@ -11,7 +11,8 @@ from keyboards import create_category_keyboard, EMPLOYER_MENU_KEYBOARD, FILE_MAN
 from helpers.menu_manager import MenuManager
 import asyncio  # برای استفاده از sleep
 from asyncio import Lock
-from handlers.state_handler import SERVICE_REQUEST_FLOW, STATE_NAMES
+# Fix circular import by importing from navigation_utils directly instead of state_handler
+from handlers.navigation_utils import SERVICE_REQUEST_FLOW, STATE_NAMES
 
 logger = logging.getLogger(__name__)
 
