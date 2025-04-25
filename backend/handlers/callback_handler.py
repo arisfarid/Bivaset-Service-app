@@ -50,18 +50,24 @@ def create_navigation_keyboard(current_state, context):
             
             # Add back button if not at the beginning
             if current_index > 0 or context.user_data.get('previous_state') is not None:
-                row.append(InlineKeyboardButton("◀️ قبلی", callback_data="navigate_back"))
+                row.append(InlineKeyboardButton("◀️ بازگشت", callback_data="navigate_back"))
             
-            # Add next button if not at the end
+            # Add next button if not at the end and not in DESCRIPTION state
             if current_index < len(SERVICE_REQUEST_FLOW) - 1:
-                row.append(InlineKeyboardButton("بعدی ▶️", callback_data="navigate_next"))
+                # For description, we only want to show next if they've entered text
+                if current_state == DESCRIPTION and 'description' not in context.user_data:
+                    # Don't add next button if no description has been entered yet
+                    pass
+                else:
+                    row.append(InlineKeyboardButton("ادامه ▶️", callback_data="navigate_next"))
             
             # Add the navigation row if it has buttons
             if row:
                 keyboard.append(row)
             
-            # Add menu button
-            keyboard.append([InlineKeyboardButton("🏠 منوی اصلی", callback_data="back_to_employer_menu")])
+            # Add menu button only if not in DESCRIPTION state
+            if current_state != DESCRIPTION:
+                keyboard.append([InlineKeyboardButton("🏠 منوی اصلی", callback_data="back_to_employer_menu")])
         else:
             # For states outside the flow, just add back to menu button
             keyboard.append([InlineKeyboardButton("🏠 منوی اصلی", callback_data="back_to_employer_menu")])

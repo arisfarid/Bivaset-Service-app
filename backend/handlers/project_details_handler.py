@@ -455,13 +455,24 @@ async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_T
                 message_text = "📋 جزئیات درخواست\nاگه بخوای می‌تونی برای راهنمایی بهتر مجری‌ها این اطلاعات رو هم وارد کنی:"
                 message_text, navigation_keyboard = add_navigation_to_message(message_text, DETAILS, context.user_data)
                 
+                # دکمه‌های مخصوص ادامه فرآیند
+                continue_keyboard = [
+                    [InlineKeyboardButton("✅ ادامه به مرحله بعد", callback_data="continue_to_submit")]
+                ]
+                
                 if navigation_keyboard:
                     # ادغام کیبوردها
                     keyboard_rows = create_dynamic_keyboard(context, include_navigation_buttons=False).inline_keyboard
+                    # اضافه کردن دکمه‌های ادامه
+                    keyboard_rows.extend(continue_keyboard)
+                    # اضافه کردن دکمه‌های ناوبری
                     keyboard_rows.extend(navigation_keyboard.inline_keyboard)
                     await message.reply_text(message_text, reply_markup=InlineKeyboardMarkup(keyboard_rows))
                 else:
-                    await message.reply_text(message_text, reply_markup=create_dynamic_keyboard(context))
+                    # ادغام دکمه‌های ادامه با کیبورد اصلی
+                    keyboard_rows = create_dynamic_keyboard(context, include_navigation_buttons=False).inline_keyboard
+                    keyboard_rows.extend(continue_keyboard)
+                    await message.reply_text(message_text, reply_markup=InlineKeyboardMarkup(keyboard_rows))
                 
                 return DETAILS
 
