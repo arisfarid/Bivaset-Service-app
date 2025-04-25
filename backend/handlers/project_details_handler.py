@@ -11,7 +11,7 @@ from handlers.attachment_handler import handle_photo_navigation, init_photo_mana
 # Fix circular import by importing from navigation_utils instead of state_handler
 from handlers.navigation_utils import add_navigation_to_message, SERVICE_REQUEST_FLOW
 from functools import wraps
-from app.models import User, Category, Subcategory
+from app.models import User, Category
 import json
 import os
 
