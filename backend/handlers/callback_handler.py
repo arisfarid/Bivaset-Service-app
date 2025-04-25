@@ -11,6 +11,7 @@ from keyboards import create_category_keyboard, EMPLOYER_MENU_KEYBOARD, FILE_MAN
 from helpers.menu_manager import MenuManager
 import asyncio  # برای استفاده از sleep
 from asyncio import Lock
+from handlers.state_handler import SERVICE_REQUEST_FLOW, STATE_NAMES
 
 logger = logging.getLogger(__name__)
 
@@ -35,8 +36,186 @@ async def send_message_with_keyboard(context, chat_id, text, reply_markup):
         reply_markup=reply_markup
     )
 
+# Create navigation keyboard with back and next buttons
+def create_navigation_keyboard(current_state, context):
+    """Create navigation keyboard with back and next buttons based on the current state"""
+    keyboard = []
+    
+    # Find current position in flow
+    try:
+        if current_state in SERVICE_REQUEST_FLOW:
+            current_index = SERVICE_REQUEST_FLOW.index(current_state)
+            row = []
+            
+            # Add back button if not at the beginning
+            if current_index > 0 or context.user_data.get('previous_state') is not None:
+                row.append(InlineKeyboardButton("◀️ قبلی", callback_data="navigate_back"))
+            
+            # Add next button if not at the end
+            if current_index < len(SERVICE_REQUEST_FLOW) - 1:
+                row.append(InlineKeyboardButton("بعدی ▶️", callback_data="navigate_next"))
+            
+            # Add the navigation row if it has buttons
+            if row:
+                keyboard.append(row)
+            
+            # Add menu button
+            keyboard.append([InlineKeyboardButton("🏠 منوی اصلی", callback_data="back_to_employer_menu")])
+        else:
+            # For states outside the flow, just add back to menu button
+            keyboard.append([InlineKeyboardButton("🏠 منوی اصلی", callback_data="back_to_employer_menu")])
+    except Exception as e:
+        logger.error(f"Error creating navigation keyboard: {e}")
+        # Fallback to basic navigation
+        keyboard.append([InlineKeyboardButton("🏠 منوی اصلی", callback_data="back_to_employer_menu")])
+    
+    return InlineKeyboardMarkup(keyboard)
+
+async def handle_navigation_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Handle navigation callbacks for moving back and forth in the conversation flow"""
+    query = update.callback_query
+    data = query.data
+    current_state = context.user_data.get('state')
+    
+    logger.info(f"Navigation callback: {data} from state {STATE_NAMES.get(current_state, current_state)}")
+    
+    try:
+        if data == "navigate_back":
+            # If we're in the standard flow
+            if current_state in SERVICE_REQUEST_FLOW:
+                current_index = SERVICE_REQUEST_FLOW.index(current_state)
+                if current_index > 0:
+                    # Move to previous state in flow
+                    previous_state = SERVICE_REQUEST_FLOW[current_index - 1]
+                    context.user_data['previous_state'] = current_state
+                    context.user_data['state'] = previous_state
+                    logger.info(f"Moving back to {STATE_NAMES.get(previous_state, previous_state)}")
+                    
+                    # Handle specific states for back navigation
+                    if previous_state == CATEGORY:
+                        from handlers.category_handler import show_category_selection
+                        await show_category_selection(update, context)
+                    elif previous_state == SUBCATEGORY:
+                        from handlers.category_handler import show_subcategories
+                        # Get the selected category from context
+                        category_id = context.user_data.get('selected_category')
+                        if category_id:
+                            await show_subcategories(update, context, category_id)
+                        else:
+                            from handlers.category_handler import show_category_selection
+                            await show_category_selection(update, context)
+                    elif previous_state == LOCATION_TYPE:
+                        from handlers.location_handler import select_location_type
+                        await select_location_type(update, context)
+                    elif previous_state == DESCRIPTION:
+                        await MenuManager.show_menu(
+                            update,
+                            context,
+                            "📝 لطفا توضیحات درخواست خود را وارد کنید:",
+                            create_navigation_keyboard(previous_state, context)
+                        )
+                    await query.answer()
+                    return previous_state
+                else:
+                    # We're at the beginning of the flow, go back to employer menu
+                    context.user_data['previous_state'] = current_state
+                    context.user_data['state'] = EMPLOYER_MENU
+                    await MenuManager.show_menu(
+                        update,
+                        context,
+                        "🎉 عالیه! چه کاری برات انجام بدم؟",
+                        EMPLOYER_MENU_KEYBOARD
+                    )
+                    await query.answer()
+                    return EMPLOYER_MENU
+            else:
+                # For states outside of flow, use the stored previous state
+                previous_state = context.user_data.get('previous_state')
+                if previous_state is not None:
+                    context.user_data['state'] = previous_state
+                    context.user_data['previous_state'] = current_state
+                    logger.info(f"Moving to stored previous state: {STATE_NAMES.get(previous_state, previous_state)}")
+                    
+                    # Handle specific previous states
+                    if previous_state == EMPLOYER_MENU:
+                        await MenuManager.show_menu(
+                            update,
+                            context,
+                            "🎉 عالیه! چه کاری برات انجام بدم؟",
+                            EMPLOYER_MENU_KEYBOARD
+                        )
+                    elif previous_state == DETAILS:
+                        await MenuManager.show_menu(
+                            update,
+                            context,
+                            "📋 جزئیات درخواست:",
+                            create_dynamic_keyboard(context)
+                        )
+                    await query.answer()
+                    return previous_state
+                else:
+                    # Default to employer menu if no previous state
+                    context.user_data['state'] = EMPLOYER_MENU
+                    await MenuManager.show_menu(
+                        update,
+                        context,
+                        "🎉 عالیه! چه کاری برات انجام بدم؟",
+                        EMPLOYER_MENU_KEYBOARD
+                    )
+                    await query.answer()
+                    return EMPLOYER_MENU
+        
+        elif data == "navigate_next":
+            # If we're in the standard flow
+            if current_state in SERVICE_REQUEST_FLOW:
+                current_index = SERVICE_REQUEST_FLOW.index(current_state)
+                if current_index < len(SERVICE_REQUEST_FLOW) - 1:
+                    # Move to next state in flow
+                    next_state = SERVICE_REQUEST_FLOW[current_index + 1]
+                    context.user_data['previous_state'] = current_state
+                    context.user_data['state'] = next_state
+                    logger.info(f"Moving forward to {STATE_NAMES.get(next_state, next_state)}")
+                    
+                    # Handle specific states for next navigation
+                    if next_state == SUBCATEGORY:
+                        from handlers.category_handler import show_subcategories
+                        # Get the selected category from context
+                        category_id = context.user_data.get('selected_category')
+                        if category_id:
+                            await show_subcategories(update, context, category_id)
+                        else:
+                            from handlers.category_handler import show_category_selection
+                            await show_category_selection(update, context)
+                    elif next_state == LOCATION_TYPE:
+                        from handlers.location_handler import select_location_type
+                        await select_location_type(update, context)
+                    elif next_state == DESCRIPTION:
+                        await MenuManager.show_menu(
+                            update,
+                            context,
+                            "📝 لطفا توضیحات درخواست خود را وارد کنید:",
+                            create_navigation_keyboard(next_state, context)
+                        )
+                    elif next_state == DETAILS:
+                        await MenuManager.show_menu(
+                            update,
+                            context,
+                            "📋 جزئیات درخواست:",
+                            create_dynamic_keyboard(context)
+                        )
+                    await query.answer()
+                    return next_state
+            
+            await query.answer()
+            return current_state
+    
+    except Exception as e:
+        logger.error(f"Error in navigation handler: {e}", exc_info=True)
+        await query.answer("❌ خطایی در مسیریابی رخ داد!")
+        return current_state
+
 async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Main callback handler with improved error handling"""
+    """Main callback handler with improved error handling and universal navigation"""
     query = update.callback_query
     if not query:
         return START
@@ -49,56 +228,77 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         logger.info(f"Current state: {current_state}")
         logger.info(f"Previous state: {previous_state}")
         
-        # پردازش دکمه‌های ادامه برای ناوبری بین مراحل
-        if data.startswith("continue_to_"):
-            target_state = data.replace("continue_to_", "")
-            logger.info(f"User requested to continue to state: {target_state}")
-            
-            # بررسی اجازه ادامه به مراحل بعدی
-            if target_state == "location" and context.user_data.get('category_id'):
-                # ادامه از دسته‌بندی به لوکیشن
-                logger.info(f"Moving from category to location selection. Category ID: {context.user_data.get('category_id')}")
-                context.user_data['state'] = LOCATION_TYPE
-                from handlers.location_handler import show_location_type_selection
-                await query.answer()  # اضافه کردن پاسخ به callback
-                return await show_location_type_selection(update, context)
+        # Universal back navigation patterns
+        if data == "back" or data == "back_to_previous":
+            if previous_state is not None:
+                logger.info(f"User navigating back to previous state: {previous_state}")
+                # Store current state as the next previous state
+                context.user_data['previous_state'] = current_state
+                context.user_data['state'] = previous_state
                 
-            elif target_state == "description" and context.user_data.get('service_location'):
-                # ادامه از لوکیشن به توضیحات
-                context.user_data['state'] = DESCRIPTION
-                from handlers.project_details_handler import send_description_guidance
-                await query.answer()  # اضافه کردن پاسخ به callback
-                await send_description_guidance(query.message, context)
-                return DESCRIPTION
-                
-            elif target_state == "details" and context.user_data.get('description'):
-                # ادامه از توضیحات به جزئیات
-                context.user_data['state'] = DETAILS
-                await query.answer()  # اضافه کردن پاسخ به callback
-                # استفاده از MenuManager
-                await MenuManager.show_menu(
-                    update,
-                    context,
-                    "📋 جزئیات درخواست:\nاگه بخوای می‌تونی برای راهنمایی بهتر مجری‌ها این اطلاعات رو هم وارد کنی:",
-                    create_dynamic_keyboard(context)
-                )
-                return DETAILS
-                
-            elif target_state == "submit" and context.user_data.get('description'):
-                # ادامه مستقیم به ثبت نهایی
-                await query.answer()  # اضافه کردن پاسخ به callback
-                from handlers.submission_handler import submit_project
-                return await submit_project(update, context)
-            
+                # Handle back navigation to specific states
+                if previous_state == EMPLOYER_MENU:
+                    await MenuManager.show_menu(
+                        update,
+                        context,
+                        "🎉 عالیه! چه کاری برات انجام بدم؟",
+                        EMPLOYER_MENU_KEYBOARD
+                    )
+                    await query.answer()
+                    return EMPLOYER_MENU
+                    
+                elif previous_state == ROLE:
+                    await MenuManager.show_menu(
+                        update,
+                        context,
+                        "🌟 لطفاً یکی از گزینه‌ها را انتخاب کنید:",
+                        MAIN_MENU_KEYBOARD
+                    )
+                    await query.answer()
+                    return ROLE
+                    
+                elif previous_state == CATEGORY:
+                    from handlers.category_handler import show_category_selection
+                    return await show_category_selection(update, context)
+                    
+                elif previous_state == DETAILS:
+                    await MenuManager.show_menu(
+                        update,
+                        context,
+                        "📋 جزئیات درخواست:",
+                        create_dynamic_keyboard(context)
+                    )
+                    await query.answer()
+                    return DETAILS
+                    
+                # Let the conversation handler handle other states
+                return previous_state
             else:
-                # اطلاعات کافی برای انتقال به مرحله بعد وجود ندارد
-                logger.warning(f"Missing information for transition to {target_state}. Current data: {context.user_data}")
-                await query.answer("❌ لطفاً ابتدا اطلاعات مورد نیاز این مرحله را تکمیل کنید.")
-                return current_state
+                # If no previous state, try to determine logical previous state
+                if current_state == CATEGORY:
+                    context.user_data['state'] = EMPLOYER_MENU
+                    await MenuManager.show_menu(
+                        update,
+                        context,
+                        "🎉 عالیه! چه کاری برات انجام بدم؟",
+                        EMPLOYER_MENU_KEYBOARD
+                    )
+                    await query.answer()
+                    return EMPLOYER_MENU
+                elif current_state in SERVICE_REQUEST_FLOW:
+                    # Find current position in flow
+                    current_index = SERVICE_REQUEST_FLOW.index(current_state)
+                    if current_index > 0:
+                        # Go to previous state in flow
+                        prev_state = SERVICE_REQUEST_FLOW[current_index - 1]
+                        context.user_data['state'] = prev_state
+                        logger.info(f"No previous state stored, navigating to previous in flow: {prev_state}")
+                        return await handle_navigation_callback(update, context)
         
-        # پردازش بازگشت به جزئیات
+        # Specific back patterns from callback_handler
         if data == "back_to_details":
             logger.info("User returning to details menu")
+            context.user_data['previous_state'] = current_state
             context.user_data['state'] = DETAILS
             # استفاده از MenuManager
             await MenuManager.show_menu(
@@ -110,42 +310,21 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await query.answer()
             return DETAILS
 
-        # پردازش برای دکمه اتمام ارسال تصاویر
-        if data == "finish_files":
-            logger.info("User clicked finish_files button")
-            context.user_data['state'] = DETAILS
-            # استفاده از MenuManager
-            await MenuManager.show_menu(
-                update,
-                context,
-                "📋 جزئیات درخواست:",
-                create_dynamic_keyboard(context)
-            )
-            await query.answer()
-            return DETAILS
-            
-        # پردازش برای دکمه مدیریت عکس‌ها
-        if data == "manage_photos":
-            logger.info("User clicked manage_photos button")
-            await show_photo_management(update, context)
-            await query.answer()
-            return DETAILS_FILES
-        
-        # پردازش برای دکمه تاریخ نیاز
-        if data == "need_date":
-            logger.info("User clicked need_date button")
-            context.user_data['state'] = DETAILS_DATE
-            # استفاده از MenuManager
-            await MenuManager.show_menu(
-                update,
-                context,
-                "📅 تاریخ نیاز خود را به صورت 'ماه/روز' وارد کنید (مثال: 05/15):",
-                InlineKeyboardMarkup([[InlineKeyboardButton("⬅️ بازگشت", callback_data="back_to_details")]])
-            )
-            await query.answer()
-            return DETAILS_DATE
-            
-        # پردازش برای دکمه مهلت انجام
+        if data == "back_to_menu":
+            logger.info("Processing back to menu")
+            # اگر در مرحله انتخاب دسته‌بندی هستیم
+            context.user_data['previous_state'] = current_state
+            if current_state == CATEGORY:
+                context.user_data['state'] = EMPLOYER_MENU
+                # استفاده از MenuManager
+                await MenuManager.show_menu(
+                    update,
+                    context,
+                    "🎉 عالیه! چه کاری برات انجام بدم؟",
+                    EMPLOYER_MENU_KEYBOARD
+                )
+                await query.answer()
+                return EMPLOYER_MENU
         if data == "deadline":
             logger.info("User clicked deadline button")
             context.user_data['state'] = DETAILS_DEADLINE

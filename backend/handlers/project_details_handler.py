@@ -8,6 +8,7 @@ import logging
 from handlers.phone_handler import require_phone
 from handlers.submission_handler import submit_project
 from handlers.attachment_handler import handle_photo_navigation, init_photo_management
+from handlers.state_handler import add_navigation_to_message, SERVICE_REQUEST_FLOW
 
 logger = logging.getLogger(__name__)
 
@@ -53,10 +54,21 @@ async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_T
                 del context.user_data['temp_description']
             
             context.user_data['state'] = DETAILS
-            await query.message.edit_text(
-                "📋 جزئیات درخواست:\nاگه بخوای می‌تونی برای راهنمایی بهتر مجری‌ها این اطلاعات رو هم وارد کنی:",
-                reply_markup=create_dynamic_keyboard(context)
-            )
+            message_text = "📋 جزئیات درخواست:\nاگه بخوای می‌تونی برای راهنمایی بهتر مجری‌ها این اطلاعات رو هم وارد کنی:"
+            
+            # افزودن اطلاعات ناوبری به پیام
+            message_text, navigation_keyboard = add_navigation_to_message(message_text, DETAILS, context.user_data)
+            
+            # اگر navigation keyboard داریم، آن را ادغام کنیم با کیبورد اصلی
+            if navigation_keyboard:
+                dynamic_keyboard = create_dynamic_keyboard(context, include_navigation_buttons=False)
+                # ادغام دکمه‌های ناوبری با کیبورد اصلی
+                keyboard_rows = dynamic_keyboard.inline_keyboard
+                keyboard_rows.extend(navigation_keyboard.inline_keyboard)
+                await query.message.edit_text(message_text, reply_markup=InlineKeyboardMarkup(keyboard_rows))
+            else:
+                await query.message.edit_text(message_text, reply_markup=create_dynamic_keyboard(context))
+                
             return DETAILS
 
         # اضافه کردن callback برای بازگشت به مرحله توضیحات
@@ -87,8 +99,15 @@ async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_T
                 [InlineKeyboardButton("✏️ تاریخ دلخواه", callback_data="date_custom")],
                 [InlineKeyboardButton("⬅️ بازگشت", callback_data="back_to_details")]
             ]
+            
+            message_text = "📅 تاریخ نیاز رو انتخاب کن یا دستی وارد کن (مثلاً 1403/10/15):"
+            message_text, navigation_keyboard = add_navigation_to_message(message_text, DETAILS_DATE, context.user_data)
+            
+            if navigation_keyboard:
+                keyboard.extend(navigation_keyboard.inline_keyboard)
+                
             await query.message.edit_text(
-                "📅 تاریخ نیاز رو انتخاب کن یا دستی وارد کن (مثلاً 1403/10/15):",
+                message_text,
                 reply_markup=InlineKeyboardMarkup(keyboard)
             )
             return DETAILS_DATE
@@ -101,9 +120,16 @@ async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_T
                 
                 if date_type == "custom":
                     # نمایش پیام برای ورود تاریخ دستی
+                    message_text = "📅 لطفاً تاریخ مورد نظر خود را به فرمت 1403/10/15 وارد کنید:"
+                    message_text, navigation_keyboard = add_navigation_to_message(message_text, DETAILS_DATE, context.user_data)
+                    
+                    keyboard = [[InlineKeyboardButton("⬅️ بازگشت", callback_data="back_to_details")]]
+                    if navigation_keyboard:
+                        keyboard.extend(navigation_keyboard.inline_keyboard)
+                        
                     await query.message.edit_text(
-                        "📅 لطفاً تاریخ مورد نظر خود را به فرمت 1403/10/15 وارد کنید:",
-                        reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("⬅️ بازگشت", callback_data="back_to_details")]])
+                        message_text,
+                        reply_markup=InlineKeyboardMarkup(keyboard)
                     )
                     await query.answer()
                     return DETAILS_DATE
@@ -113,9 +139,16 @@ async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_T
                 context.user_data['need_date'] = date_str
                 context.user_data['state'] = DETAILS
                 
+                message_text = f"📅 تاریخ نیاز ثبت شد: {date_str}"
+                message_text, navigation_keyboard = add_navigation_to_message(message_text, DETAILS, context.user_data)
+                
+                keyboard = create_dynamic_keyboard(context, include_navigation_buttons=False).inline_keyboard
+                if navigation_keyboard:
+                    keyboard.extend(navigation_keyboard.inline_keyboard)
+                    
                 await query.message.edit_text(
-                    f"📅 تاریخ نیاز ثبت شد: {date_str}",
-                    reply_markup=create_dynamic_keyboard(context)
+                    message_text,
+                    reply_markup=InlineKeyboardMarkup(keyboard)
                 )
                 await query.answer("✅ تاریخ با موفقیت ثبت شد!")
                 return DETAILS
@@ -141,8 +174,15 @@ async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_T
                 [InlineKeyboardButton("✏️ مقدار دلخواه", callback_data="deadline_custom")],
                 [InlineKeyboardButton("⬅️ بازگشت", callback_data="back_to_details")]
             ]
+            
+            message_text = "⏳ مهلت انجام (برحسب روز) را انتخاب کنید:"
+            message_text, navigation_keyboard = add_navigation_to_message(message_text, DETAILS_DEADLINE, context.user_data)
+            
+            if navigation_keyboard:
+                keyboard.extend(navigation_keyboard.inline_keyboard)
+                
             await query.message.edit_text(
-                "⏳ مهلت انجام (برحسب روز) را انتخاب کنید:",
+                message_text,
                 reply_markup=InlineKeyboardMarkup(keyboard)
             )
             return DETAILS_DEADLINE
@@ -153,9 +193,16 @@ async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_T
             if len(parts) == 2:
                 if parts[1] == "custom":
                     # نمایش پیام برای ورود مهلت دستی
+                    message_text = "⏳ لطفاً مهلت انجام مورد نظر خود را به روز وارد کنید (مثلاً: 7):"
+                    message_text, navigation_keyboard = add_navigation_to_message(message_text, DETAILS_DEADLINE, context.user_data)
+                    
+                    keyboard = [[InlineKeyboardButton("⬅️ بازگشت", callback_data="back_to_details")]]
+                    if navigation_keyboard:
+                        keyboard.extend(navigation_keyboard.inline_keyboard)
+                        
                     await query.message.edit_text(
-                        "⏳ لطفاً مهلت انجام مورد نظر خود را به روز وارد کنید (مثلاً: 7):",
-                        reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("⬅️ بازگشت", callback_data="back_to_details")]])
+                        message_text,
+                        reply_markup=InlineKeyboardMarkup(keyboard)
                     )
                     await query.answer()
                     return DETAILS_DEADLINE
@@ -166,9 +213,16 @@ async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_T
                     context.user_data['deadline'] = deadline
                     context.user_data['state'] = DETAILS
                     
+                    message_text = f"⏳ مهلت انجام ثبت شد: {deadline} روز"
+                    message_text, navigation_keyboard = add_navigation_to_message(message_text, DETAILS, context.user_data)
+                    
+                    keyboard = create_dynamic_keyboard(context, include_navigation_buttons=False).inline_keyboard
+                    if navigation_keyboard:
+                        keyboard.extend(navigation_keyboard.inline_keyboard)
+                        
                     await query.message.edit_text(
-                        f"⏳ مهلت انجام ثبت شد: {deadline} روز",
-                        reply_markup=create_dynamic_keyboard(context)
+                        message_text,
+                        reply_markup=InlineKeyboardMarkup(keyboard)
                     )
                     await query.answer("✅ مهلت انجام با موفقیت ثبت شد!")
                     return DETAILS
@@ -192,8 +246,15 @@ async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_T
                 [InlineKeyboardButton("✏️ مبلغ دلخواه", callback_data="budget_custom")],
                 [InlineKeyboardButton("⬅️ بازگشت", callback_data="back_to_details")]
             ]
+            
+            message_text = "💰 بودجه‌ای که برای این خدمات در نظر دارید را انتخاب کنید:"
+            message_text, navigation_keyboard = add_navigation_to_message(message_text, DETAILS_BUDGET, context.user_data)
+            
+            if navigation_keyboard:
+                keyboard.extend(navigation_keyboard.inline_keyboard)
+                
             await query.message.edit_text(
-                "💰 بودجه‌ای که برای این خدمات در نظر دارید را انتخاب کنید:",
+                message_text,
                 reply_markup=InlineKeyboardMarkup(keyboard)
             )
             return DETAILS_BUDGET
@@ -204,9 +265,16 @@ async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_T
             if len(parts) == 2:
                 if parts[1] == "custom":
                     # نمایش پیام برای ورود بودجه دستی
+                    message_text = "💰 لطفاً بودجه مورد نظر خود را به تومان وارد کنید (مثلاً: 500000):"
+                    message_text, navigation_keyboard = add_navigation_to_message(message_text, DETAILS_BUDGET, context.user_data)
+                    
+                    keyboard = [[InlineKeyboardButton("⬅️ بازگشت", callback_data="back_to_details")]]
+                    if navigation_keyboard:
+                        keyboard.extend(navigation_keyboard.inline_keyboard)
+                        
                     await query.message.edit_text(
-                        "💰 لطفاً بودجه مورد نظر خود را به تومان وارد کنید (مثلاً: 500000):",
-                        reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("⬅️ بازگشت", callback_data="back_to_details")]])
+                        message_text,
+                        reply_markup=InlineKeyboardMarkup(keyboard)
                     )
                     await query.answer()
                     return DETAILS_BUDGET
@@ -218,9 +286,16 @@ async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_T
                     context.user_data['budget'] = budget
                     context.user_data['state'] = DETAILS
                     
+                    message_text = f"💰 بودجه ثبت شد: {formatted_budget} تومان"
+                    message_text, navigation_keyboard = add_navigation_to_message(message_text, DETAILS, context.user_data)
+                    
+                    keyboard = create_dynamic_keyboard(context, include_navigation_buttons=False).inline_keyboard
+                    if navigation_keyboard:
+                        keyboard.extend(navigation_keyboard.inline_keyboard)
+                        
                     await query.message.edit_text(
-                        f"💰 بودجه ثبت شد: {formatted_budget} تومان",
-                        reply_markup=create_dynamic_keyboard(context)
+                        message_text,
+                        reply_markup=InlineKeyboardMarkup(keyboard)
                     )
                     await query.answer("✅ بودجه با موفقیت ثبت شد!")
                     return DETAILS
@@ -246,8 +321,15 @@ async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_T
                 [InlineKeyboardButton("✏️ مقدار دلخواه", callback_data="quantity_custom")],
                 [InlineKeyboardButton("⬅️ بازگشت", callback_data="back_to_details")]
             ]
+            
+            message_text = "📏 مقدار و واحد مورد نیاز را انتخاب کنید:"
+            message_text, navigation_keyboard = add_navigation_to_message(message_text, DETAILS_QUANTITY, context.user_data)
+            
+            if navigation_keyboard:
+                keyboard.extend(navigation_keyboard.inline_keyboard)
+                
             await query.message.edit_text(
-                "📏 مقدار و واحد مورد نیاز را انتخاب کنید:",
+                message_text,
                 reply_markup=InlineKeyboardMarkup(keyboard)
             )
             return DETAILS_QUANTITY
@@ -258,9 +340,16 @@ async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_T
             if len(parts) >= 2:
                 if parts[1] == "custom":
                     # نمایش پیام برای ورود مقدار و واحد دستی
+                    message_text = "📏 لطفاً مقدار و واحد مورد نظر خود را وارد کنید (مثلاً: 2 عدد، 5 متر مربع، 3 ساعت):"
+                    message_text, navigation_keyboard = add_navigation_to_message(message_text, DETAILS_QUANTITY, context.user_data)
+                    
+                    keyboard = [[InlineKeyboardButton("⬅️ بازگشت", callback_data="back_to_details")]]
+                    if navigation_keyboard:
+                        keyboard.extend(navigation_keyboard.inline_keyboard)
+                        
                     await query.message.edit_text(
-                        "📏 لطفاً مقدار و واحد مورد نظر خود را وارد کنید (مثلاً: 2 عدد، 5 متر مربع، 3 ساعت):",
-                        reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("⬅️ بازگشت", callback_data="back_to_details")]])
+                        message_text,
+                        reply_markup=InlineKeyboardMarkup(keyboard)
                     )
                     await query.answer()
                     return DETAILS_QUANTITY
@@ -270,9 +359,16 @@ async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_T
                 context.user_data['quantity'] = quantity
                 context.user_data['state'] = DETAILS
                 
+                message_text = f"📏 مقدار و واحد ثبت شد: {quantity}"
+                message_text, navigation_keyboard = add_navigation_to_message(message_text, DETAILS, context.user_data)
+                
+                keyboard = create_dynamic_keyboard(context, include_navigation_buttons=False).inline_keyboard
+                if navigation_keyboard:
+                    keyboard.extend(navigation_keyboard.inline_keyboard)
+                    
                 await query.message.edit_text(
-                    f"📏 مقدار و واحد ثبت شد: {quantity}",
-                    reply_markup=create_dynamic_keyboard(context)
+                    message_text,
+                    reply_markup=InlineKeyboardMarkup(keyboard)
                 )
                 await query.answer("✅ مقدار و واحد با موفقیت ثبت شد!")
                 return DETAILS
@@ -353,11 +449,19 @@ async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_T
                 # ذخیره توضیحات و رفتن به جزئیات
                 context.user_data['description'] = text
                 context.user_data['state'] = DETAILS
-                await message.reply_text(
-                    "📋 جزئیات درخواست\n"
-                    "اگه بخوای می‌تونی برای راهنمایی بهتر مجری‌ها این اطلاعات رو هم وارد کنی:",
-                    reply_markup=create_dynamic_keyboard(context)
-                )
+                
+                # با استفاده از navigation utility
+                message_text = "📋 جزئیات درخواست\nاگه بخوای می‌تونی برای راهنمایی بهتر مجری‌ها این اطلاعات رو هم وارد کنی:"
+                message_text, navigation_keyboard = add_navigation_to_message(message_text, DETAILS, context.user_data)
+                
+                if navigation_keyboard:
+                    # ادغام کیبوردها
+                    keyboard_rows = create_dynamic_keyboard(context, include_navigation_buttons=False).inline_keyboard
+                    keyboard_rows.extend(navigation_keyboard.inline_keyboard)
+                    await message.reply_text(message_text, reply_markup=InlineKeyboardMarkup(keyboard_rows))
+                else:
+                    await message.reply_text(message_text, reply_markup=create_dynamic_keyboard(context))
+                
                 return DETAILS
 
         elif current_state == DETAILS:
@@ -391,8 +495,15 @@ async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_T
                     [InlineKeyboardButton("✏️ تاریخ دلخواه", callback_data="date_custom")],
                     [InlineKeyboardButton("⬅️ بازگشت", callback_data="back_to_details")]
                 ]
+                
+                message_text = "📅 تاریخ نیاز رو انتخاب کن یا دستی وارد کن (مثلاً 1403/10/15):"
+                message_text, navigation_keyboard = add_navigation_to_message(message_text, DETAILS_DATE, context.user_data)
+                
+                if navigation_keyboard:
+                    keyboard.extend(navigation_keyboard.inline_keyboard)
+                
                 await message.reply_text(
-                    "📅 تاریخ نیاز رو انتخاب کن یا دستی وارد کن (مثلاً 1403/10/15):",
+                    message_text,
                     reply_markup=InlineKeyboardMarkup(keyboard)
                 )
                 return DETAILS_DATE
@@ -417,8 +528,15 @@ async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_T
                     [InlineKeyboardButton("✏️ مقدار دلخواه", callback_data="deadline_custom")],
                     [InlineKeyboardButton("⬅️ بازگشت", callback_data="back_to_details")]
                 ]
+                
+                message_text = "⏳ مهلت انجام (برحسب روز) را انتخاب کنید:"
+                message_text, navigation_keyboard = add_navigation_to_message(message_text, DETAILS_DEADLINE, context.user_data)
+                
+                if navigation_keyboard:
+                    keyboard.extend(navigation_keyboard.inline_keyboard)
+                
                 await message.reply_text(
-                    "⏳ مهلت انجام (برحسب روز) را انتخاب کنید:",
+                    message_text,
                     reply_markup=InlineKeyboardMarkup(keyboard)
                 )
                 return DETAILS_DEADLINE
@@ -441,8 +559,15 @@ async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_T
                     [InlineKeyboardButton("✏️ مبلغ دلخواه", callback_data="budget_custom")],
                     [InlineKeyboardButton("⬅️ بازگشت", callback_data="back_to_details")]
                 ]
+                
+                message_text = "💰 بودجه‌ای که برای این خدمات در نظر دارید را انتخاب کنید:"
+                message_text, navigation_keyboard = add_navigation_to_message(message_text, DETAILS_BUDGET, context.user_data)
+                
+                if navigation_keyboard:
+                    keyboard.extend(navigation_keyboard.inline_keyboard)
+                
                 await message.reply_text(
-                    "💰 بودجه‌ای که برای این خدمات در نظر دارید را انتخاب کنید:",
+                    message_text,
                     reply_markup=InlineKeyboardMarkup(keyboard)
                 )
                 return DETAILS_BUDGET
@@ -467,8 +592,15 @@ async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_T
                     [InlineKeyboardButton("✏️ مقدار دلخواه", callback_data="quantity_custom")],
                     [InlineKeyboardButton("⬅️ بازگشت", callback_data="back_to_details")]
                 ]
+                
+                message_text = "📏 مقدار و واحد مورد نیاز را انتخاب کنید:"
+                message_text, navigation_keyboard = add_navigation_to_message(message_text, DETAILS_QUANTITY, context.user_data)
+                
+                if navigation_keyboard:
+                    keyboard.extend(navigation_keyboard.inline_keyboard)
+                
                 await message.reply_text(
-                    "📏 مقدار و واحد مورد نیاز را انتخاب کنید:",
+                    message_text,
                     reply_markup=InlineKeyboardMarkup(keyboard)
                 )
                 return DETAILS_QUANTITY
@@ -479,9 +611,16 @@ async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_T
         elif current_state == DETAILS_DATE:
             if text == "⬅️ بازگشت":
                 context.user_data['state'] = DETAILS
+                message_text = "📋 جزئیات درخواست:\nاگه بخوای می‌تونی برای راهنمایی بهتر مجری‌ها این اطلاعات رو هم وارد کنی:"
+                message_text, navigation_keyboard = add_navigation_to_message(message_text, DETAILS, context.user_data)
+                
+                keyboard = create_dynamic_keyboard(context, include_navigation_buttons=False).inline_keyboard
+                if navigation_keyboard:
+                    keyboard.extend(navigation_keyboard.inline_keyboard)
+                    
                 await message.reply_text(
-                    "📋 جزئیات درخواست:\nاگه بخوای می‌تونی برای راهنمایی بهتر مجری‌ها این اطلاعات رو هم وارد کنی:",
-                    reply_markup=create_dynamic_keyboard(context)
+                    message_text,
+                    reply_markup=InlineKeyboardMarkup(keyboard)
                 )
                 return DETAILS
             
@@ -489,31 +628,60 @@ async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_T
             if validate_date(text):
                 input_date = JalaliDatetime.strptime(text, '%Y/%m/%d')
                 if input_date < JalaliDatetime(datetime.now()):
+                    message_text = "❌ تاریخ باید از امروز به بعد باشه!"
+                    message_text, navigation_keyboard = add_navigation_to_message(message_text, DETAILS_DATE, context.user_data)
+                    
+                    keyboard = [[InlineKeyboardButton("⬅️ بازگشت", callback_data="back_to_details")]]
+                    if navigation_keyboard:
+                        keyboard.extend(navigation_keyboard.inline_keyboard)
+                        
                     await message.reply_text(
-                        "❌ تاریخ باید از امروز به بعد باشه!",
-                        reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("⬅️ بازگشت", callback_data="back_to_details")]])
+                        message_text,
+                        reply_markup=InlineKeyboardMarkup(keyboard)
                     )
                 else:
                     context.user_data['need_date'] = text
                     context.user_data['state'] = DETAILS
+                    
+                    message_text = f"📅 تاریخ نیاز ثبت شد: {text}"
+                    message_text, navigation_keyboard = add_navigation_to_message(message_text, DETAILS, context.user_data)
+                    
+                    keyboard = create_dynamic_keyboard(context, include_navigation_buttons=False).inline_keyboard
+                    if navigation_keyboard:
+                        keyboard.extend(navigation_keyboard.inline_keyboard)
+                        
                     await message.reply_text(
-                        f"📅 تاریخ نیاز ثبت شد: {text}",
-                        reply_markup=create_dynamic_keyboard(context)
+                        message_text,
+                        reply_markup=InlineKeyboardMarkup(keyboard)
                     )
                     return DETAILS
             else:
+                message_text = "❌ تاریخ نامعتبر! لطفاً به فرمت 1403/10/15 وارد کن و از امروز به بعد باشه."
+                message_text, navigation_keyboard = add_navigation_to_message(message_text, DETAILS_DATE, context.user_data)
+                
+                keyboard = [[InlineKeyboardButton("⬅️ بازگشت", callback_data="back_to_details")]]
+                if navigation_keyboard:
+                    keyboard.extend(navigation_keyboard.inline_keyboard)
+                    
                 await message.reply_text(
-                    "❌ تاریخ نامعتبر! لطفاً به فرمت 1403/10/15 وارد کن و از امروز به بعد باشه.",
-                    reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("⬅️ بازگشت", callback_data="back_to_details")]])
+                    message_text,
+                    reply_markup=InlineKeyboardMarkup(keyboard)
                 )
             return DETAILS_DATE
         
         elif current_state == DETAILS_DEADLINE:
             if text == "⬅️ بازگشت":
                 context.user_data['state'] = DETAILS
+                message_text = "📋 جزئیات درخواست:\nاگه بخوای می‌تونی برای راهنمایی بهتر مجری‌ها این اطلاعات رو هم وارد کنی:"
+                message_text, navigation_keyboard = add_navigation_to_message(message_text, DETAILS, context.user_data)
+                
+                keyboard = create_dynamic_keyboard(context, include_navigation_buttons=False).inline_keyboard
+                if navigation_keyboard:
+                    keyboard.extend(navigation_keyboard.inline_keyboard)
+                    
                 await message.reply_text(
-                    "📋 جزئیات درخواست:\nاگه بخوای می‌تونی برای راهنمایی بهتر مجری‌ها این اطلاعات رو هم وارد کنی:",
-                    reply_markup=create_dynamic_keyboard(context)
+                    message_text,
+                    reply_markup=InlineKeyboardMarkup(keyboard)
                 )
                 return DETAILS
             
@@ -522,24 +690,46 @@ async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_T
             if deadline:
                 context.user_data['deadline'] = deadline
                 context.user_data['state'] = DETAILS
+                
+                message_text = f"⏳ مهلت انجام ثبت شد: {deadline} روز"
+                message_text, navigation_keyboard = add_navigation_to_message(message_text, DETAILS, context.user_data)
+                
+                keyboard = create_dynamic_keyboard(context, include_navigation_buttons=False).inline_keyboard
+                if navigation_keyboard:
+                    keyboard.extend(navigation_keyboard.inline_keyboard)
+                    
                 await message.reply_text(
-                    f"⏳ مهلت انجام ثبت شد: {deadline} روز",
-                    reply_markup=create_dynamic_keyboard(context)
+                    message_text,
+                    reply_markup=InlineKeyboardMarkup(keyboard)
                 )
                 return DETAILS
             else:
+                message_text = "❌ مهلت نامعتبر! لطفاً یه عدد وارد کن (مثلاً 7)."
+                message_text, navigation_keyboard = add_navigation_to_message(message_text, DETAILS_DEADLINE, context.user_data)
+                
+                keyboard = [[InlineKeyboardButton("⬅️ بازگشت", callback_data="back_to_details")]]
+                if navigation_keyboard:
+                    keyboard.extend(navigation_keyboard.inline_keyboard)
+                    
                 await message.reply_text(
-                    "❌ مهلت نامعتبر! لطفاً یه عدد وارد کن (مثلاً 7).",
-                    reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("⬅️ بازگشت", callback_data="back_to_details")]])
+                    message_text,
+                    reply_markup=InlineKeyboardMarkup(keyboard)
                 )
             return DETAILS_DEADLINE
         
         elif current_state == DETAILS_BUDGET:
             if text == "⬅️ بازگشت":
                 context.user_data['state'] = DETAILS
+                message_text = "📋 جزئیات درخواست:\nاگه بخوای می‌تونی برای راهنمایی بهتر مجری‌ها این اطلاعات رو هم وارد کنی:"
+                message_text, navigation_keyboard = add_navigation_to_message(message_text, DETAILS, context.user_data)
+                
+                keyboard = create_dynamic_keyboard(context, include_navigation_buttons=False).inline_keyboard
+                if navigation_keyboard:
+                    keyboard.extend(navigation_keyboard.inline_keyboard)
+                    
                 await message.reply_text(
-                    "📋 جزئیات درخواست:\nاگه بخوای می‌تونی برای راهنمایی بهتر مجری‌ها این اطلاعات رو هم وارد کنی:",
-                    reply_markup=create_dynamic_keyboard(context)
+                    message_text,
+                    reply_markup=InlineKeyboardMarkup(keyboard)
                 )
                 return DETAILS
             
@@ -549,33 +739,63 @@ async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_T
                 formatted_budget = format_price(budget)
                 context.user_data['budget'] = budget
                 context.user_data['state'] = DETAILS
+                
+                message_text = f"💰 بودجه ثبت شد: {formatted_budget} تومان"
+                message_text, navigation_keyboard = add_navigation_to_message(message_text, DETAILS, context.user_data)
+                
+                keyboard = create_dynamic_keyboard(context, include_navigation_buttons=False).inline_keyboard
+                if navigation_keyboard:
+                    keyboard.extend(navigation_keyboard.inline_keyboard)
+                    
                 await message.reply_text(
-                    f"💰 بودجه ثبت شد: {formatted_budget} تومان",
-                    reply_markup=create_dynamic_keyboard(context)
+                    message_text,
+                    reply_markup=InlineKeyboardMarkup(keyboard)
                 )
                 return DETAILS
             else:
+                message_text = "❌ بودجه نامعتبر! لطفاً فقط عدد وارد کن (مثلاً 500000)."
+                message_text, navigation_keyboard = add_navigation_to_message(message_text, DETAILS_BUDGET, context.user_data)
+                
+                keyboard = [[InlineKeyboardButton("⬅️ بازگشت", callback_data="back_to_details")]]
+                if navigation_keyboard:
+                    keyboard.extend(navigation_keyboard.inline_keyboard)
+                    
                 await message.reply_text(
-                    "❌ بودجه نامعتبر! لطفاً فقط عدد وارد کن (مثلاً 500000).",
-                    reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("⬅️ بازگشت", callback_data="back_to_details")]])
+                    message_text,
+                    reply_markup=InlineKeyboardMarkup(keyboard)
                 )
             return DETAILS_BUDGET
         
         elif current_state == DETAILS_QUANTITY:
             if text == "⬅️ بازگشت":
                 context.user_data['state'] = DETAILS
+                message_text = "📋 جزئیات درخواست:\nاگه بخوای می‌تونی برای راهنمایی بهتر مجری‌ها این اطلاعات رو هم وارد کنی:"
+                message_text, navigation_keyboard = add_navigation_to_message(message_text, DETAILS, context.user_data)
+                
+                keyboard = create_dynamic_keyboard(context, include_navigation_buttons=False).inline_keyboard
+                if navigation_keyboard:
+                    keyboard.extend(navigation_keyboard.inline_keyboard)
+                    
                 await message.reply_text(
-                    "📋 جزئیات درخواست:\nاگه بخوای می‌تونی برای راهنمایی بهتر مجری‌ها این اطلاعات رو هم وارد کنی:",
-                    reply_markup=create_dynamic_keyboard(context)
+                    message_text,
+                    reply_markup=InlineKeyboardMarkup(keyboard)
                 )
                 return DETAILS
             
             # ذخیره مقدار و واحد
             context.user_data['quantity'] = text
             context.user_data['state'] = DETAILS
+            
+            message_text = f"📏 مقدار و واحد ثبت شد: {text}"
+            message_text, navigation_keyboard = add_navigation_to_message(message_text, DETAILS, context.user_data)
+            
+            keyboard = create_dynamic_keyboard(context, include_navigation_buttons=False).inline_keyboard
+            if navigation_keyboard:
+                keyboard.extend(navigation_keyboard.inline_keyboard)
+                
             await message.reply_text(
-                f"📏 مقدار و واحد ثبت شد: {text}",
-                reply_markup=create_dynamic_keyboard(context)
+                message_text,
+                reply_markup=InlineKeyboardMarkup(keyboard)
             )
             return DETAILS
 
@@ -629,14 +849,24 @@ async def send_description_guidance(message, context):
         # اطمینان از اینکه state درست تنظیم شده
         context.user_data['state'] = DESCRIPTION
         
-        # ارسال پیام راهنما با کیبورد بازگشت و شروع مجدد
+        # استفاده از سیستم ناوبری جدید
+        guidance_text, navigation_keyboard = add_navigation_to_message(guidance_text, DESCRIPTION, context.user_data)
+        
+        # ایجاد کیبورد با دکمه‌های بازگشت و شروع مجدد
+        keyboard = [
+            [InlineKeyboardButton("⬅️ بازگشت", callback_data="back_to_location_type")],
+            [InlineKeyboardButton("🔄 شروع مجدد", callback_data="restart")]
+        ]
+        
+        # ادغام با کیبورد ناوبری اگر وجود دارد
+        if navigation_keyboard:
+            keyboard.extend(navigation_keyboard.inline_keyboard)
+            
+        # ارسال پیام راهنما با کیبورد
         await message.reply_text(
             guidance_text,
             parse_mode='Markdown',
-            reply_markup=InlineKeyboardMarkup([
-                [InlineKeyboardButton("⬅️ بازگشت", callback_data="back_to_location_type")],
-                [InlineKeyboardButton("🔄 شروع مجدد", callback_data="restart")]
-            ])
+            reply_markup=InlineKeyboardMarkup(keyboard)
         )
         
         logger.info(f"Description guidance sent successfully to user {message.chat.id}")
