@@ -1,6 +1,6 @@
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, ForceReply
-from telegram.ext import ContextTypes, ConversationHandler
-from keyboards import create_dynamic_keyboard, FILE_MANAGEMENT_MENU_KEYBOARD, create_category_keyboard, MAIN_MENU_KEYBOARD
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, ForceReply, ReplyKeyboardMarkup, KeyboardButton
+from telegram.ext import ContextTypes, ConversationHandler, MessageHandler, filters, CallbackQueryHandler
+from keyboards import create_dynamic_keyboard, FILE_MANAGEMENT_MENU_KEYBOARD, create_category_keyboard, MAIN_MENU_KEYBOARD, create_location_type_keyboard, LOCATION_TYPE_GUIDANCE_TEXT
 from utils import clean_budget, validate_date, validate_deadline, log_chat, format_price
 from khayyam import JalaliDatetime
 from datetime import datetime, timedelta
@@ -10,11 +10,60 @@ from handlers.submission_handler import submit_project
 from handlers.attachment_handler import handle_photo_navigation, init_photo_management
 # Fix circular import by importing from navigation_utils instead of state_handler
 from handlers.navigation_utils import add_navigation_to_message, SERVICE_REQUEST_FLOW
+from functools import wraps
+from app.models import User, Category, Subcategory
+import json
+import os
 
 logger = logging.getLogger(__name__)
 
 START, REGISTER, ROLE, EMPLOYER_MENU, CATEGORY, SUBCATEGORY, DESCRIPTION, LOCATION_TYPE, LOCATION_INPUT, DETAILS, DETAILS_FILES, DETAILS_DATE, DETAILS_DEADLINE, DETAILS_BUDGET, DETAILS_QUANTITY, SUBMIT, VIEW_PROJECTS, PROJECT_ACTIONS = range(18)
 CHANGE_PHONE, VERIFY_CODE = range(20, 22)  # states جدید
+
+async def send_description_guidance(message, context):
+    """
+    ارسال پیام راهنمای کامل برای مرحله وارد کردن توضیحات
+    """
+    # دریافت توضیحات قبلی اگر موجود باشد
+    last_description = context.user_data.get('description', context.user_data.get('temp_description', ''))
+    
+    guidance_text = (
+        "🌟 لطفاً توضیحات کاملی درباره خدمات موردنظرتان وارد کنید:\n\n"
+        "✅ نکات مهم برای توضیحات بهتر:\n"
+        "- دقیقاً چه خدماتی نیاز دارید؟\n"
+        "- جزئیات فنی یا ویژگی‌های مهم را ذکر کنید\n"
+        "- شرایط خاص و انتظارات خود را بیان کنید\n"
+        "- اگر مهارت یا ابزار خاصی لازم است، ذکر کنید\n\n"
+    )
+    
+    # اگر توضیحات قبلی موجود باشد، آن را نمایش می‌دهیم
+    if last_description:
+        guidance_text += f"✍️ توضیحات قبلی شما:\n{last_description}\n\nمی‌توانید آن را ویرایش کنید یا همین را تایید کنید:"
+    else:
+        guidance_text += "لطفاً توضیحات خود را بنویسید:"
+    
+    # افزودن اطلاعات ناوبری به پیام
+    guidance_text, navigation_keyboard = add_navigation_to_message(guidance_text, DESCRIPTION, context.user_data)
+    
+    # اگر توضیحات قبلی داریم، دکمه‌های تأیید را اضافه می‌کنیم
+    if last_description:
+        keyboard = [
+            [InlineKeyboardButton("✅ تأیید و ادامه", callback_data="continue_to_details")],
+            [InlineKeyboardButton("⬅️ بازگشت به مرحله قبل", callback_data="back_to_location_type")]
+        ]
+    else:
+        keyboard = [
+            [InlineKeyboardButton("⬅️ بازگشت به مرحله قبل", callback_data="back_to_location_type")]
+        ]
+    
+    # اگر navigation keyboard داریم، آن را ادغام می‌کنیم
+    if navigation_keyboard:
+        keyboard.extend(navigation_keyboard.inline_keyboard)
+    
+    await message.edit_text(
+        guidance_text,
+        reply_markup=InlineKeyboardMarkup(keyboard)
+    )
 
 @require_phone
 async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
@@ -33,15 +82,9 @@ async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_T
         if data == "back_to_location_type":
             # برگشت به انتخاب نوع لوکیشن
             context.user_data['state'] = LOCATION_TYPE
-            keyboard = [
-                [InlineKeyboardButton("🏠 محل من", callback_data="location_client")],
-                [InlineKeyboardButton("🔧 محل مجری", callback_data="location_contractor")],
-                [InlineKeyboardButton("💻 غیرحضوری", callback_data="location_remote")],
-                [InlineKeyboardButton("⬅️ بازگشت", callback_data="back_to_categories")]
-            ]
             await query.message.edit_text(
-                "🌟 محل انجام خدماتت رو انتخاب کن:",
-                reply_markup=InlineKeyboardMarkup(keyboard)
+                LOCATION_TYPE_GUIDANCE_TEXT,
+                reply_markup=create_location_type_keyboard()
             )
             return LOCATION_TYPE
             
@@ -419,15 +462,9 @@ async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_T
             if text == "⬅️ بازگشت":
                 # برگشت به انتخاب نوع لوکیشن
                 context.user_data['state'] = LOCATION_TYPE
-                keyboard = [
-                    [InlineKeyboardButton("🏠 محل من", callback_data="location_client")],
-                    [InlineKeyboardButton("🔧 محل مجری", callback_data="location_contractor")],
-                    [InlineKeyboardButton("💻 غیرحضوری", callback_data="location_remote")],
-                    [InlineKeyboardButton("⬅️ بازگشت", callback_data="back_to_categories")]
-                ]
                 await message.reply_text(
-                    "🌟 محل انجام خدماتت رو انتخاب کن:",
-                    reply_markup=InlineKeyboardMarkup(keyboard)
+                    LOCATION_TYPE_GUIDANCE_TEXT,
+                    reply_markup=create_location_type_keyboard()
                 )
                 return LOCATION_TYPE
             else:
@@ -817,83 +854,3 @@ async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_T
         return DESCRIPTION
 
     return current_state
-
-# تابع کمکی برای ارسال پیام راهنمای توضیحات
-async def send_description_guidance(message, context):
-    """ارسال پیام راهنما برای نوشتن توضیحات کامل"""
-    try:
-        # دریافت سرویس انتخاب شده برای ارائه مثال مناسب
-        category_id = context.user_data.get('category_id')
-        categories = context.user_data.get('categories', {})
-        category_name = categories.get(category_id, {}).get('name', 'خدمات')
-        
-        # مثال‌های متناسب با نوع خدمات
-        examples = {
-            'تعمیر': "مثال: «یخچال سامسونگ مدل X دچار مشکل برفک شده و صدای عجیبی می‌دهد. حدود 3 سال قدمت دارد.»",
-            'نظافت': "مثال: «آپارتمان 80 متری با 2 اتاق خواب و سرویس بهداشتی نیاز به نظافت کامل دارد. کف سرامیک است.»",
-            'بازسازی': "مثال: «دیوار آشپزخانه نیاز به کاشی‌کاری جدید دارد. متراژ تقریبی 5 متر است و کاشی‌ها توسط خودم تهیه شده.»",
-            'نقاشی': "مثال: «برای نقاشی 3 اتاق خواب با سقف کناف نیاز به استادکار دارم. رنگ سفید مات مدنظر است.»",
-            'حمل و نقل': "مثال: «نیاز به جابجایی اثاثیه منزل از تهرانپارس به پونک دارم. حدود 20 کارتن و 5 تکه مبلمان است.»"
-        }
-        
-        # انتخاب یک مثال پیش‌فرض اگر دسته‌بندی خاصی با مثال‌ها تطابق نداشت
-        example = "مثال: «نیاز به اتو کشی 10 پیراهن و 3 شلوار برای روز سه‌شنبه دارم، ترجیحاً با اتوی بخار»"
-        
-        # جستجو برای یک مثال مناسب با نوع خدمات
-        if category_name:
-            for key in examples:
-                if key in category_name:
-                    example = examples[key]
-                    break
-        
-        guidance_text = (
-            "🌟 *لطفاً توضیحات کاملی از خدمات درخواستی خود بنویسید*\n\n"
-            "توضیحات دقیق به مجریان کمک می‌کند تا قیمت دقیق‌تری پیشنهاد دهند و برای شما تجربه بهتری رقم بزنند.\n\n"
-            "📝 *توضیحات خوب شامل موارد زیر است:*\n"
-            "• جزئیات مشکل یا نیاز شما\n"
-            "• ابعاد، مدل یا نوع وسایل\n"
-            "• انتظارات شما از نتیجه کار\n"
-            "• زمان مورد نظر برای انجام خدمات\n\n"
-            f"{example}\n\n"
-            "🔍 هرچه توضیحات شما کامل‌تر باشد، مجریان با دقت بیشتری می‌توانند هزینه و زمان اجرا را برآورد کنند."
-        )
-        
-        # اطمینان از اینکه state درست تنظیم شده
-        context.user_data['state'] = DESCRIPTION
-        
-        # استفاده از سیستم ناوبری جدید
-        guidance_text, navigation_keyboard = add_navigation_to_message(guidance_text, DESCRIPTION, context.user_data)
-        
-        # ایجاد کیبورد با دکمه‌های بازگشت و شروع مجدد
-        keyboard = [
-            [InlineKeyboardButton("⬅️ بازگشت", callback_data="back_to_location_type")],
-            [InlineKeyboardButton("🔄 شروع مجدد", callback_data="restart")]
-        ]
-        
-        # ادغام با کیبورد ناوبری اگر وجود دارد
-        if navigation_keyboard:
-            keyboard.extend(navigation_keyboard.inline_keyboard)
-            
-        # ارسال پیام راهنما با کیبورد
-        await message.reply_text(
-            guidance_text,
-            parse_mode='Markdown',
-            reply_markup=InlineKeyboardMarkup(keyboard)
-        )
-        
-        logger.info(f"Description guidance sent successfully to user {message.chat.id}")
-        return True
-    except Exception as e:
-        logger.error(f"Error in send_description_guidance: {e}")
-        # در صورت خطا، یک پیام ساده ارسال کنیم
-        try:
-            await message.reply_text(
-                "🌟 لطفاً توضیحات کاملی از خدمات درخواستی خود بنویسید:",
-                reply_markup=InlineKeyboardMarkup([
-                    [InlineKeyboardButton("⬅️ بازگشت", callback_data="back_to_location_type")],
-                    [InlineKeyboardButton("🔄 شروع مجدد", callback_data="restart")]
-                ])
-            )
-            return True
-        except:
-            return False
