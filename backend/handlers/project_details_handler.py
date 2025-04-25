@@ -8,7 +8,8 @@ import logging
 from handlers.phone_handler import require_phone
 from handlers.submission_handler import submit_project
 from handlers.attachment_handler import handle_photo_navigation, init_photo_management
-from handlers.state_handler import add_navigation_to_message, SERVICE_REQUEST_FLOW
+# Fix circular import by importing from navigation_utils instead of state_handler
+from handlers.navigation_utils import add_navigation_to_message, SERVICE_REQUEST_FLOW
 
 logger = logging.getLogger(__name__)
 

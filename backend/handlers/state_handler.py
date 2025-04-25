@@ -15,6 +15,8 @@ from handlers.project_details_handler import handle_project_details
 from handlers.view_handler import handle_view_projects
 from handlers.callback_handler import handle_callback
 from keyboards import REGISTER_MENU_KEYBOARD
+# Import navigation utilities from navigation_utils.py instead of defining them here
+from handlers.navigation_utils import add_navigation_to_message, SERVICE_REQUEST_FLOW, STATE_NAMES
 
 logger = logging.getLogger(__name__)
 
@@ -24,149 +26,8 @@ LOCATION_TYPE, LOCATION_INPUT, DETAILS, DETAILS_FILES, DETAILS_DATE, \
 DETAILS_DEADLINE, DETAILS_BUDGET, DETAILS_QUANTITY, SUBMIT, VIEW_PROJECTS, \
 PROJECT_ACTIONS, CHANGE_PHONE, VERIFY_CODE = range(20)
 
-# Define the standard service request flow for navigation purposes
-SERVICE_REQUEST_FLOW = [
-    CATEGORY, 
-    SUBCATEGORY, 
-    DESCRIPTION, 
-    LOCATION_TYPE, 
-    LOCATION_INPUT, 
-    DETAILS, 
-    DETAILS_FILES, 
-    DETAILS_DATE, 
-    DETAILS_DEADLINE, 
-    DETAILS_BUDGET, 
-    DETAILS_QUANTITY, 
-    SUBMIT
-]
-
-# Map state numbers to readable names for logging
-STATE_NAMES = {
-    START: "شروع",
-    REGISTER: "ثبت‌نام",
-    ROLE: "انتخاب نقش",
-    EMPLOYER_MENU: "منوی کارفرما",
-    CATEGORY: "انتخاب دسته‌بندی",
-    SUBCATEGORY: "انتخاب زیردسته",
-    DESCRIPTION: "توضیحات",
-    LOCATION_TYPE: "نوع موقعیت",
-    LOCATION_INPUT: "ورود موقعیت",
-    DETAILS: "جزئیات",
-    DETAILS_FILES: "ارسال فایل",
-    DETAILS_DATE: "تاریخ",
-    DETAILS_DEADLINE: "مهلت",
-    DETAILS_BUDGET: "بودجه",
-    DETAILS_QUANTITY: "تعداد",
-    SUBMIT: "ارسال درخواست",
-    VIEW_PROJECTS: "مشاهده پروژه‌ها",
-    PROJECT_ACTIONS: "عملیات پروژه",
-    CHANGE_PHONE: "تغییر شماره تلفن",
-    VERIFY_CODE: "تأیید کد"
-}
-
 from handlers.submission_handler import submit_project
 from handlers.phone_handler import change_phone, handle_new_phone, verify_new_phone
-
-def get_navigation_keyboard(current_state: int, user_data: Dict[str, Any]) -> Optional[InlineKeyboardMarkup]:
-    """
-    Creates a navigation keyboard with back/next buttons based on the current state in the flow
-    """
-    # Skip navigation for certain states
-    if current_state in [START, REGISTER, ROLE, EMPLOYER_MENU, VIEW_PROJECTS, PROJECT_ACTIONS]:
-        return None
-        
-    # Find position in the flow
-    if current_state in SERVICE_REQUEST_FLOW:
-        current_index = SERVICE_REQUEST_FLOW.index(current_state)
-        
-        # Create keyboard
-        keyboard = []
-        row = []
-        
-        # Back button (if not first state)
-        if current_index > 0:
-            prev_state = SERVICE_REQUEST_FLOW[current_index - 1]
-            row.append(InlineKeyboardButton("« قبلی", callback_data=f"nav_to_{prev_state}"))
-        
-        # Add cancel button in the middle
-        row.append(InlineKeyboardButton("❌ لغو", callback_data="cancel"))
-        
-        # Skip button (if form data already present for this state)
-        if has_data_for_state(current_state, user_data) and current_index < len(SERVICE_REQUEST_FLOW) - 1:
-            next_state = SERVICE_REQUEST_FLOW[current_index + 1]
-            row.append(InlineKeyboardButton("رد کردن »", callback_data=f"nav_to_{next_state}"))
-        
-        keyboard.append(row)
-        return InlineKeyboardMarkup(keyboard)
-    
-    return None
-
-# Add this function to ensure consistent navigation keyboards across all handlers
-def get_universal_navigation_keyboard(context, additional_buttons=None):
-    """
-    Creates a universal navigation keyboard that can be used across all handlers
-    
-    Parameters:
-    - context: The conversation context
-    - additional_buttons: Optional list of additional InlineKeyboardButton rows to add
-    
-    Returns:
-    - InlineKeyboardMarkup with navigation buttons
-    """
-    current_state = context.user_data.get('state')
-    previous_state = context.user_data.get('previous_state')
-    keyboard = []
-    
-    # Navigation row with back button
-    nav_row = []
-    if previous_state is not None:
-        nav_row.append(InlineKeyboardButton("◀️ قبلی", callback_data="navigate_back"))
-    
-    # Add next button if in the service request flow and not at the end
-    if current_state in SERVICE_REQUEST_FLOW:
-        current_index = SERVICE_REQUEST_FLOW.index(current_state)
-        if current_index < len(SERVICE_REQUEST_FLOW) - 1:
-            nav_row.append(InlineKeyboardButton("بعدی ▶️", callback_data="navigate_next"))
-    
-    # Add navigation row if it has buttons
-    if nav_row:
-        keyboard.append(nav_row)
-    
-    # Add any additional buttons
-    if additional_buttons:
-        keyboard.extend(additional_buttons)
-    
-    # Always add a way to get back to the main menu
-    keyboard.append([InlineKeyboardButton("🏠 منوی اصلی", callback_data="back_to_employer_menu")])
-    
-    return InlineKeyboardMarkup(keyboard)
-
-def has_data_for_state(state: int, user_data: Dict[str, Any]) -> bool:
-    """
-    Checks if the user already has data for the given state
-    """
-    if state == CATEGORY:
-        return 'category_id' in user_data
-    elif state == SUBCATEGORY:
-        return 'subcategory_id' in user_data
-    elif state == DESCRIPTION:
-        return 'description' in user_data
-    elif state == LOCATION_TYPE:
-        return 'location_type' in user_data
-    elif state == LOCATION_INPUT:
-        return 'location' in user_data or 'address' in user_data
-    elif state == DETAILS_FILES:
-        return 'photos' in user_data
-    elif state == DETAILS_DATE:
-        return 'date' in user_data
-    elif state == DETAILS_DEADLINE:
-        return 'deadline' in user_data
-    elif state == DETAILS_BUDGET:
-        return 'budget' in user_data
-    elif state == DETAILS_QUANTITY:
-        return 'quantity' in user_data
-    
-    return False
 
 async def handle_navigation_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """
@@ -274,26 +135,6 @@ async def handle_navigation_callback(update: Update, context: ContextTypes.DEFAU
     
     # Default: stay in current state
     return context.user_data.get('state', ROLE)
-
-def add_navigation_to_message(text: str, current_state: int, user_data: Dict[str, Any]) -> Tuple[str, Optional[InlineKeyboardMarkup]]:
-    """
-    Adds navigation info to a message and returns updated text and keyboard
-    """
-    keyboard = get_navigation_keyboard(current_state, user_data)
-    
-    # Add progress indicator for certain flows
-    if current_state in SERVICE_REQUEST_FLOW:
-        current_index = SERVICE_REQUEST_FLOW.index(current_state)
-        total_steps = len(SERVICE_REQUEST_FLOW)
-        progress = f"\n\n📊 مرحله {current_index + 1} از {total_steps}"
-        
-        # Add ability to go back info if applicable
-        if current_index > 0:
-            progress += " | می‌توانید از دکمه «قبلی» برای بازگشت استفاده کنید"
-            
-        text += progress
-    
-    return text, keyboard
 
 async def handle_non_contact(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     logger.info(f"=== Entering handle_non_contact - User: {update.effective_user.id} ===")
