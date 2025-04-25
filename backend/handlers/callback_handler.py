@@ -57,20 +57,24 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             # بررسی اجازه ادامه به مراحل بعدی
             if target_state == "location" and context.user_data.get('category_id'):
                 # ادامه از دسته‌بندی به لوکیشن
+                logger.info(f"Moving from category to location selection. Category ID: {context.user_data.get('category_id')}")
                 context.user_data['state'] = LOCATION_TYPE
                 from handlers.location_handler import show_location_type_selection
+                await query.answer()  # اضافه کردن پاسخ به callback
                 return await show_location_type_selection(update, context)
                 
             elif target_state == "description" and context.user_data.get('service_location'):
                 # ادامه از لوکیشن به توضیحات
                 context.user_data['state'] = DESCRIPTION
                 from handlers.project_details_handler import send_description_guidance
+                await query.answer()  # اضافه کردن پاسخ به callback
                 await send_description_guidance(query.message, context)
                 return DESCRIPTION
                 
             elif target_state == "details" and context.user_data.get('description'):
                 # ادامه از توضیحات به جزئیات
                 context.user_data['state'] = DETAILS
+                await query.answer()  # اضافه کردن پاسخ به callback
                 # استفاده از MenuManager
                 await MenuManager.show_menu(
                     update,
@@ -82,11 +86,13 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 
             elif target_state == "submit" and context.user_data.get('description'):
                 # ادامه مستقیم به ثبت نهایی
+                await query.answer()  # اضافه کردن پاسخ به callback
                 from handlers.submission_handler import submit_project
                 return await submit_project(update, context)
             
             else:
                 # اطلاعات کافی برای انتقال به مرحله بعد وجود ندارد
+                logger.warning(f"Missing information for transition to {target_state}. Current data: {context.user_data}")
                 await query.answer("❌ لطفاً ابتدا اطلاعات مورد نیاز این مرحله را تکمیل کنید.")
                 return current_state
         
