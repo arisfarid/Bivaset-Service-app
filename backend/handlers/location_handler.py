@@ -2,7 +2,7 @@ from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, ReplyKe
 from telegram.ext import ContextTypes, ConversationHandler
 from utils import log_chat
 import logging
-from keyboards import create_category_keyboard, LOCATION_TYPE_MENU_KEYBOARD, LOCATION_INPUT_KEYBOARD, LOCATION_INPUT_MENU_KEYBOARD, BACK_TO_DESCRIPTION_KEYBOARD, REMOVE_KEYBOARD
+from keyboards import create_category_keyboard, create_location_type_keyboard, LOCATION_TYPE_GUIDANCE_TEXT, LOCATION_INPUT_KEYBOARD, BACK_TO_DESCRIPTION_KEYBOARD, REMOVE_KEYBOARD
 
 logger = logging.getLogger(__name__)
 
@@ -100,7 +100,7 @@ async def handle_location(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
             context.user_data['state'] = LOCATION_TYPE
             await query.message.edit_text(
                 "🌟 محل انجام خدماتت رو انتخاب کن:",
-                reply_markup=LOCATION_TYPE_MENU_KEYBOARD
+                reply_markup=create_location_type_keyboard()
             )
             return LOCATION_TYPE
 
@@ -171,7 +171,7 @@ async def handle_location(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
                 # نمایش منوی انتخاب نوع لوکیشن
                 await update.message.reply_text(
                     "🌟 محل انجام خدماتت رو انتخاب کن:",
-                    reply_markup=LOCATION_TYPE_MENU_KEYBOARD
+                    reply_markup=create_location_type_keyboard()
                 )
                 return LOCATION_TYPE
         

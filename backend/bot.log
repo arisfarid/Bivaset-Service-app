@@ -1,0 +1,10 @@
+Traceback (most recent call last):
+  File "/home/ubuntu/Bivaset-Service-app/backend/bot.py", line 14, in <module>
+    from handlers.state_handler import get_conversation_handler, handle_error
+  File "/home/ubuntu/Bivaset-Service-app/backend/handlers/state_handler.py", line 10, in <module>
+    from handlers.message_handler import handle_message
+  File "/home/ubuntu/Bivaset-Service-app/backend/handlers/message_handler.py", line 5, in <module>
+    from handlers.location_handler import handle_location
+  File "/home/ubuntu/Bivaset-Service-app/backend/handlers/location_handler.py", line 5, in <module>
+    from keyboards import create_category_keyboard, LOCATION_TYPE_MENU_KEYBOARD, LOCATION_INPUT_KEYBOARD, LOCATION_INPUT_MENU_KEYBOARD, BACK_TO_DESCRIPTION_KEYBOARD, REMOVE_KEYBOARD
+ImportError: cannot import name 'LOCATION_TYPE_MENU_KEYBOARD' from 'keyboards' (/home/ubuntu/Bivaset-Service-app/backend/keyboards.py)
