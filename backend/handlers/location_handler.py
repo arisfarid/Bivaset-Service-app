@@ -145,6 +145,25 @@ async def handle_location(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
                 reply_markup=BACK_TO_DESCRIPTION_KEYBOARD
             )
             return DESCRIPTION
+            
+        # ادامه به مرحله توضیحات پس از ثبت لوکیشن
+        elif data == "continue_to_description":
+            logger.info(f"Moving to description stage after location input")
+            context.user_data['state'] = DESCRIPTION
+            
+            try:
+                # استفاده از تابع send_description_guidance برای نمایش راهنمای کامل
+                from handlers.project_details_handler import send_description_guidance
+                await send_description_guidance(query.message, context)
+            except Exception as e:
+                logger.error(f"Error sending description guidance after location: {e}")
+                # اگر خطا رخ داد، همان پیام ساده قبلی نمایش داده شود
+                await query.message.edit_text(
+                    "🌟 توضیحات خدماتت رو بگو:",
+                    reply_markup=BACK_TO_DESCRIPTION_KEYBOARD
+                )
+            
+            return DESCRIPTION
 
     # اگر لوکیشن دریافت شد
     if update.message and update.message.location:
