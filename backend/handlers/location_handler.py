@@ -14,6 +14,15 @@ logger = logging.getLogger(__name__)
 START, REGISTER, ROLE, EMPLOYER_MENU, CATEGORY, SUBCATEGORY, DESCRIPTION, LOCATION_TYPE, LOCATION_INPUT, DETAILS, DETAILS_FILES, DETAILS_DATE, DETAILS_DEADLINE, DETAILS_BUDGET, DETAILS_QUANTITY, SUBMIT, VIEW_PROJECTS, PROJECT_ACTIONS = range(18)
 CHANGE_PHONE, VERIFY_CODE = range(20, 22)  # states جدید
 
+async def delete_message_after_delay(message, delay_seconds):
+    """Delete a message after a specified delay"""
+    import asyncio
+    await asyncio.sleep(delay_seconds)
+    try:
+        await message.delete()
+    except Exception as e:
+        logger.error(f"Error deleting temporary message: {e}")
+
 @require_phone
 async def show_location_type_selection(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """نمایش منوی انتخاب نوع محل خدمات (محل من، محل مجری، غیرحضوری)"""
@@ -171,16 +180,19 @@ async def handle_location(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         context.user_data['location'] = {'longitude': location.longitude, 'latitude': location.latitude}
         logger.info(f"Received location: {context.user_data['location']}")
         
-        # نمایش پیام پاپ‌آپ موقت برای تأیید دریافت لوکیشن
-        await update.message.reply_text(
-            "✅ موقعیت مکانی با موفقیت دریافت شد!",
-            reply_markup=REMOVE_KEYBOARD
+        # ارسال یک پیام موقت تأیید که بعداً حذف میشود
+        temp_message = await update.message.reply_text(
+            "✅ موقعیت مکانی با موفقیت دریافت شد!"
         )
         
         # تنظیم state برای مرحله بعدی (توضیحات)
         context.user_data['state'] = DESCRIPTION
         
         try:
+            # حذف پیام موقت تأیید بعد از مدت کوتاهی
+            import asyncio
+            asyncio.create_task(delete_message_after_delay(temp_message, 2))  # حذف پیام بعد از 2 ثانیه
+            
             # استفاده از تابع send_description_guidance برای نمایش راهنمای کامل
             from handlers.project_details_handler import send_description_guidance
             await send_description_guidance(update.message, context)
@@ -225,23 +237,14 @@ async def handle_location(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
 
     # بررسی سایر نوع پیام‌ها (عکس، فایل، استیکر و غیره)
     if update.message and current_state == LOCATION_INPUT:
-        # بررسی انواع پیام غیر متنی و غیر لوکیشن
-        if any([
-            update.message.photo,
-            update.message.video,
-            update.message.audio,
-            update.message.document,
-            update.message.sticker,
-            update.message.voice
-        ]):
-            logger.info(f"Received non-location content in location input step")
-            
-            # ارسال پیام راهنما
-            await update.message.reply_text(
-                LOCATION_ERROR_GUIDANCE_TEXT,
-                parse_mode="Markdown",
-                reply_markup=LOCATION_INPUT_KEYBOARD
-            )
-            return LOCATION_INPUT
+        logger.info(f"Received non-location content in location input step")
+        
+        # ارسال پیام راهنما
+        await update.message.reply_text(
+            LOCATION_ERROR_GUIDANCE_TEXT,
+            parse_mode="Markdown",
+            reply_markup=LOCATION_INPUT_KEYBOARD
+        )
+        return LOCATION_INPUT
 
     return context.user_data.get('state', LOCATION_TYPE)
