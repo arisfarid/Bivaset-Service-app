@@ -3,6 +3,12 @@ import sys
 import signal
 import asyncio
 import logging
+
+# Configure Django settings before importing Django models
+import django
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'app.settings')
+django.setup()
+
 from telegram.ext import Application, CommandHandler, CallbackQueryHandler, ContextTypes, PicklePersistence, PersistenceInput, ConversationHandler
 from telegram import Update
 from handlers.state_handler import get_conversation_handler, handle_error
