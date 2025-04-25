@@ -229,6 +229,20 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         logger.info(f"Current state: {current_state}")
         logger.info(f"Previous state: {previous_state}")
         
+        # Handle continue_to_description callback (from location input to description)
+        if data == "continue_to_description":
+            logger.info("User continuing from location to description")
+            context.user_data['previous_state'] = current_state
+            context.user_data['state'] = DESCRIPTION
+            await MenuManager.show_menu(
+                update,
+                context,
+                "📝 لطفا توضیحات درخواست خود را وارد کنید:",
+                create_navigation_keyboard(DESCRIPTION, context)
+            )
+            await query.answer()
+            return DESCRIPTION
+        
         # Universal back navigation patterns
         if data == "back" or data == "back_to_previous":
             if previous_state is not None:
