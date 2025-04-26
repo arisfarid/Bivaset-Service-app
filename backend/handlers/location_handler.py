@@ -123,7 +123,7 @@ async def handle_location(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         elif data == "back_to_location_type":
             context.user_data['state'] = LOCATION_TYPE
             await query.message.edit_text(
-                "🌟 محل انجام خدماتت رو انتخاب کن:",
+                LOCATION_TYPE_GUIDANCE_TEXT,
                 reply_markup=create_location_type_keyboard()
             )
             return LOCATION_TYPE
@@ -194,7 +194,7 @@ async def handle_location(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
                 
                 # نمایش منوی انتخاب نوع لوکیشن
                 await update.message.reply_text(
-                    "🌟 محل انجام خدماتت رو انتخاب کن:",
+                    LOCATION_TYPE_GUIDANCE_TEXT,
                     reply_markup=create_location_type_keyboard()
                 )
                 return LOCATION_TYPE
