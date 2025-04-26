@@ -61,8 +61,8 @@ async def handle_navigation_callback(update: Update, context: ContextTypes.DEFAU
                 return DESCRIPTION
                 
             elif next_state == LOCATION_TYPE:
-                from handlers.location_handler import show_location_type_selection
-                return await show_location_type_selection(update, context)
+                from handlers.location_handler import handle_location
+                return await handle_location(update, context)
                 
             elif next_state == LOCATION_INPUT:
                 from handlers.location_handler import request_location_input

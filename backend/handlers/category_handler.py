@@ -5,7 +5,7 @@ import logging
 from handlers.start_handler import start
 from keyboards import EMPLOYER_MENU_KEYBOARD, MAIN_MENU_KEYBOARD, create_category_keyboard
 from handlers.phone_handler import require_phone
-from handlers.location_handler import show_location_type_selection
+from handlers.location_handler import handle_location
 
 logger = logging.getLogger(__name__)
 
@@ -41,7 +41,7 @@ async def handle_category_selection(update: Update, context: ContextTypes.DEFAUL
             if context.user_data.get('category_id'):
                 context.user_data['state'] = LOCATION_TYPE
                 await query.answer()  # پاسخ به callback
-                return await show_location_type_selection(update, context)
+                return await handle_location(update, context)
             else:
                 logger.warning("Cannot proceed to location: No category selected")
                 await query.answer("❌ لطفاً ابتدا یک دسته‌بندی انتخاب کنید.")
