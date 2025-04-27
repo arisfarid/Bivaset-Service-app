@@ -2,7 +2,7 @@ from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, ReplyKe
 from telegram.ext import ContextTypes, ConversationHandler
 from utils import log_chat
 import logging
-from keyboards import get_location_input_keyboard, get_location_type_keyboard, LOCATION_TYPE_GUIDANCE_TEXT, LOCATION_INPUT_KEYBOARD, BACK_TO_DESCRIPTION_KEYBOARD, REMOVE_KEYBOARD
+from keyboards import get_location_input_keyboard, get_location_type_keyboard, LOCATION_TYPE_GUIDANCE_TEXT, BACK_TO_DESCRIPTION_KEYBOARD, REMOVE_KEYBOARD
 from localization import get_message, get_location_input_guidance_text
 
 logger = logging.getLogger(__name__)
