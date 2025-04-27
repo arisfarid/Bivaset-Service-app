@@ -60,6 +60,22 @@ MESSAGES = {
     "location_error_guidance": {
         "fa": "❌ پیام ارسالی مربوط به موقعیت نیست.\n\nلطفاً *فقط موقعیت مکانی* خود را ارسال کنید. این اطلاعات برای یافتن نزدیک‌ترین مجری به شما ضروری است.\n\n📱 از دکمه «ارسال موقعیت فعلی» استفاده کنید یا\n📎 روی آیکون پیوست (📎) کلیک کرده و گزینه «Location» را انتخاب کنید.",
         "en": "❌ The sent message is not a location.\n\nPlease *only send your location*. This is necessary to find the nearest contractor.\n\n📱 Use the 'Send current location' button or\n📎 click the attachment (📎) icon and select 'Location'."
+    },
+    "category_main_select": {
+        "fa": "🌟 دسته‌بندی خدماتت رو انتخاب کن:",
+        "en": "🌟 Select your service category:"
+    },
+    "category_selected": {
+        "fa": "دسته‌بندی انتخاب شد",
+        "en": "Category selected"
+    },
+    "category_submit_or_back": {
+        "fa": "برای ادامه ثبت درخواست، دکمه ثبت را بزنید یا برای بازگشت، دکمه بازگشت را انتخاب کنید.",
+        "en": "To continue, press submit or select back to return."
+    },
+    "submit": {
+        "fa": "ثبت درخواست",
+        "en": "Submit"
     }
 }
 

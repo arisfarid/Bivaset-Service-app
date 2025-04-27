@@ -73,7 +73,10 @@ async def handle_category_selection(update: Update, context: ContextTypes.DEFAUL
                                 callback_data=f"subcat_{child_id}"
                             )
                         ])
-                keyboard.append([InlineKeyboardButton("⬅️ بازگشت", callback_data="back_to_categories")])
+                # استفاده از لوکالایزیشن برای دکمه بازگشت
+                from localization import get_message
+                lang = context.user_data.get('lang', 'fa')
+                keyboard.append([InlineKeyboardButton(get_message("back", lang=lang), callback_data="back_to_categories")])
                 await query.message.edit_text(
                     f"📋 زیرمجموعه {selected_category['name']} را انتخاب کنید:",
                     reply_markup=InlineKeyboardMarkup(keyboard)
@@ -123,7 +126,9 @@ async def handle_category_selection(update: Update, context: ContextTypes.DEFAUL
                                 callback_data=f"subcat_{child_id}"
                             )
                         ])
-                keyboard.append([InlineKeyboardButton("⬅️ بازگشت", callback_data="back_to_categories")])
+                from localization import get_message
+                lang = context.user_data.get('lang', 'fa')
+                keyboard.append([InlineKeyboardButton(get_message("back", lang=lang), callback_data="back_to_categories")])
                 await query.message.edit_text(
                     f"📋 زیرمجموعه {selected_subcategory['name']} را انتخاب کنید:",
                     reply_markup=InlineKeyboardMarkup(keyboard)
@@ -151,7 +156,8 @@ async def handle_category_selection(update: Update, context: ContextTypes.DEFAUL
         elif data == "back_to_categories":
             categories = context.user_data.get('categories', {})
             category_group = context.user_data.get('category_group')
-            
+            from localization import get_message
+            lang = context.user_data.get('lang', 'fa')
             if category_group and categories.get(category_group):
                 parent = categories[category_group]
                 parent_id = parent.get('parent')
@@ -169,7 +175,7 @@ async def handle_category_selection(update: Update, context: ContextTypes.DEFAUL
                                     callback_data=f"subcat_{child_id}"
                                 )
                             ])
-                    keyboard.append([InlineKeyboardButton("⬅️ بازگشت", callback_data="back_to_menu")])
+                    keyboard.append([InlineKeyboardButton(get_message("back", lang=lang), callback_data="back_to_menu")])
                     context.user_data['category_group'] = parent_id
                     await query.message.edit_text(
                         f"📋 زیرمجموعه {grandparent['name']} را انتخاب کنید:",
@@ -179,7 +185,7 @@ async def handle_category_selection(update: Update, context: ContextTypes.DEFAUL
                     # اگر در بالاترین سطح هستیم، به منوی اصلی دسته‌بندی‌ها برمی‌گردیم
                     keyboard = create_category_keyboard(categories)
                     await query.message.edit_text(
-                        "🌟 دسته‌بندی خدماتت رو انتخاب کن:",
+                        get_message("category_main_select", lang=lang),
                         reply_markup=keyboard
                     )
                     context.user_data['category_group'] = None
@@ -187,7 +193,7 @@ async def handle_category_selection(update: Update, context: ContextTypes.DEFAUL
                 # برگشت به منوی اصلی دسته‌بندی‌ها
                 keyboard = create_category_keyboard(categories)
                 await query.message.edit_text(
-                    "🌟 دسته‌بندی خدماتت رو انتخاب کن:",
+                    get_message("category_main_select", lang=lang),
                     reply_markup=keyboard
                 )
                 context.user_data['category_group'] = None
@@ -210,12 +216,14 @@ async def handle_category_callback(update: Update, context: ContextTypes.DEFAULT
     context.user_data['category_id'] = int(data)
     project = {'category': context.user_data['category_id']}
     cat_name = context.user_data.get('categories', {}).get(project['category'], {}).get('name', 'نامشخص')
+    from localization import get_message
+    lang = context.user_data.get('lang', 'fa')
     keyboard = [
-        [InlineKeyboardButton("✅ ثبت", callback_data="submit_project")],
-        [InlineKeyboardButton("⬅️ بازگشت", callback_data="back_to_categories")]
+        [InlineKeyboardButton(get_message("submit", lang=lang), callback_data="submit_project")],
+        [InlineKeyboardButton(get_message("back", lang=lang), callback_data="back_to_categories")]
     ]
     await query.edit_message_text(
-        f"دسته‌بندی انتخاب‌شده: {cat_name}\nحالا می‌تونی ثبت کنی یا برگردی:",
+        f"{get_message('category_selected', lang=lang)}: {cat_name}\n{get_message('category_submit_or_back', lang=lang)}",
         reply_markup=InlineKeyboardMarkup(keyboard)
     )
     await log_chat(update, context)
