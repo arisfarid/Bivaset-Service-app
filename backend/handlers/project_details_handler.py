@@ -1,6 +1,6 @@
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, ForceReply, ReplyKeyboardMarkup, KeyboardButton
 from telegram.ext import ContextTypes, ConversationHandler, MessageHandler, filters, CallbackQueryHandler
-from keyboards import create_dynamic_keyboard, FILE_MANAGEMENT_MENU_KEYBOARD, create_category_keyboard, MAIN_MENU_KEYBOARD, create_location_type_keyboard, LOCATION_TYPE_GUIDANCE_TEXT
+from keyboards import create_dynamic_keyboard, FILE_MANAGEMENT_MENU_KEYBOARD, create_category_keyboard, MAIN_MENU_KEYBOARD, get_location_type_keyboard, LOCATION_TYPE_GUIDANCE_TEXT
 from utils import clean_budget, validate_date, validate_deadline, log_chat, format_price
 from khayyam import JalaliDatetime
 from datetime import datetime, timedelta
@@ -83,7 +83,7 @@ async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_T
             context.user_data['state'] = LOCATION_TYPE
             await query.message.edit_text(
                 LOCATION_TYPE_GUIDANCE_TEXT,
-                reply_markup=create_location_type_keyboard()
+                reply_markup=get_location_type_keyboard()
             )
             return LOCATION_TYPE
             
@@ -463,7 +463,7 @@ async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_T
                 context.user_data['state'] = LOCATION_TYPE
                 await message.reply_text(
                     LOCATION_TYPE_GUIDANCE_TEXT,
-                    reply_markup=create_location_type_keyboard()
+                    reply_markup=get_location_type_keyboard()
                 )
                 return LOCATION_TYPE
             else:
