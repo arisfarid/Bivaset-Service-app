@@ -27,13 +27,15 @@ async def handle_location(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         if query and (not query.data or query.data == "continue_to_location"):
             await query.message.edit_text(
                 LOCATION_TYPE_GUIDANCE_TEXT,
-                reply_markup=get_location_type_keyboard(lang=lang)
+                reply_markup=get_location_type_keyboard(lang=lang),
+                parse_mode="Markdown"
             )
             return LOCATION_TYPE
         elif message:
             await message.reply_text(
                 LOCATION_TYPE_GUIDANCE_TEXT,
-                reply_markup=get_location_type_keyboard(lang=lang)
+                reply_markup=get_location_type_keyboard(lang=lang),
+                parse_mode="Markdown"
             )
             return LOCATION_TYPE
 
@@ -82,7 +84,7 @@ async def handle_location(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
                 await query.message.delete()
                 await query.message.reply_text(
                     get_message("location_request", lang=lang),
-                    reply_markup=get_location_input_keyboard
+                    reply_markup=get_location_input_keyboard(lang=lang)
                 )
                 return LOCATION_INPUT
 
