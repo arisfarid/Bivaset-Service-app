@@ -22,21 +22,21 @@ async def handle_location(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
     lang = context.user_data.get('lang', 'fa')
     logger.info(f"Location handler - State: {current_state}")
     
-    # اگر کاربر در مرحله انتخاب نوع لوکیشن است و پیام جدیدی ارسال نشده
-    if current_state == LOCATION_TYPE and not query and not message:
-        # نمایش منوی انتخاب نوع لوکیشن
-        context.user_data['state'] = LOCATION_TYPE
-        message = update.callback_query.message if update.callback_query else update.message
-        await message.edit_text(
-            LOCATION_TYPE_GUIDANCE_TEXT,
-            reply_markup=get_location_type_keyboard()
-        ) if update.callback_query else await message.reply_text(
-            LOCATION_TYPE_GUIDANCE_TEXT,
-            reply_markup=get_location_type_keyboard()
-        )
-        logger.info(f"Showing location type selection for user: {update.effective_user.id}")
-        return LOCATION_TYPE
-    
+    # اگر کاربر به مرحله انتخاب نوع لوکیشن منتقل شد (چه با callback و چه با state)
+    if current_state == LOCATION_TYPE:
+        if query and (not query.data or query.data == "continue_to_location"):
+            await query.message.edit_text(
+                LOCATION_TYPE_GUIDANCE_TEXT,
+                reply_markup=get_location_type_keyboard(lang=lang)
+            )
+            return LOCATION_TYPE
+        elif message:
+            await message.reply_text(
+                LOCATION_TYPE_GUIDANCE_TEXT,
+                reply_markup=get_location_type_keyboard(lang=lang)
+            )
+            return LOCATION_TYPE
+
     # اگر callback دریافت شده (مثلاً دکمه‌ای کلیک شده)
     if query:
         data = query.data
