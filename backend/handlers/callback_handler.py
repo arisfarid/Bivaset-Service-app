@@ -22,6 +22,7 @@ CHANGE_PHONE, VERIFY_CODE = range(20, 22)  # states جدید
 # ایجاد قفل سراسری
 button_lock = Lock()
 
+# این تابع برای ارسال عکس به همراه کپشن و کیبورد اینلاین استفاده می‌شود
 async def send_photo_with_caption(context, chat_id, photo, caption, reply_markup=None):
     await context.bot.send_photo(
         chat_id=chat_id,
@@ -30,6 +31,7 @@ async def send_photo_with_caption(context, chat_id, photo, caption, reply_markup
         reply_markup=reply_markup
     )
 
+# این تابع برای ارسال پیام متنی به همراه کیبورد اینلاین استفاده می‌شود
 async def send_message_with_keyboard(context, chat_id, text, reply_markup):
     await context.bot.send_message(
         chat_id=chat_id,
@@ -37,7 +39,11 @@ async def send_message_with_keyboard(context, chat_id, text, reply_markup):
         reply_markup=reply_markup
     )
 
-# Create navigation keyboard with back and next buttons
+# ساخت کیبورد ناوبری (قبلی/بعدی/منو) بر اساس state فعلی
+# این کیبورد در مراحل مختلف ثبت درخواست نمایش داده می‌شود
+# دکمه بازگشت، ادامه و منوی اصلی را بسته به شرایط اضافه می‌کند
+# اگر state خارج از جریان اصلی باشد فقط دکمه منو را نمایش می‌دهد
+# اگر خطایی رخ دهد فقط دکمه منو را نمایش می‌دهد
 def create_navigation_keyboard(current_state, context):
     """Create navigation keyboard with back and next buttons based on the current state"""
     keyboard = []
@@ -78,6 +84,9 @@ def create_navigation_keyboard(current_state, context):
     
     return InlineKeyboardMarkup(keyboard)
 
+# هندلر ناوبری برای مدیریت دکمه‌های قبلی/بعدی در جریان ثبت درخواست
+# این تابع با توجه به state فعلی، کاربر را به مرحله قبلی یا بعدی هدایت می‌کند
+# و منوهای مناسب را نمایش می‌دهد
 async def handle_navigation_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handle navigation callbacks for moving back and forth in the conversation flow"""
     query = update.callback_query
@@ -221,6 +230,9 @@ async def handle_navigation_callback(update: Update, context: ContextTypes.DEFAU
         await query.answer("❌ خطایی در مسیریابی رخ داد!")
         return current_state
 
+# هندلر اصلی callback برای مدیریت همه callback ها و ناوبری کلی
+# این تابع بر اساس داده callback و state فعلی، منو یا مرحله مناسب را نمایش می‌دهد
+# و همچنین خطاها را مدیریت می‌کند
 async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Main callback handler with improved error handling and universal navigation"""
     query = update.callback_query
@@ -553,6 +565,8 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             pass
         return START
 
+# هندلر شروع درخواست جدید (new_request)
+# این تابع context کاربر را پاک می‌کند و منوی دسته‌بندی‌ها را نمایش می‌دهد
 async def handle_new_request(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     query = update.callback_query
     try:
@@ -596,6 +610,7 @@ async def handle_new_request(update: Update, context: ContextTypes.DEFAULT_TYPE)
         )
         return EMPLOYER_MENU
 
+# هندلر بازگشت به منوی اصلی
 async def handle_main_menu(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     query = update.callback_query
     # بازگشت به منوی اصلی
@@ -605,6 +620,8 @@ async def handle_main_menu(update: Update, context: ContextTypes.DEFAULT_TYPE) -
     )
     return ROLE
 
+# هندلر مدیریت عکس‌ها (نمایش، حذف، جایگزینی)
+# این تابع برای مدیریت عکس‌های پروژه در مراحل مختلف استفاده می‌شود
 async def handle_photos_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     query = update.callback_query
     data = query.data

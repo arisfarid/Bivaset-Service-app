@@ -1,5 +1,6 @@
 # keyboards.py
 from telegram import InlineKeyboardMarkup, InlineKeyboardButton, KeyboardButton, ReplyKeyboardMarkup, ReplyKeyboardRemove
+from localization import get_message
 
 # منوی اصلی 
 MAIN_MENU_KEYBOARD = InlineKeyboardMarkup([
@@ -21,42 +22,37 @@ CONTRACTOR_MENU_KEYBOARD = InlineKeyboardMarkup([
     [InlineKeyboardButton("⬅️ بازگشت", callback_data="main_menu")]
 ])
 
-# تابع ایجاد کیبورد انتخاب محل خدمات با توضیحات کامل
-def create_location_type_keyboard():
-    """ایجاد کیبورد انتخاب محل خدمات"""
+# تابع ایجاد کیبورد انتخاب محل خدمات با قابلیت لوکالایزیشن
+def get_location_type_keyboard(lang="fa"):
+    """ایجاد کیبورد انتخاب محل خدمات با قابلیت لوکالایزیشن"""
     return InlineKeyboardMarkup([
-        [InlineKeyboardButton("🏠 محل من", callback_data="location_client")],
-        [InlineKeyboardButton("🔧 محل مجری", callback_data="location_contractor")],
-        [InlineKeyboardButton("💻 غیرحضوری", callback_data="location_remote")],
-        [InlineKeyboardButton("⬅️ بازگشت", callback_data="back_to_categories")]
+        [InlineKeyboardButton(get_message("location_type_client", lang=lang), callback_data="location_client")],
+        [InlineKeyboardButton(get_message("location_type_contractor", lang=lang), callback_data="location_contractor")],
+        [InlineKeyboardButton(get_message("location_type_remote", lang=lang), callback_data="location_remote")],
+        [InlineKeyboardButton(get_message("back", lang=lang), callback_data="back_to_categories")]
     ])
 
-# متن راهنمای انتخاب محل خدمات
-LOCATION_TYPE_GUIDANCE_TEXT = (
-    "🌟 لطفاً محلی که خدمات شما باید انجام شود را انتخاب کنید:\n\n"
-    "🏠 **محل من**: مجری برای انجام خدمات به محل شما مراجعه می‌کند\n"
-    "      مانند: نظافت، بازسازی، باغبانی و خدمات سیار\n\n"
-    "🔧 **محل مجری**: شما برای دریافت خدمات به محل کار مجری مراجعه می‌کنید\n"
-    "      مانند: کارواش، تعمیرگاه، آرایشگاه و خدمات کارگاهی\n\n"
-    "💻 **غیرحضوری**: خدمات بدون نیاز به حضور فیزیکی و از راه دور انجام می‌شود\n"
-    "      مانند: مشاوره، آموزش، تایپ و ترجمه، برنامه‌نویسی"
-)
+# متن راهنمای انتخاب محل خدمات با قابلیت لوکالایزیشن
+LOCATION_TYPE_GUIDANCE_TEXT = get_message("location_type_guidance")
 
-# منوی ارسال لوکیشن با دکمه درخواست موقعیت مکانی
-LOCATION_INPUT_KEYBOARD = ReplyKeyboardMarkup([
-    [KeyboardButton("📲 ارسال موقعیت فعلی", request_location=True)],
-    [KeyboardButton("⬅️ بازگشت")]
-], resize_keyboard=True)
+# تابع ایجاد کیبورد ارسال لوکیشن با قابلیت لوکالایزیشن
+def get_location_input_keyboard(lang="fa"):
+    """ایجاد کیبورد ارسال لوکیشن با قابلیت لوکالایزیشن"""
+    return ReplyKeyboardMarkup([
+        [KeyboardButton(get_message("send_current_location", lang=lang), request_location=True)],
+        [KeyboardButton(get_message("back", lang=lang))]
+    ], resize_keyboard=True)
 
 # تابع ایجاد متن راهنمای ارسال لوکیشن
 def get_location_input_guidance_text(service_location_name):
     """ایجاد متن راهنمای ارسال لوکیشن با توجه به نوع خدمات"""
-    return (
-        f"📍 **موقعیت مکانی برای {service_location_name}**\n\n"
+    text = (
+        f"📍 *موقعیت مکانی برای {service_location_name}*\n\n"
         f"📍 برای اتصال به نزدیک‌ترین مجری، لطفاً لوکیشن (موقعیت) خود را مشخص کنید:\n\n"
         f"📱 اگر هم اکنون در محل مورد نظرتان برای دریافت خدمات قرار دارید، از دکمه «ارسال موقعیت فعلی» استفاده کنید یا\n"
         f"📎 روی آیکون پیوست (📎) کلیک کرده و با گزینه «Location» موقعیت دلخواه خود را از نقشه انتخاب کنید."
     )
+    return text, {"parse_mode": "Markdown"}
 
 # کیبورد حذف (برای برداشتن کیبوردهای معمولی)
 REMOVE_KEYBOARD = ReplyKeyboardRemove()
@@ -66,13 +62,15 @@ BACK_TO_LOCATION_KEYBOARD = InlineKeyboardMarkup([
     [InlineKeyboardButton("⬅️ بازگشت", callback_data="back_to_location_type")]
 ])
 
-# متن راهنمای خطا در ارسال لوکیشن
-LOCATION_ERROR_GUIDANCE_TEXT = (
-    "❌ پیام ارسالی مربوط به موقعیت نیست.\n\n"
-    "لطفاً *فقط موقعیت مکانی* خود را ارسال کنید. این اطلاعات برای یافتن نزدیک‌ترین مجری به شما ضروری است.\n\n"
-    "📱 از دکمه «ارسال موقعیت فعلی» استفاده کنید یا\n"
-    "📎 روی آیکون پیوست (📎) کلیک کرده و گزینه «Location» را انتخاب کنید."
-)
+# تابع ایجاد کیبورد بازگشت به توضیحات با قابلیت لوکالایزیشن
+def get_back_to_description_keyboard(lang="fa"):
+    """ایجاد کیبورد بازگشت به توضیحات با قابلیت لوکالایزیشن"""
+    return InlineKeyboardMarkup([
+        [InlineKeyboardButton(get_message("back", lang=lang), callback_data="back_to_location_type")]
+    ])
+
+# متن راهنمای خطا در ارسال لوکیشن با قابلیت لوکالایزیشن
+LOCATION_ERROR_GUIDANCE_TEXT = get_message("location_error_guidance")
 
 # منوی مدیریت فایل‌ها
 FILE_MANAGEMENT_MENU_KEYBOARD = InlineKeyboardMarkup([
