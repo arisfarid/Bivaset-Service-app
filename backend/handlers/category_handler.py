@@ -1,11 +1,12 @@
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardRemove
 from telegram.ext import ContextTypes, ConversationHandler
-from utils import get_categories, log_chat
+from utils import get_categories, log_chat, delete_message_later
 import logging
 from handlers.start_handler import start
 from keyboards import EMPLOYER_MENU_KEYBOARD, MAIN_MENU_KEYBOARD, create_category_keyboard
 from handlers.phone_handler import require_phone
 from handlers.location_handler import handle_location
+import asyncio
 
 logger = logging.getLogger(__name__)
 
@@ -224,9 +225,10 @@ async def handle_category_callback(update: Update, context: ContextTypes.DEFAULT
         [InlineKeyboardButton(get_message("submit", lang=lang), callback_data="submit_project")],
         [InlineKeyboardButton(get_message("back", lang=lang), callback_data="back_to_categories")]
     ]
-    await query.edit_message_text(
+    msg = await query.edit_message_text(
         f"{get_message('category_selected', lang=lang)}: {cat_name}\n{get_message('category_submit_or_back', lang=lang)}",
         reply_markup=InlineKeyboardMarkup(keyboard)
     )
+    asyncio.create_task(delete_message_later(context.bot, msg.chat_id, msg.message_id))
     await log_chat(update, context)
     return SUBMIT

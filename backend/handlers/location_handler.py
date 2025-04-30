@@ -1,9 +1,10 @@
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardMarkup, KeyboardButton, ReplyKeyboardRemove
 from telegram.ext import ContextTypes, ConversationHandler
-from utils import log_chat
+from utils import log_chat, delete_message_later
 import logging
 from keyboards import get_location_input_keyboard, get_location_type_keyboard, LOCATION_TYPE_GUIDANCE_TEXT, BACK_TO_DESCRIPTION_KEYBOARD, REMOVE_KEYBOARD
 from localization import get_message
+import asyncio
 
 logger = logging.getLogger(__name__)
 
@@ -124,10 +125,12 @@ async def handle_location(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         logger.info(f"Received location: {context.user_data['location']}")
         context.user_data['state'] = DESCRIPTION
         # نمایش پیام موفقیت و هدایت به مرحله توضیحات
-        await update.message.reply_text(
+        msg = await update.message.reply_text(
             get_message("location_success", lang=lang),
             reply_markup=REMOVE_KEYBOARD
         )
+        # حذف خودکار پیام بعد از ۴ ثانیه
+        asyncio.create_task(delete_message_later(context.bot, msg.chat_id, msg.message_id))
         try:
             from handlers.project_details_handler import send_description_guidance
             await send_description_guidance(update.message, context)
@@ -163,10 +166,11 @@ async def handle_location(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         # اگر متن بازگشت ارسال شد
         if update.message.text and update.message.text == get_message("back", lang=lang):
             context.user_data['state'] = LOCATION_TYPE
-            await update.message.reply_text(
+            msg = await update.message.reply_text(
                 get_message("back_to_previous", lang=lang),
                 reply_markup=REMOVE_KEYBOARD
             )
+            asyncio.create_task(delete_message_later(context.bot, msg.chat_id, msg.message_id))
             await update.message.reply_text(
                 get_message("location_type_guidance", lang=lang),
                 reply_markup=get_location_type_keyboard(lang=lang),

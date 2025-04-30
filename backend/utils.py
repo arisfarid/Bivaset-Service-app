@@ -3,6 +3,7 @@ import requests
 import re
 import sys
 import logging
+import asyncio
 from datetime import datetime, timedelta
 from khayyam import JalaliDatetime
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
@@ -230,3 +231,10 @@ async def restart_chat(update: Update, context: ContextTypes.DEFAULT_TYPE):
     except Exception as e:
         logger.error(f"Error restarting chat: {e}")
         return False
+
+async def delete_message_later(bot, chat_id, message_id, delay=4):
+    await asyncio.sleep(delay)
+    try:
+        await bot.delete_message(chat_id=chat_id, message_id=message_id)
+    except Exception:
+        pass
