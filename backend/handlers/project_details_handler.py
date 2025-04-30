@@ -466,13 +466,14 @@ async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_T
                     message_text = get_message("details_guidance", lang=context.user_data.get('lang', 'fa'))
                     message_text, navigation_keyboard = add_navigation_to_message(message_text, DETAILS, context.user_data)
                     from keyboards import create_dynamic_keyboard
-                    keyboard_rows = create_dynamic_keyboard(context).inline_keyboard
+                    main_keyboard = create_dynamic_keyboard(context)
+                    keyboard_rows = list(main_keyboard.inline_keyboard) if hasattr(main_keyboard, "inline_keyboard") else []
                     if navigation_keyboard:
-                        keyboard_rows.extend(navigation_keyboard.inline_keyboard)
+                        keyboard_rows += list(navigation_keyboard.inline_keyboard)
                     await message.reply_text(message_text, reply_markup=InlineKeyboardMarkup(keyboard_rows))
                 except Exception as e:
                     logger.error(f"Error sending DETAILS step after description: {e}")
-                    await message.reply_text(get_message("step_error", lang=context.user_data.get('lang', 'fa')))
+                    await message.reply_text(get_message("generic_step_error", lang=context.user_data.get('lang', 'fa')))
                 return DETAILS
 
         elif current_state == DETAILS:
