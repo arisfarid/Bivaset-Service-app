@@ -2,8 +2,8 @@
 
 MESSAGES = {
     "back_to_previous": {
-        "fa": "برگشت به مرحله قبل...",
-        "en": "Back to previous step..."
+        "fa": "⬅️ برگشت به مرحله قبل...",
+        "en": "⬅️ Back to previous step..."
     },
     "location_request": {
         "fa": "📍 برای اتصال به نزدیک‌ترین مجری، لطفاً لوکیشن (موقعیت) خود را ارسال کنید:\n\nاگر هم اکنون در محل مورد نظرتان برای دریافت خدمات قرار دارید، از دکمه ارسال موقعیت فعلی استفاده کنید یا با استفاده از آیکون 📎 (پیوست) موقعیت دلخواه خود را از نقشه انتخاب کنید.",
@@ -30,20 +30,20 @@ MESSAGES = {
         "en": "❌ The sent message type is not acceptable.\n\nPlease *only send your location*. This is necessary to find the nearest contractor.\n\n📱 Use the 'Send current location' button or\n📎 click the attachment (📎) icon and select 'Location'."
     },
     "location_type_client": {
-        "fa": "محل من",
-        "en": "My place"
+        "fa": "🏠 محل من",
+        "en": "🏠 My place"
     },
     "location_type_contractor": {
-        "fa": "محل مجری",
-        "en": "Contractor's place"
+        "fa": "🔧 محل مجری",
+        "en": "🔧 Contractor's place"
     },
     "location_type_remote": {
-        "fa": "غیرحضوری",
-        "en": "Remote"
+        "fa": "💻 غیرحضوری",
+        "en": "💻 Remote"
     },
     "send_current_location": {
-        "fa": "ارسال موقعیت فعلی",
-        "en": "Send current location"
+        "fa": "📍 ارسال موقعیت فعلی",
+        "en": "📍 Send current location"
     },
     "back": {
         "fa": "⬅️ بازگشت",
