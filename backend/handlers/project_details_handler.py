@@ -83,7 +83,8 @@ async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_T
             context.user_data['state'] = LOCATION_TYPE
             await query.message.edit_text(
                 LOCATION_TYPE_GUIDANCE_TEXT,
-                reply_markup=get_location_type_keyboard()
+                reply_markup=get_location_type_keyboard(),
+                parse_mode="Markdown"
             )
             return LOCATION_TYPE
             
@@ -463,7 +464,8 @@ async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_T
                 context.user_data['state'] = LOCATION_TYPE
                 await message.reply_text(
                     LOCATION_TYPE_GUIDANCE_TEXT,
-                    reply_markup=get_location_type_keyboard()
+                    reply_markup=get_location_type_keyboard(),
+                    parse_mode="Markdown"
                 )
                 return LOCATION_TYPE
             else:
