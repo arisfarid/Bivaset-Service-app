@@ -93,7 +93,8 @@ async def handle_location(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
             context.user_data['state'] = LOCATION_TYPE
             await query.message.edit_text(
                 LOCATION_TYPE_GUIDANCE_TEXT,
-                reply_markup=get_location_type_keyboard()
+                reply_markup=get_location_type_keyboard(),
+                parse_mode="Markdown"
             )
             return LOCATION_TYPE
 
@@ -107,7 +108,8 @@ async def handle_location(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
                 logger.error(f"Error sending description guidance after skipping location: {e}")
                 await query.message.edit_text(
                     get_message("description_request", lang=lang),
-                    reply_markup=BACK_TO_DESCRIPTION_KEYBOARD
+                    reply_markup=BACK_TO_DESCRIPTION_KEYBOARD,
+                    parse_mode="Markdown"
                 )
             return DESCRIPTION
 
