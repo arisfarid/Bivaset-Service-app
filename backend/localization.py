@@ -102,12 +102,16 @@ MESSAGES = {
         "en": "❌ Invalid budget! Please enter only a number (e.g. 500000)."
     },
     "continue": {
-        "fa": "✅ ادامه به مرحله بعد",
-        "en": "✅ Continue to next step"
+        "fa": "✅ ادامه",
+        "en": "✅ Continue"
     },
-    "edit_description": {
-        "fa": "✏️ اصلاح توضیحات",
-        "en": "✏️ Edit description"
+    "edit": {
+        "fa": "✏️ ویرایش",
+        "en": "✏️ Edit"
+    },
+    "step_error": {
+        "fa": "❌ خطا در نمایش مرحله بعد. لطفاً مجدداً تلاش کنید.",
+        "en": "❌ Error displaying the next step. Please try again."
     }
 }
 

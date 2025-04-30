@@ -472,7 +472,7 @@ async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_T
                     await message.reply_text(message_text, reply_markup=InlineKeyboardMarkup(keyboard_rows))
                 except Exception as e:
                     logger.error(f"Error sending DETAILS step after description: {e}")
-                    await message.reply_text("❌ خطا در نمایش مرحله بعد. لطفاً مجدداً تلاش کنید یا با پشتیبانی تماس بگیرید.")
+                    await message.reply_text(get_message("step_error", lang=context.user_data.get('lang', 'fa')))
                 return DETAILS
 
         elif current_state == DETAILS:
