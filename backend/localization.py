@@ -26,8 +26,8 @@ MESSAGES = {
         "en": "❌ Please send your *location*.\n\nFor services at {service_location_name}, we need your location to find the right contractor.\n\n📱 Use the 'Send current location' button or\n📎 click the attachment (📎) icon and select 'Location'."
     },
     "location_invalid_type": {
-        "fa": "❌ نوع پیام ارسالی قابل پذیرش نیست.\n\nلطفاً *فقط موقعیت مکانی* خود را ارسال کنید. این اطلاعات برای یافتن نزدیک‌ترین مجری به شما ضروری است.\n\n📱 از دکمه «ارسال موقعیت فعلی» استفاده کنید یا\n📎 روی آیکون پیوست (📎) کلیک کرده و گزینه «Location» را انتخاب کنید.",
-        "en": "❌ The sent message type is not acceptable.\n\nPlease *only send your location*. This is necessary to find the nearest contractor.\n\n📱 Use the 'Send current location' button or\n📎 click the attachment (📎) icon and select 'Location'."
+        "fa": "❌ پیام ارسالی مربوط به موقعیت نیست.\n\nلطفاً *فقط موقعیت مکانی* خود را ارسال کنید. این اطلاعات برای یافتن نزدیک‌ترین مجری به شما ضروری است.\n\n📱 از دکمه «ارسال موقعیت فعلی» استفاده کنید یا\n📎 روی آیکون پیوست (📎) کلیک کرده و گزینه «Location» را انتخاب کنید.",
+        "en": "❌ The sent message is not a location.\n\nPlease *only send your location*. This is necessary to find the nearest contractor.\n\n📱 Use the 'Send current location' button or\n📎 click the attachment (📎) icon and select 'Location'."
     },
     "location_type_client": {
         "fa": "🏠 محل من",
@@ -56,10 +56,6 @@ MESSAGES = {
     "location_input_guidance": {
         "fa": "📍 *موقعیت مکانی برای {service_location_name}*\n\n📍 برای اتصال به نزدیک‌ترین مجری، لطفاً لوکیشن (موقعیت) خود را مشخص کنید:\n\n📱 اگر هم اکنون در محل مورد نظرتان برای دریافت خدمات قرار دارید، از دکمه «ارسال موقعیت فعلی» استفاده کنید یا\n📎 روی آیکون پیوست (📎) کلیک کرده و با گزینه «Location» موقعیت دلخواه خود را از نقشه انتخاب کنید.",
         "en": "📍 *Location for {service_location_name}*\n\n📍 To connect to the nearest contractor, please specify your location:\n\n📱 If you are at the desired place, use the 'Send current location' button or\n📎 click the attachment (📎) icon and select 'Location' from the map."
-    },
-    "location_error_guidance": {
-        "fa": "❌ پیام ارسالی مربوط به موقعیت نیست.\n\nلطفاً *فقط موقعیت مکانی* خود را ارسال کنید. این اطلاعات برای یافتن نزدیک‌ترین مجری به شما ضروری است.\n\n📱 از دکمه «ارسال موقعیت فعلی» استفاده کنید یا\n📎 روی آیکون پیوست (📎) کلیک کرده و گزینه «Location» را انتخاب کنید.",
-        "en": "❌ The sent message is not a location.\n\nPlease *only send your location*. This is necessary to find the nearest contractor.\n\n📱 Use the 'Send current location' button or\n📎 click the attachment (📎) icon and select 'Location'."
     },
     "category_main_select": {
         "fa": "🌟 دسته‌بندی خدماتت رو انتخاب کن:",
