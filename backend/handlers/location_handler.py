@@ -20,6 +20,9 @@ async def handle_location(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
     current_state = context.user_data.get('state', LOCATION_TYPE)
     # تعیین زبان کاربر (پیش‌فرض فارسی)
     lang = context.user_data.get('lang', 'fa')
+    logger.info(f"handle_location called. current_state={current_state}, message={update.message}")
+    if update.message:
+        logger.info(f"update.message.text={getattr(update.message, 'text', None)} | photo={bool(getattr(update.message, 'photo', None))} | video={bool(getattr(update.message, 'video', None))} | document={bool(getattr(update.message, 'document', None))}")
     logger.info(f"Location handler - State: {current_state}")
     
     # اگر کاربر به مرحله انتخاب نوع لوکیشن منتقل شد (چه با callback و چه با state)
