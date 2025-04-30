@@ -545,11 +545,14 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             keyboard = create_category_keyboard(categories)
             
             # استفاده از MenuManager
+            from localization import get_message
+            lang = context.user_data.get('lang', 'fa')
             await MenuManager.show_menu(
                 update,
                 context,
-                "🌟 دسته‌بندی خدماتت رو انتخاب کن:",
-                keyboard
+                get_message("category_main_select", lang=lang),
+                keyboard,
+                clear_previous=False
             )
             await query.answer()
             return CATEGORY
