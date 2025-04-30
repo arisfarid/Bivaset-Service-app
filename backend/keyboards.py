@@ -69,9 +69,6 @@ def get_back_to_description_keyboard(lang="fa"):
         [InlineKeyboardButton(get_message("back", lang=lang), callback_data="back_to_location_type")]
     ])
 
-# متن راهنمای خطا در ارسال لوکیشن با قابلیت لوکالایزیشن
-LOCATION_ERROR_GUIDANCE_TEXT = get_message("location_error_guidance")
-
 # منوی مدیریت فایل‌ها
 FILE_MANAGEMENT_MENU_KEYBOARD = InlineKeyboardMarkup([
     [InlineKeyboardButton("🏁 اتمام ارسال تصاویر", callback_data="finish_files")],

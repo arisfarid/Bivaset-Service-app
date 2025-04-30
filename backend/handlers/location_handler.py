@@ -138,39 +138,9 @@ async def handle_location(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
             )
         return DESCRIPTION
 
-    # اگر پیام متنی دریافت شد (مثلاً کاربر دکمه بازگشت را زد یا متن اشتباه وارد کرد)
-    if update.message and update.message.text:
-        if update.message.text == get_message("back", lang=lang):
-            if current_state == LOCATION_INPUT:
-                context.user_data['state'] = LOCATION_TYPE
-                # نمایش پیام بازگشت و منوی انتخاب نوع لوکیشن با توجه به زبان کاربر
-                await update.message.reply_text(
-                    get_message("back_to_previous", lang=lang),
-                    reply_markup=REMOVE_KEYBOARD
-                )
-                await update.message.reply_text(
-                    get_message("location_type_guidance", lang=lang),
-                    reply_markup=get_location_type_keyboard(lang=lang),
-                    parse_mode="Markdown"
-                )
-                return LOCATION_TYPE
-        # اگر کاربر به جای لوکیشن، متن ارسال کند
-        elif current_state == LOCATION_INPUT:
-            logger.info(f"Received text instead of location: {update.message.text}")
-            service_location_type = context.user_data.get('service_location')
-            service_location_name = {
-                'client_site': 'محل کارفرما',
-                'contractor_site': 'محل مجری'
-            }.get(service_location_type, 'حضوری')
-            await update.message.reply_text(
-                get_message("location_required", lang=lang, service_location_name=service_location_name),
-                parse_mode="Markdown",
-                reply_markup=get_location_input_keyboard(lang=lang)
-            )
-            return LOCATION_INPUT
-
-    # اگر کاربر به جای لوکیشن، عکس یا فایل یا پیام غیرمجاز ارسال کند
+    # اگر پیام متنی یا غیرمتنی دریافت شد (در مرحله LOCATION_INPUT)
     if update.message and current_state == LOCATION_INPUT:
+        # اگر عکس، ویدیو، فایل، استیکر یا ویس ارسال شد
         if any([
             update.message.photo,
             update.message.video,
@@ -180,6 +150,15 @@ async def handle_location(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
             update.message.voice
         ]):
             logger.info(f"Received non-location content in location input step")
+            await update.message.reply_text(
+                get_message("location_invalid_type", lang=lang),
+                parse_mode="Markdown",
+                reply_markup=get_location_input_keyboard(lang=lang)
+            )
+            return LOCATION_INPUT
+        # اگر متن ارسال شد (و متن بازگشت نبود)
+        elif update.message.text and update.message.text != get_message("back", lang=lang):
+            logger.info(f"Received text instead of location: {update.message.text}")
             await update.message.reply_text(
                 get_message("location_invalid_type", lang=lang),
                 parse_mode="Markdown",
