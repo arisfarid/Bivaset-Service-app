@@ -140,6 +140,19 @@ async def handle_location(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
 
     # اگر پیام متنی یا غیرمتنی دریافت شد (در مرحله LOCATION_INPUT)
     if update.message and current_state == LOCATION_INPUT:
+        # اگر متن بازگشت ارسال شد
+        if update.message.text and update.message.text == get_message("back", lang=lang):
+            context.user_data['state'] = LOCATION_TYPE
+            await update.message.reply_text(
+                get_message("back_to_previous", lang=lang),
+                reply_markup=REMOVE_KEYBOARD
+            )
+            await update.message.reply_text(
+                get_message("location_type_guidance", lang=lang),
+                reply_markup=get_location_type_keyboard(lang=lang),
+                parse_mode="Markdown"
+            )
+            return LOCATION_TYPE
         # اگر عکس، ویدیو، فایل، استیکر یا ویس ارسال شد
         if any([
             update.message.photo,
@@ -157,7 +170,7 @@ async def handle_location(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
             )
             return LOCATION_INPUT
         # اگر متن ارسال شد (و متن بازگشت نبود)
-        elif update.message.text and update.message.text != get_message("back", lang=lang):
+        elif update.message.text:
             logger.info(f"Received text instead of location: {update.message.text}")
             await update.message.reply_text(
                 get_message("location_invalid_type", lang=lang),
