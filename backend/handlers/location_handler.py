@@ -150,7 +150,8 @@ async def handle_location(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
                 )
                 await update.message.reply_text(
                     get_message("location_type_guidance", lang=lang),
-                    reply_markup=get_location_type_keyboard(lang=lang)
+                    reply_markup=get_location_type_keyboard(lang=lang),
+                    parse_mode="Markdown"
                 )
                 return LOCATION_TYPE
         # اگر کاربر به جای لوکیشن، متن ارسال کند
