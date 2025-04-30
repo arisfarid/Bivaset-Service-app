@@ -26,14 +26,10 @@ async def send_description_guidance(message, context):
     """
     from localization import get_message
     guidance_text = get_message("description_guidance", lang=context.user_data.get('lang', 'fa'))
-    # افزودن اطلاعات ناوبری به پیام
-    from handlers.navigation_utils import add_navigation_to_message, DESCRIPTION
-    guidance_text, navigation_keyboard = add_navigation_to_message(guidance_text, DESCRIPTION, context.user_data)
+    # فقط یک دکمه بازگشت نمایش داده شود
     keyboard = [
-        [InlineKeyboardButton("⬅️ بازگشت به مرحله قبل", callback_data="back_to_location_type")]
+        [InlineKeyboardButton(get_message("back", lang=context.user_data.get('lang', 'fa')), callback_data="back_to_location_type")]
     ]
-    if navigation_keyboard:
-        keyboard.extend(navigation_keyboard.inline_keyboard)
     await message.edit_text(
         guidance_text,
         reply_markup=InlineKeyboardMarkup(keyboard)
