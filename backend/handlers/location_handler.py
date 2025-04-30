@@ -79,7 +79,7 @@ async def handle_location(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
                 except Exception as e:
                     logger.error(f"Error sending description guidance for remote service: {e}")
                     await query.message.edit_text(
-                        get_message("description_request", lang=lang),
+                        get_message("description_guidance", lang=lang),
                         reply_markup=BACK_TO_DESCRIPTION_KEYBOARD
                     )
                 return DESCRIPTION
@@ -112,7 +112,7 @@ async def handle_location(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
             except Exception as e:
                 logger.error(f"Error sending description guidance after skipping location: {e}")
                 await query.message.edit_text(
-                    get_message("description_request", lang=lang),
+                    get_message("description_guidance", lang=lang),
                     reply_markup=BACK_TO_DESCRIPTION_KEYBOARD,
                     parse_mode="Markdown"
                 )
@@ -138,7 +138,7 @@ async def handle_location(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         except Exception as e:
             logger.error(f"Error sending description guidance: {e}")
             await update.message.reply_text(
-                get_message("description_request_full", lang=lang),
+                get_message("description_guidance", lang=lang),
                 reply_markup=InlineKeyboardMarkup([
                     [InlineKeyboardButton(get_message("back", lang=lang), callback_data="back_to_location_type")]
                 ])

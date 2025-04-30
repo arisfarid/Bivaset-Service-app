@@ -13,13 +13,9 @@ MESSAGES = {
         "fa": "✅ موقعیت مکانی شما با موفقیت دریافت شد!",
         "en": "✅ Your location was received successfully!"
     },
-    "description_request": {
-        "fa": "🌟 توضیحات خدماتت رو بگو:",
-        "en": "🌟 Please describe your requested service:"
-    },
-    "description_request_full": {
-        "fa": "🌟 حالا لطفاً توضیحات کاملی از خدمات درخواستی خود بنویسید:\n\nاگر با مشکلی مواجه شدید، می‌توانید از دکمه شروع مجدد استفاده کنید.",
-        "en": "🌟 Now please write a full description of your requested service.\n\nIf you have any issues, you can use the restart button."
+    "description_guidance": {
+        "fa": "✍️ لطفاً توضیحات کامل و دقیقی درباره خدمات مورد نیازت بنویس تا مجریان بتوانند بهتر و سریع‌تر بهت کمک کنند!\n\nبهتر است به این نکات اشاره کنی:\n• نوع و جزئیات دقیق خدمت مورد نیاز\n• محل انجام خدمت (در صورت نیاز)\n• زمان یا بازه زمانی مورد انتظار\n• تعداد یا حجم کار\n• شرایط خاص یا انتظارات ویژه\n\nمثال توضیح کامل:\n«سلام، نیاز به تعمیر کولر گازی در منزل دارم. کولر مدل ال‌جی است و باد گرم می‌زند. محل نصب طبقه سوم آپارتمان است. لطفاً هزینه و زمان انجام کار را اعلام کنید. اگر قطعه نیاز به تعویض دارد، لطفاً اطلاع دهید.»\n\nهرچه توضیحاتت کامل‌تر باشه، قیمت و زمان دقیق‌تری دریافت می‌کنی! 😊",
+        "en": "✍️ Please write a complete and detailed description of the service you need so contractors can help you better and faster!\n\nIt's best to mention:\n• The exact type and details of the service\n• The location (if needed)\n• Your expected time or time window\n• Quantity or work volume\n• Any special conditions or expectations\n\nExample of a complete description:\n'Hi, I need my LG air conditioner repaired at home. It's blowing warm air. The unit is on the third floor. Please let me know the cost and time. If any part needs replacement, please inform me.'\n\nThe more complete your description, the more accurate the price and timing you'll get! 😊"
     },
     "location_required": {
         "fa": "❌ لطفاً *موقعیت مکانی* خود را ارسال کنید.\n\nبرای خدمات در {service_location_name} نیاز به دانستن موقعیت مکانی شما داریم تا مجری مناسب را پیدا کنیم.\n\n📱 از دکمه «ارسال موقعیت فعلی» استفاده کنید یا\n📎 روی آیکون پیوست (📎) کلیک کرده و گزینه «Location» را انتخاب کنید.",

@@ -24,35 +24,16 @@ async def send_description_guidance(message, context):
     """
     ارسال پیام راهنمای کامل برای مرحله وارد کردن توضیحات
     """
-    # دریافت توضیحات قبلی اگر موجود باشد
-    last_description = context.user_data.get('description', context.user_data.get('temp_description', ''))
-    
+    from localization import get_message
     guidance_text = get_message("description_guidance", lang=context.user_data.get('lang', 'fa'))
-    
-    # اگر توضیحات قبلی موجود باشد، آن را نمایش می‌دهیم
-    if last_description:
-        guidance_text += get_message("previous_description", lang=context.user_data.get('lang', 'fa'), last_description=last_description)
-    else:
-        guidance_text += get_message("write_description", lang=context.user_data.get('lang', 'fa'))
-    
     # افزودن اطلاعات ناوبری به پیام
+    from handlers.navigation_utils import add_navigation_to_message, DESCRIPTION
     guidance_text, navigation_keyboard = add_navigation_to_message(guidance_text, DESCRIPTION, context.user_data)
-    
-    # اگر توضیحات قبلی داریم، دکمه‌های تأیید را اضافه می‌کنیم
-    if last_description:
-        keyboard = [
-            [InlineKeyboardButton("✅ تأیید و ادامه", callback_data="continue_to_details")],
-            [InlineKeyboardButton("⬅️ بازگشت به مرحله قبل", callback_data="back_to_location_type")]
-        ]
-    else:
-        keyboard = [
-            [InlineKeyboardButton("⬅️ بازگشت به مرحله قبل", callback_data="back_to_location_type")]
-        ]
-    
-    # اگر navigation keyboard داریم، آن را ادغام می‌کنیم
+    keyboard = [
+        [InlineKeyboardButton("⬅️ بازگشت به مرحله قبل", callback_data="back_to_location_type")]
+    ]
     if navigation_keyboard:
         keyboard.extend(navigation_keyboard.inline_keyboard)
-    
     await message.edit_text(
         guidance_text,
         reply_markup=InlineKeyboardMarkup(keyboard)
