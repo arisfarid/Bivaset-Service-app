@@ -84,11 +84,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
             update, 
             context, 
             welcome_message,
-            MAIN_MENU_KEYBOARD
-        )
-        # حذف کیبورد تایپ
-        await update.message.reply_text(
-            " ",
+            MAIN_MENU_KEYBOARD,
             reply_markup=ReplyKeyboardRemove()
         )
         return ROLE
@@ -171,11 +167,7 @@ async def handle_role(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int
             update, 
             context, 
             employer_message,
-            EMPLOYER_MENU_KEYBOARD
-        )
-        # حذف کیبورد تایپ
-        await update.message.reply_text(
-            " ",
+            EMPLOYER_MENU_KEYBOARD,
             reply_markup=ReplyKeyboardRemove()
         )
         return EMPLOYER_MENU

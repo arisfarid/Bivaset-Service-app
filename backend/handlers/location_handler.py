@@ -40,11 +40,6 @@ async def handle_location(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
                 reply_markup=get_location_type_keyboard(lang=lang),
                 parse_mode="Markdown"
             )
-            # حذف کیبورد تایپ
-            await message.reply_text(
-                " ",
-                reply_markup=ReplyKeyboardRemove()
-            )
             return LOCATION_TYPE
 
     # اگر callback دریافت شده (مثلاً دکمه‌ای کلیک شده)
