@@ -223,8 +223,7 @@ def get_conversation_handler() -> ConversationHandler:
                 CallbackQueryHandler(handle_location)
             ],
             LOCATION_INPUT: [
-                MessageHandler(filters.LOCATION, handle_location),
-                MessageHandler(filters.TEXT & ~filters.COMMAND, handle_location),
+                MessageHandler(filters.ALL, handle_location),
                 restart_handler,
                 navigation_handler,
                 cancel_callback_handler,
