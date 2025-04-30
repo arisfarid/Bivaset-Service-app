@@ -6,8 +6,8 @@ MESSAGES = {
         "en": "⬅️ Back to previous step..."
     },
     "location_request": {
-        "fa": "📍 *موقعیت مکانی برای {service_location_name}*\n\n📍 برای اتصال به نزدیک‌ترین مجری، لطفاً لوکیشن (موقعیت) خود را مشخص کنید:\n\n📱 اگر هم اکنون در محل مورد نظرتان برای دریافت خدمات قرار دارید، از دکمه «ارسال موقعیت فعلی» استفاده کنید یا\n📎 روی آیکون پیوست (📎) کلیک کرده و با گزینه «Location» موقعیت دلخواه خود را از نقشه انتخاب کنید.",
-        "en": "📍 *Location for {service_location_name}*\n\n📍 To connect to the nearest contractor, please specify your location:\n\n📱 If you are at the desired place, use the 'Send current location' button or\n📎 click the attachment (📎) icon and select 'Location' from the map."
+        "fa": "📍 برای اتصال به نزدیک‌ترین مجری، لطفاً لوکیشن (موقعیت) خود را مشخص کنید:\n\n📱 اگر هم اکنون در محل مورد نظرتان برای دریافت خدمات قرار دارید، از دکمه «ارسال موقعیت فعلی» استفاده کنید یا\n📎 روی آیکون پیوست (📎) کلیک کرده و با گزینه «Location» موقعیت دلخواه خود را از نقشه انتخاب کنید.",
+        "en": "📍 To connect to the nearest contractor, please specify your location:\n\n📱 If you are at the desired place, use the 'Send current location' button or\n📎 click the attachment (📎) icon and select 'Location' from the map."
     },
     "location_success": {
         "fa": "✅ موقعیت مکانی شما با موفقیت دریافت شد!",
@@ -71,7 +71,7 @@ MESSAGES = {
     },
     "only_select_from_buttons": {
         "fa": "❌ لطفاً فقط از دکمه‌ها انتخاب کنید و پیام یا فایل ارسال نکنید.",
-        "en": "❌ Please only select from the buttons below and do not send text or files."
+        "en": "❌ Please only select from the buttons and do not send text or files."
     },
     "description_only_text": {
         "fa": "❌ لطفاً فقط متن توضیحات را وارد کنید.\n\nدر این مرحله، نیاز داریم توضیحات متنی دقیقی از خدمات موردنظرتان دریافت کنیم.\nلطفاً توضیحات خود را به صورت متن بنویسید.",
