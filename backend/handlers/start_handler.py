@@ -1,4 +1,4 @@
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardRemove
 from telegram.ext import ContextTypes, ConversationHandler
 from utils import BASE_URL, log_chat, ensure_active_chat
 from keyboards import MAIN_MENU_KEYBOARD, REGISTER_MENU_KEYBOARD, EMPLOYER_MENU_KEYBOARD
@@ -79,7 +79,6 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
             f"👋 سلام {update.effective_user.first_name}! به ربات خدمات بی‌واسط خوش آمدید.\n"
             "لطفاً یکی از گزینه‌ها را انتخاب کنید:"
         )
-        
         # استفاده از MenuManager برای نمایش منو
         await MenuManager.show_menu(
             update, 
@@ -87,7 +86,11 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
             welcome_message,
             MAIN_MENU_KEYBOARD
         )
-        
+        # حذف کیبورد تایپ
+        await update.message.reply_text(
+            " ",
+            reply_markup=ReplyKeyboardRemove()
+        )
         return ROLE
     else:
         # اگر شماره نداشت، درخواست ثبت شماره
@@ -170,9 +173,20 @@ async def handle_role(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int
             employer_message,
             EMPLOYER_MENU_KEYBOARD
         )
-        
+        # حذف کیبورد تایپ
+        await update.message.reply_text(
+            " ",
+            reply_markup=ReplyKeyboardRemove()
+        )
         return EMPLOYER_MENU
     
+    # اگر پیام غیرمجاز ارسال شد
+    from localization import get_message
+    lang = context.user_data.get('lang', 'fa')
+    await update.message.reply_text(
+        get_message("only_select_from_buttons", lang=lang),
+        reply_markup=ReplyKeyboardRemove()
+    )
     return ROLE
 
 async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:

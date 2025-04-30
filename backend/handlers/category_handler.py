@@ -1,4 +1,4 @@
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardRemove
 from telegram.ext import ContextTypes, ConversationHandler
 from utils import get_categories, log_chat
 import logging
@@ -16,7 +16,15 @@ CHANGE_PHONE, VERIFY_CODE = range(20, 22)  # states جدید
 async def handle_category_selection(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Handle category and subcategory selection"""
     query = update.callback_query
+    message = update.message
+    from localization import get_message
+    lang = context.user_data.get('lang', 'fa')
     if not query:
+        # اگر کاربر پیام غیرمجاز (متن، عکس و ...) ارسال کرد
+        await message.reply_text(
+            get_message("only_select_from_buttons", lang=lang),
+            reply_markup=ReplyKeyboardRemove()
+        )
         return CATEGORY
 
     try:
@@ -74,12 +82,15 @@ async def handle_category_selection(update: Update, context: ContextTypes.DEFAUL
                             )
                         ])
                 # استفاده از لوکالایزیشن برای دکمه بازگشت
-                from localization import get_message
-                lang = context.user_data.get('lang', 'fa')
                 keyboard.append([InlineKeyboardButton(get_message("back", lang=lang), callback_data="back_to_categories")])
                 await query.message.edit_text(
                     f"📋 زیرمجموعه {selected_category['name']} را انتخاب کنید:",
                     reply_markup=InlineKeyboardMarkup(keyboard)
+                )
+                # حذف کیبورد تایپ
+                await query.message.reply_text(
+                    " ",
+                    reply_markup=ReplyKeyboardRemove()
                 )
                 return SUBCATEGORY
 
@@ -126,12 +137,15 @@ async def handle_category_selection(update: Update, context: ContextTypes.DEFAUL
                                 callback_data=f"subcat_{child_id}"
                             )
                         ])
-                from localization import get_message
-                lang = context.user_data.get('lang', 'fa')
                 keyboard.append([InlineKeyboardButton(get_message("back", lang=lang), callback_data="back_to_categories")])
                 await query.message.edit_text(
                     f"📋 زیرمجموعه {selected_subcategory['name']} را انتخاب کنید:",
                     reply_markup=InlineKeyboardMarkup(keyboard)
+                )
+                # حذف کیبورد تایپ
+                await query.message.reply_text(
+                    " ",
+                    reply_markup=ReplyKeyboardRemove()
                 )
                 return SUBCATEGORY
 
@@ -156,8 +170,6 @@ async def handle_category_selection(update: Update, context: ContextTypes.DEFAUL
         elif data == "back_to_categories":
             categories = context.user_data.get('categories', {})
             category_group = context.user_data.get('category_group')
-            from localization import get_message
-            lang = context.user_data.get('lang', 'fa')
             if category_group and categories.get(category_group):
                 parent = categories[category_group]
                 parent_id = parent.get('parent')
@@ -181,12 +193,20 @@ async def handle_category_selection(update: Update, context: ContextTypes.DEFAUL
                         f"📋 زیرمجموعه {grandparent['name']} را انتخاب کنید:",
                         reply_markup=InlineKeyboardMarkup(keyboard)
                     )
+                    await query.message.reply_text(
+                        " ",
+                        reply_markup=ReplyKeyboardRemove()
+                    )
                 else:
                     # اگر در بالاترین سطح هستیم، به منوی اصلی دسته‌بندی‌ها برمی‌گردیم
                     keyboard = create_category_keyboard(categories)
                     await query.message.edit_text(
                         get_message("category_main_select", lang=lang),
                         reply_markup=keyboard
+                    )
+                    await query.message.reply_text(
+                        " ",
+                        reply_markup=ReplyKeyboardRemove()
                     )
                     context.user_data['category_group'] = None
             else:
@@ -195,6 +215,10 @@ async def handle_category_selection(update: Update, context: ContextTypes.DEFAUL
                 await query.message.edit_text(
                     get_message("category_main_select", lang=lang),
                     reply_markup=keyboard
+                )
+                await query.message.reply_text(
+                    " ",
+                    reply_markup=ReplyKeyboardRemove()
                 )
                 context.user_data['category_group'] = None
             

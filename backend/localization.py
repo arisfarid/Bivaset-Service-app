@@ -72,6 +72,10 @@ MESSAGES = {
     "submit": {
         "fa": "ثبت درخواست",
         "en": "Submit"
+    },
+    "only_select_from_buttons": {
+        "fa": "❌ لطفاً فقط از دکمه‌های زیر انتخاب کنید و پیام یا فایل ارسال نکنید.",
+        "en": "❌ Please only select from the buttons below and do not send text or files."
     }
 }
 

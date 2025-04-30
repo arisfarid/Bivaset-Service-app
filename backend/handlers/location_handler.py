@@ -1,4 +1,4 @@
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardMarkup, KeyboardButton
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardMarkup, KeyboardButton, ReplyKeyboardRemove
 from telegram.ext import ContextTypes, ConversationHandler
 from utils import log_chat
 import logging
@@ -39,6 +39,11 @@ async def handle_location(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
                 LOCATION_TYPE_GUIDANCE_TEXT,
                 reply_markup=get_location_type_keyboard(lang=lang),
                 parse_mode="Markdown"
+            )
+            # حذف کیبورد تایپ
+            await message.reply_text(
+                " ",
+                reply_markup=ReplyKeyboardRemove()
             )
             return LOCATION_TYPE
 
