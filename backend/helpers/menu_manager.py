@@ -12,62 +12,47 @@ class MenuManager:
     async def show_menu(update: Update, context: ContextTypes.DEFAULT_TYPE, text: str, 
                        keyboard: InlineKeyboardMarkup, clear_previous=True) -> int:
         """
-        نمایش منو با حذف منوهای قبلی
-        
-        پارامترها:
-        update - آبجکت Update تلگرام
-        context - آبجکت Context تلگرام
-        text - متن منو
-        keyboard - کیبورد منو
-        clear_previous - اگر True باشد، منوی قبلی را پاک می‌کند
-        
-        خروجی:
-        شناسه پیام منوی جدید
+        نمایش منو با حذف منوهای قبلی (در صورت نیاز)
+        اگر callback_query وجود داشته باشد، فقط پیام قبلی را با edit_message_text ویرایش کن و هیچ پیام جدیدی ارسال نکن (تاخیر حذف شود)
+        اگر edit_message_text خطا داد، پیام جدید ارسال کن اما پیام قبلی را حذف نکن (تاخیر حذف شود)
         """
         query = update.callback_query
         chat_id = update.effective_chat.id
-        
-        # پاک کردن منوی قبلی
-        if clear_previous and 'menu_history' in context.user_data:
-            for msg_id in context.user_data['menu_history'][-5:]:  # فقط 5 منوی آخر را بررسی می‌کنیم
+
+        # فقط اگر clear_previous True و callback_query نداریم، پیام‌های قبلی را حذف کن
+        if clear_previous and not query and 'menu_history' in context.user_data:
+            for msg_id in context.user_data['menu_history'][-5:]:
                 try:
                     await context.bot.delete_message(chat_id=chat_id, message_id=msg_id)
                     logger.info(f"Deleted previous menu message {msg_id}")
                 except (BadRequest, TelegramError) as e:
                     logger.warning(f"Could not delete menu message {msg_id}: {e}")
-        
-        # نمایش منوی جدید
+
+        # اگر callback_query داریم، فقط پیام قبلی را ویرایش کن
         if query:
             try:
-                # اگر callback query داریم، edit message
                 message = await query.message.edit_text(text, reply_markup=keyboard, parse_mode='Markdown')
                 menu_id = message.message_id
                 logger.info(f"Edited message to show new menu with ID {menu_id}")
             except Exception as e:
-                # اگر نتوانیم edit کنیم، پیام جدید می‌فرستیم
                 logger.warning(f"Could not edit menu: {e}")
-                message = await context.bot.send_message(chat_id=chat_id, text=text, 
-                                                       reply_markup=keyboard, parse_mode='Markdown')
+                # پیام جدید ارسال کن اما پیام قبلی را حذف نکن
+                message = await context.bot.send_message(chat_id=chat_id, text=text, reply_markup=keyboard, parse_mode='Markdown')
                 menu_id = message.message_id
                 logger.info(f"Sent new menu message with ID {menu_id} after edit failure")
         else:
-            # ارسال پیام جدید
-            message = await context.bot.send_message(chat_id=chat_id, text=text, 
-                                                   reply_markup=keyboard, parse_mode='Markdown')
+            # اگر callback_query نداریم، پیام جدید ارسال کن
+            message = await context.bot.send_message(chat_id=chat_id, text=text, reply_markup=keyboard, parse_mode='Markdown')
             menu_id = message.message_id
             logger.info(f"Sent new menu message with ID {menu_id}")
-        
+
         # ذخیره تاریخچه منوها
         if 'menu_history' not in context.user_data:
             context.user_data['menu_history'] = []
-        
         context.user_data['menu_history'].append(menu_id)
         context.user_data['current_menu_id'] = menu_id
-        
-        # محدود کردن تاریخچه به 10 منوی آخر
         if len(context.user_data['menu_history']) > 10:
             context.user_data['menu_history'] = context.user_data['menu_history'][-10:]
-        
         return menu_id
     
     @staticmethod
