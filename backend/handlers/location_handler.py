@@ -51,7 +51,8 @@ async def handle_location(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         if data == "back_to_categories":
             logger.info("Returning to category selection")
             context.user_data['state'] = CATEGORY
-            return CATEGORY
+            from handlers.category_handler import show_category_selection
+            return await show_category_selection(update, context)
 
         # بازگشت به مرحله توضیحات
         if data == "back_to_description":
