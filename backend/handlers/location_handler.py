@@ -70,7 +70,7 @@ async def handle_location(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
                 'remote': 'remote'
             }[location_type]
 
-            # اگر کاربر غیرحضوری را انتخاب کند، مستقیماً به مرحله توضیحات هدایت می‌شود
+            # اگر کاربر غیرحضوری را انتخاب کند، مستقیماً به مرحله توضیحات هدایت شود و هیچ پیام راهنمای مرحله یا navigation ارسال نشود
             if location_type == 'remote':
                 context.user_data['state'] = DESCRIPTION
                 try:

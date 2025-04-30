@@ -117,17 +117,17 @@ def add_navigation_to_message(text: str, current_state: int, user_data: Dict[str
     Adds navigation info to a message and returns updated text and keyboard
     """
     keyboard = get_navigation_keyboard(current_state, user_data)
-    
-    # Add progress indicator for certain flows
-    if current_state in SERVICE_REQUEST_FLOW:
-        current_index = SERVICE_REQUEST_FLOW.index(current_state)
-        total_steps = len(SERVICE_REQUEST_FLOW)
-        progress = f"\n\n📊 مرحله {current_index + 1} از {total_steps}"
-        
-        # Add ability to go back info if applicable
-        if current_index > 0:
-            progress += " | می‌توانید از دکمه «قبلی» برای بازگشت استفاده کنید"
-            
-        text += progress
-    
+
+    # اگر کاربر غیرحضوری انتخاب کرده و در مرحله توضیحات است، پیام مرحله و navigation اضافه نشود
+    if not (current_state == DESCRIPTION and user_data.get('service_location') == 'remote'):
+        # Add progress indicator for certain flows
+        if current_state in SERVICE_REQUEST_FLOW:
+            current_index = SERVICE_REQUEST_FLOW.index(current_state)
+            total_steps = len(SERVICE_REQUEST_FLOW)
+            progress = f"\n\n📊 مرحله {current_index + 1} از {total_steps}"
+            # Add ability to go back info if applicable
+            if current_index > 0:
+                progress += " | می‌توانید از دکمه «قبلی» برای بازگشت استفاده کنید"
+            text += progress
+
     return text, keyboard
