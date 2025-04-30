@@ -79,13 +79,17 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
             f"👋 سلام {update.effective_user.first_name}! به ربات خدمات بی‌واسط خوش آمدید.\n"
             "لطفاً یکی از گزینه‌ها را انتخاب کنید:"
         )
+        # حذف کیبورد تایپ قبل از نمایش منو
+        await update.message.reply_text(
+            "لطفاً از دکمه‌های زیر انتخاب کنید.",
+            reply_markup=ReplyKeyboardRemove()
+        )
         # استفاده از MenuManager برای نمایش منو
         await MenuManager.show_menu(
             update, 
             context, 
             welcome_message,
-            MAIN_MENU_KEYBOARD,
-            reply_markup=ReplyKeyboardRemove()
+            MAIN_MENU_KEYBOARD
         )
         return ROLE
     else:
@@ -162,6 +166,11 @@ async def handle_role(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int
             update.effective_user.full_name
         )
         
+        # حذف کیبورد تایپ قبل از نمایش منو
+        await update.message.reply_text(
+            "لطفاً از دکمه‌های زیر انتخاب کنید.",
+            reply_markup=ReplyKeyboardRemove()
+        )
         # استفاده از MenuManager برای نمایش منو
         await MenuManager.show_menu(
             update, 

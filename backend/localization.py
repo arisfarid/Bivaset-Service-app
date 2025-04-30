@@ -76,6 +76,38 @@ MESSAGES = {
     "only_select_from_buttons": {
         "fa": "❌ لطفاً فقط از دکمه‌های زیر انتخاب کنید و پیام یا فایل ارسال نکنید.",
         "en": "❌ Please only select from the buttons below and do not send text or files."
+    },
+    "description_only_text": {
+        "fa": "❌ لطفاً فقط متن توضیحات را وارد کنید.\n\nدر این مرحله، نیاز داریم توضیحات متنی دقیقی از خدمات موردنظرتان دریافت کنیم.\nلطفاً توضیحات خود را به صورت متن بنویسید.",
+        "en": "❌ Please enter only text for the description.\n\nAt this step, we need a precise text description of your requested service.\nPlease write your description as text."
+    },
+    "description_too_short": {
+        "fa": "⚠️ توضیحات شما کوتاه به نظر می‌رسد.\n\nتوضیحات کامل‌تر به مجریان کمک می‌کند تا قیمت دقیق‌تری پیشنهاد دهند.\nآیا می‌خواهید توضیحات بیشتری اضافه کنید؟\n\nاگر توضیحات کامل است، می‌توانید به مرحله بعد بروید.",
+        "en": "⚠️ Your description seems too short.\n\nA more complete description helps contractors give a more accurate quote.\nWould you like to add more details?\n\nIf your description is complete, you can proceed to the next step."
+    },
+    "invalid_option": {
+        "fa": "❌ گزینه نامعتبر! لطفاً یکی از دکمه‌ها رو انتخاب کن.",
+        "en": "❌ Invalid option! Please select one of the buttons."
+    },
+    "details_prev_description": {
+        "fa": "🌟 توضیحات قبلی:\n{last_description}\n\nمی‌تونی توضیحات رو ویرایش کنی:",
+        "en": "🌟 Previous description:\n{last_description}\n\nYou can edit your description:"
+    },
+    "date_must_be_future": {
+        "fa": "❌ تاریخ باید از امروز به بعد باشه!",
+        "en": "❌ The date must be today or later!"
+    },
+    "invalid_date_format": {
+        "fa": "❌ تاریخ نامعتبر! لطفاً به فرمت 1403/10/15 وارد کن و از امروز به بعد باشه.",
+        "en": "❌ Invalid date! Please enter in the format YYYY/MM/DD and make sure it is today or later."
+    },
+    "invalid_deadline": {
+        "fa": "❌ مهلت نامعتبر! لطفاً یه عدد وارد کن (مثلاً 7).",
+        "en": "❌ Invalid deadline! Please enter a number (e.g. 7)."
+    },
+    "invalid_budget": {
+        "fa": "❌ بودجه نامعتبر! لطفاً فقط عدد وارد کن (مثلاً 500000).",
+        "en": "❌ Invalid budget! Please enter only a number (e.g. 500000)."
     }
 }
 
@@ -84,7 +116,3 @@ def get_message(key, lang="fa", **kwargs):
     if kwargs:
         return msg.format(**kwargs)
     return msg
-
-def get_location_input_guidance_text(service_location_name, lang="fa"):
-    """دریافت متن راهنمای ارسال لوکیشن با توجه به نوع خدمات و زبان"""
-    return get_message("location_input_guidance", lang=lang, service_location_name=service_location_name)
