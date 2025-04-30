@@ -6,8 +6,8 @@ MESSAGES = {
         "en": "⬅️ Back to previous step..."
     },
     "location_request": {
-        "fa": "📍 برای اتصال به نزدیک‌ترین مجری، لطفاً لوکیشن (موقعیت) خود را ارسال کنید:\n\nاگر هم اکنون در محل مورد نظرتان برای دریافت خدمات قرار دارید، از دکمه ارسال موقعیت فعلی استفاده کنید یا با استفاده از آیکون 📎 (پیوست) موقعیت دلخواه خود را از نقشه انتخاب کنید.",
-        "en": "📍 To connect to the nearest contractor, please send your location.\n\nIf you are at the desired place, use the 'Send current location' button or select a location from the map using the 📎 (attachment) icon."
+        "fa": "📍 *موقعیت مکانی برای {service_location_name}*\n\n📍 برای اتصال به نزدیک‌ترین مجری، لطفاً لوکیشن (موقعیت) خود را مشخص کنید:\n\n📱 اگر هم اکنون در محل مورد نظرتان برای دریافت خدمات قرار دارید، از دکمه «ارسال موقعیت فعلی» استفاده کنید یا\n📎 روی آیکون پیوست (📎) کلیک کرده و با گزینه «Location» موقعیت دلخواه خود را از نقشه انتخاب کنید.",
+        "en": "📍 *Location for {service_location_name}*\n\n📍 To connect to the nearest contractor, please specify your location:\n\n📱 If you are at the desired place, use the 'Send current location' button or\n📎 click the attachment (📎) icon and select 'Location' from the map."
     },
     "location_success": {
         "fa": "✅ موقعیت مکانی شما با موفقیت دریافت شد!",
@@ -52,10 +52,6 @@ MESSAGES = {
     "location_type_guidance": {
         "fa": "🌟 لطفاً محلی که خدمات شما باید انجام شود را انتخاب کنید:\n\n🏠 *محل من*: مجری برای انجام خدمات به محل شما مراجعه می‌کند\n      مانند: نظافت، بازسازی، باغبانی و خدمات سیار\n\n🔧 *محل مجری*: شما برای دریافت خدمات به محل کار مجری مراجعه می‌کنید\n      مانند: کارواش، تعمیرگاه، آرایشگاه و خدمات کارگاهی\n\n💻 *غیرحضوری*: خدمات بدون نیاز به حضور فیزیکی و از راه دور انجام می‌شود\n      مانند: مشاوره، آموزش، تایپ و ترجمه، برنامه‌نویسی",
         "en": "🌟 Please select where the service should be performed:\n\n🏠 *My place*: The contractor will come to your place.\n      Examples: cleaning, renovation, gardening, mobile services\n\n🔧 *Contractor's place*: You go to the contractor's workplace.\n      Examples: carwash, repair shop, barbershop, workshop services\n\n💻 *Remote*: The service is done remotely without physical presence.\n      Examples: consulting, teaching, typing, translation, programming"
-    },
-    "location_input_guidance": {
-        "fa": "📍 *موقعیت مکانی برای {service_location_name}*\n\n📍 برای اتصال به نزدیک‌ترین مجری، لطفاً لوکیشن (موقعیت) خود را مشخص کنید:\n\n📱 اگر هم اکنون در محل مورد نظرتان برای دریافت خدمات قرار دارید، از دکمه «ارسال موقعیت فعلی» استفاده کنید یا\n📎 روی آیکون پیوست (📎) کلیک کرده و با گزینه «Location» موقعیت دلخواه خود را از نقشه انتخاب کنید.",
-        "en": "📍 *Location for {service_location_name}*\n\n📍 To connect to the nearest contractor, please specify your location:\n\n📱 If you are at the desired place, use the 'Send current location' button or\n📎 click the attachment (📎) icon and select 'Location' from the map."
     },
     "category_main_select": {
         "fa": "🌟 دسته‌بندی خدماتت رو انتخاب کن:",
