@@ -1,6 +1,6 @@
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, ForceReply, ReplyKeyboardMarkup, KeyboardButton
 from telegram.ext import ContextTypes, ConversationHandler, MessageHandler, filters, CallbackQueryHandler
-from keyboards import create_dynamic_keyboard, FILE_MANAGEMENT_MENU_KEYBOARD, create_category_keyboard, MAIN_MENU_KEYBOARD, get_location_type_keyboard, LOCATION_TYPE_GUIDANCE_TEXT
+from keyboards import create_dynamic_keyboard, FILE_MANAGEMENT_MENU_KEYBOARD, create_category_keyboard, MAIN_MENU_KEYBOARD, get_location_type_keyboard, LOCATION_TYPE_GUIDANCE_TEXT, get_description_short_buttons
 from utils import clean_budget, validate_date, validate_deadline, log_chat, format_price
 from khayyam import JalaliDatetime
 from datetime import datetime, timedelta
@@ -440,12 +440,20 @@ async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_T
             else:
                 # بررسی کیفیت توضیحات (اختیاری: پیشنهاد بهبود برای توضیحات کوتاه)
                 if len(text) < 20:  # اگر توضیحات خیلی کوتاه است
+                    # حذف منوی قبلی راهنما (در صورت وجود)
+                    if 'current_menu_id' in context.user_data:
+                        try:
+                            await message.bot.delete_message(
+                                chat_id=message.chat_id,
+                                message_id=context.user_data['current_menu_id']
+                            )
+                        except Exception:
+                            pass
+                        context.user_data.pop('current_menu_id', None)
+                    from keyboards import get_description_short_buttons
                     await message.reply_text(
                         get_message("description_too_short", lang=context.user_data.get('lang', 'fa')),
-                        reply_markup=InlineKeyboardMarkup([
-                            [InlineKeyboardButton("✅ ادامه به مرحله بعد", callback_data="continue_to_details")],
-                            [InlineKeyboardButton("✏️ اصلاح توضیحات", callback_data="back_to_description")]
-                        ])
+                        reply_markup=get_description_short_buttons(lang=context.user_data.get('lang', 'fa'))
                     )
                     # ذخیره توضیحات موقت برای استفاده بعدی
                     context.user_data['temp_description'] = text
@@ -454,30 +462,17 @@ async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_T
                 # ذخیره توضیحات و رفتن به جزئیات
                 context.user_data['description'] = text
                 context.user_data['state'] = DETAILS
-                
-                # با استفاده از navigation utility
-                message_text = get_message("details_guidance", lang=context.user_data.get('lang', 'fa'))
-                message_text, navigation_keyboard = add_navigation_to_message(message_text, DETAILS, context.user_data)
-                
-                # دکمه‌های مخصوص ادامه فرآیند
-                continue_keyboard = [
-                    [InlineKeyboardButton("✅ ادامه به مرحله بعد", callback_data="continue_to_submit")]
-                ]
-                
-                if navigation_keyboard:
-                    # ادغام کیبوردها
+                try:
+                    message_text = get_message("details_guidance", lang=context.user_data.get('lang', 'fa'))
+                    message_text, navigation_keyboard = add_navigation_to_message(message_text, DETAILS, context.user_data)
+                    from keyboards import create_dynamic_keyboard
                     keyboard_rows = create_dynamic_keyboard(context, include_navigation_buttons=False).inline_keyboard
-                    # اضافه کردن دکمه‌های ادامه
-                    keyboard_rows.extend(continue_keyboard)
-                    # اضافه کردن دکمه‌های ناوبری
-                    keyboard_rows.extend(navigation_keyboard.inline_keyboard)
+                    if navigation_keyboard:
+                        keyboard_rows.extend(navigation_keyboard.inline_keyboard)
                     await message.reply_text(message_text, reply_markup=InlineKeyboardMarkup(keyboard_rows))
-                else:
-                    # ادغام دکمه‌های ادامه با کیبورد اصلی
-                    keyboard_rows = create_dynamic_keyboard(context, include_navigation_buttons=False).inline_keyboard
-                    keyboard_rows.extend(continue_keyboard)
-                    await message.reply_text(message_text, reply_markup=InlineKeyboardMarkup(keyboard_rows))
-                
+                except Exception as e:
+                    logger.error(f"Error sending DETAILS step after description: {e}")
+                    await message.reply_text("❌ خطا در نمایش مرحله بعد. لطفاً مجدداً تلاش کنید یا با پشتیبانی تماس بگیرید.")
                 return DETAILS
 
         elif current_state == DETAILS:

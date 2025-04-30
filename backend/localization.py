@@ -100,6 +100,14 @@ MESSAGES = {
     "invalid_budget": {
         "fa": "❌ بودجه نامعتبر! لطفاً فقط عدد وارد کن (مثلاً 500000).",
         "en": "❌ Invalid budget! Please enter only a number (e.g. 500000)."
+    },
+    "continue": {
+        "fa": "✅ ادامه به مرحله بعد",
+        "en": "✅ Continue to next step"
+    },
+    "edit_description": {
+        "fa": "✏️ اصلاح توضیحات",
+        "en": "✏️ Edit description"
     }
 }
 

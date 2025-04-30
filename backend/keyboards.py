@@ -161,3 +161,9 @@ def create_category_keyboard(categories):
     
     keyboard.append([InlineKeyboardButton("⬅️ بازگشت", callback_data="back_to_menu")])
     return InlineKeyboardMarkup(keyboard)
+
+def get_description_short_buttons(lang="fa"):
+    return InlineKeyboardMarkup([
+        [InlineKeyboardButton(get_message("continue", lang=lang), callback_data="continue_to_details")],
+        [InlineKeyboardButton(get_message("edit_description", lang=lang), callback_data="back_to_description")]
+    ])
