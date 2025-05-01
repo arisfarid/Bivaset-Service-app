@@ -1,6 +1,6 @@
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardMarkup, KeyboardButton, ReplyKeyboardRemove
 from telegram.ext import ContextTypes, ConversationHandler
-from utils import log_chat, delete_message_later
+from utils import log_chat, delete_message_later, delete_last_n_messages
 import logging
 from keyboards import get_location_input_keyboard, get_location_type_keyboard, LOCATION_TYPE_GUIDANCE_TEXT, BACK_TO_DESCRIPTION_KEYBOARD, REMOVE_KEYBOARD
 from localization import get_message
@@ -14,6 +14,8 @@ CHANGE_PHONE, VERIFY_CODE = range(20, 22)  # states جدید
 # هندلر اصلی مدیریت مرحله انتخاب و دریافت موقعیت مکانی کاربر
 # این تابع مسئول مدیریت انتخاب نوع لوکیشن، دریافت لوکیشن، و هدایت به مرحله توضیحات است
 async def handle_location(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    # حذف ۳ پیام آخر (چه از ربات چه از کاربر)
+    await delete_last_n_messages(update, context, n=3)
     # دریافت query و message از آپدیت تلگرام
     query = update.callback_query
     message = update.message
