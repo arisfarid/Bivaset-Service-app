@@ -1,6 +1,6 @@
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardRemove
 from telegram.ext import ContextTypes, ConversationHandler
-from utils import BASE_URL, log_chat, ensure_active_chat
+from utils import BASE_URL, log_chat, ensure_active_chat, delete_previous_messages
 from keyboards import MAIN_MENU_KEYBOARD, REGISTER_MENU_KEYBOARD, EMPLOYER_MENU_KEYBOARD
 from handlers.phone_handler import check_phone
 from helpers.menu_manager import MenuManager
@@ -167,10 +167,11 @@ async def handle_role(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int
         )
         
         # حذف کیبورد تایپ قبل از نمایش منو
-        await update.message.reply_text(
+        sent = await update.message.reply_text(
             "لطفاً از دکمه‌های زیر انتخاب کنید.",
             reply_markup=ReplyKeyboardRemove()
         )
+        await delete_previous_messages(sent, context, n=3)
         # استفاده از MenuManager برای نمایش منو
         await MenuManager.show_menu(
             update, 
@@ -184,10 +185,11 @@ async def handle_role(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int
     # اگر پیام غیرمجاز ارسال شد
     from localization import get_message
     lang = context.user_data.get('lang', 'fa')
-    await update.message.reply_text(
+    sent = await update.message.reply_text(
         get_message("only_select_from_buttons", lang=lang),
         reply_markup=ReplyKeyboardRemove()
     )
+    await delete_previous_messages(sent, context, n=3)
     return ROLE
 
 async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
