@@ -8,7 +8,8 @@ import logging
 import json
 import aiohttp
 from utils import BASE_URL, save_user_phone, log_chat
-from keyboards import MAIN_MENU_KEYBOARD, REGISTER_MENU_KEYBOARD
+from localization import get_message
+from keyboards import get_main_menu_keyboard, REGISTER_MENU_KEYBOARD, REGISTER_INLINE_KEYBOARD
 
 logger = logging.getLogger(__name__)
 
@@ -114,7 +115,11 @@ async def verify_new_phone(update: Update, context: ContextTypes.DEFAULT_TYPE) -
             user['phone'] = new_phone
             update_response = requests.put(f"{BASE_URL}users/{user['id']}/", json=user)
             if update_response.status_code == 200:
-                await update.message.reply_text("✅ شماره تلفن شما با موفقیت تأیید و ثبت شد.", reply_markup=MAIN_MENU_KEYBOARD)
+                lang = context.user_data.get('lang', 'fa')
+                await update.message.reply_text(
+                    get_message("phone_verified_success", lang=lang),
+                    reply_markup=get_main_menu_keyboard(lang)
+                )
             else:
                 raise Exception("Failed to update phone number")
         for key in ['verification_code', 'code_expires_at', 'new_phone', 'verify_attempts']:
@@ -149,7 +154,6 @@ def require_phone(func):
             if not await check_phone(update, context):
                 if update.callback_query:
                     # استفاده از InlineKeyboardMarkup برای callback_query
-                    from keyboards import REGISTER_INLINE_KEYBOARD
                     message = update.callback_query.message
                     await update.callback_query.answer("برای ادامه نیاز به ثبت شماره تلفن است")
                     # ارسال پیام با کیبورد اینلاین
@@ -207,11 +211,10 @@ async def handle_contact(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
             async with session.post('http://localhost:8000/api/users/', json=user_data) as response:
                 logger.info(f"Register response: {response.status} - {await response.text()}")
                 if response.status in [200, 201]:
+                    lang = context.user_data.get('lang', 'fa')
                     await update.message.reply_text(
-                        "✅ ثبت‌نام شما با موفقیت انجام شد!\n"
-                        "به ربات خدمات بی‌واسط خوش آمدید:\n"
-                        "لطفاً یکی از گزینه‌ها را انتخاب کنید:",
-                        reply_markup=MAIN_MENU_KEYBOARD
+                        get_message("welcome", lang=lang, name=update.effective_user.first_name),
+                        reply_markup=get_main_menu_keyboard(lang)
                     )
                     return ROLE
                 else:
