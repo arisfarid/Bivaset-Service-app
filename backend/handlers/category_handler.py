@@ -3,7 +3,7 @@ from telegram.ext import ContextTypes, ConversationHandler
 from utils import get_categories, log_chat, delete_previous_messages
 import logging
 from handlers.start_handler import start
-from keyboards import EMPLOYER_MENU_KEYBOARD, MAIN_MENU_KEYBOARD, create_category_keyboard, get_employer_menu_keyboard, get_main_menu_keyboard, create_subcategory_keyboard
+from keyboards import create_category_keyboard, get_employer_menu_keyboard, get_main_menu_keyboard, create_subcategory_keyboard
 from handlers.phone_handler import require_phone
 from handlers.location_handler import handle_location
 from localization import get_message
