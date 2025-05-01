@@ -4,9 +4,10 @@ from utils import generate_title, convert_deadline_to_date, log_chat, BASE_URL, 
 import requests
 import logging
 from handlers.start_handler import start
-from keyboards import create_dynamic_keyboard, MAIN_MENU_KEYBOARD  # اضافه کردن import
+from keyboards import create_dynamic_keyboard, get_main_menu_keyboard  # اضافه کردن import
 import asyncio  # برای sleep
 from handlers.phone_handler import require_phone
+from localization import get_message
 
 logger = logging.getLogger(__name__)
 
@@ -20,6 +21,8 @@ async def submit_project(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         return DETAILS
 
     try:
+        lang = context.user_data.get('lang', 'fa')
+
         # آماده‌سازی داده‌های پروژه
         category_id = context.user_data.get('category_id')
         category_name = context.user_data.get('categories', {}).get(category_id, {}).get('name', 'نامشخص')
@@ -118,8 +121,8 @@ async def submit_project(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
 
             # ارسال منوی اصلی به صورت کیبورد ساده
             await update.message.reply_text(
-                "🌟 برای ادامه از منوی زیر انتخاب کنید:",
-                reply_markup=MAIN_MENU_KEYBOARD
+                get_message("main_menu_prompt", lang=lang),
+                reply_markup=get_main_menu_keyboard(lang)
             )
 
             # پاک کردن داده‌های قبلی
@@ -145,7 +148,7 @@ async def submit_project(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
             
             await update.message.reply_text(
                 error_msg,
-                reply_markup=MAIN_MENU_KEYBOARD  # استفاده از MAIN_MENU_KEYBOARD به جای create_dynamic_keyboard
+                reply_markup=get_main_menu_keyboard(lang)  # استفاده از get_main_menu_keyboard به جای MAIN_MENU_KEYBOARD
             )
             return ROLE
 
@@ -153,7 +156,7 @@ async def submit_project(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         logger.error(f"Error in submit_project: {e}")
         await update.message.reply_text(
             "❌ خطا در ثبت درخواست. لطفاً دوباره تلاش کنید.",
-            reply_markup=MAIN_MENU_KEYBOARD  # استفاده از MAIN_MENU_KEYBOARD به جای create_dynamic_keyboard
+            reply_markup=get_main_menu_keyboard(lang)  # استفاده از get_main_menu_keyboard به جای MAIN_MENU_KEYBOARD
         )
         return ROLE
 
