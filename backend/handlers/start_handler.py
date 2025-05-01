@@ -1,7 +1,7 @@
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardRemove
 from telegram.ext import ContextTypes, ConversationHandler
 from utils import BASE_URL, log_chat, ensure_active_chat, delete_previous_messages
-from keyboards import MAIN_MENU_KEYBOARD, REGISTER_MENU_KEYBOARD, EMPLOYER_MENU_KEYBOARD
+from keyboards import get_main_menu_keyboard, REGISTER_MENU_KEYBOARD, get_employer_menu_keyboard, get_contractor_menu_keyboard
 from handlers.phone_handler import check_phone
 from helpers.menu_manager import MenuManager
 import logging
@@ -9,7 +9,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 # تعریف حالت‌ها
-START, REGISTER, ROLE, EMPLOYER_MENU = range(4)
+START, REGISTER, ROLE, EMPLOYER_MENU, CONTRACTOR_MENU = range(5)
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Start the conversation with the bot."""
@@ -31,17 +31,15 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
         # پاک کردن منوهای قبلی و غیرفعال کردن آنها
         await MenuManager.disable_previous_menus(update, context)
         
-        # ارسال پیام هشدار
-        confirmation_text = (
-            "⚠️ شما در حال حاضر در یک فرآیند فعال هستید.\n"
-            "آیا مایل به خروج از فرآیند فعلی و شروع مجدد هستید؟"
-        )
+        # ارسال پیام هشدار با لوکالایزیشن
+        from localization import get_message
+        lang = context.user_data.get('lang', 'fa')
+        text = get_message("process_active_prompt", lang=lang)
         keyboard = InlineKeyboardMarkup([
-            [InlineKeyboardButton("✅ بله، شروع مجدد", callback_data="confirm_restart")],
-            [InlineKeyboardButton("❌ خیر، ادامه فرآیند فعلی", callback_data="continue_current")]
+            [InlineKeyboardButton(get_message("restart_yes", lang=lang), callback_data="confirm_restart")],
+            [InlineKeyboardButton(get_message("restart_no", lang=lang), callback_data="continue_current")]
         ])
-        
-        await update.message.reply_text(confirmation_text, reply_markup=keyboard)
+        await update.message.reply_text(text, reply_markup=keyboard)
         return current_state
     
     # اگر این یک restart است یا در مرحله اولیه هستیم
@@ -75,29 +73,32 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     if (has_phone):
         # اگر شماره داشت، نمایش منوی اصلی
         context.user_data['state'] = ROLE
-        welcome_message = (
-            f"👋 سلام {update.effective_user.first_name}! به ربات خدمات بی‌واسط خوش آمدید.\n"
-            "لطفاً یکی از گزینه‌ها را انتخاب کنید:"
-        )
+        from localization import get_message
+        lang = context.user_data.get('lang', 'fa')
+        welcome_message = get_message("welcome", lang=lang, name=update.effective_user.first_name)
         # حذف کیبورد تایپ قبل از نمایش منو
-        await update.message.reply_text(
-            "لطفاً از دکمه‌های زیر انتخاب کنید.",
+        sent = await update.message.reply_text(
+            get_message("select_from_buttons", lang=lang),
             reply_markup=ReplyKeyboardRemove()
         )
+        await delete_previous_messages(sent, context, n=3)
         # استفاده از MenuManager برای نمایش منو
         await MenuManager.show_menu(
-            update, 
-            context, 
+            update,
+            context,
             welcome_message,
-            MAIN_MENU_KEYBOARD
+            get_main_menu_keyboard(lang)
         )
         return ROLE
     else:
         # اگر شماره نداشت، درخواست ثبت شماره
-        await message.reply_text(
-            "👋 سلام! برای استفاده از امکانات ربات، لطفاً شماره تلفن خود را به اشتراک بگذارید:",
+        from localization import get_message
+        lang = context.user_data.get('lang', 'fa')
+        sent = await message.reply_text(
+            get_message("share_phone_prompt", lang=lang),
             reply_markup=REGISTER_MENU_KEYBOARD
         )
+        await delete_previous_messages(sent, context, n=3)
         return REGISTER
 
 async def handle_confirm_restart(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
@@ -120,17 +121,16 @@ async def handle_confirm_restart(update: Update, context: ContextTypes.DEFAULT_T
             await MenuManager.clear_menus(update, context)
         
         # نمایش منوی اصلی
-        welcome_message = (
-            f"👋 سلام {update.effective_user.first_name}! به ربات خدمات بی‌واسط خوش آمدید.\n"
-            "لطفاً یکی از گزینه‌ها را انتخاب کنید:"
-        )
+        from localization import get_message
+        lang = context.user_data.get('lang', 'fa')
+        welcome_message = get_message("welcome", lang=lang, name=update.effective_user.first_name)
         
         # استفاده از MenuManager برای نمایش منو
         await MenuManager.show_menu(
             update, 
             context, 
             welcome_message,
-            MAIN_MENU_KEYBOARD
+            get_main_menu_keyboard(lang)
         )
         
         context.user_data['state'] = ROLE
@@ -150,7 +150,9 @@ async def handle_role(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int
     logger.info(f"Current state: {context.user_data.get('state')}")
     text = update.message.text if update.message else None
     
-    if text == "درخواست خدمات | کارفرما 👔":
+    from localization import get_message
+    lang = context.user_data.get('lang', 'fa')
+    if text == get_message("role_employer", lang=lang):
         context.user_data['state'] = EMPLOYER_MENU
         
         # پاک کردن تاریخچه چت با استفاده از متد جدید
@@ -162,13 +164,11 @@ async def handle_role(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int
             # در صورت خطا، از روش قبلی استفاده کنیم
             await MenuManager.clear_menus(update, context)
         
-        from localization import get_message
-        lang = context.user_data.get('lang', 'fa')
         employer_message = get_message("employer_menu_prompt", lang=lang, name=update.effective_user.full_name)
         
         # حذف کیبورد تایپ قبل از نمایش منو
         sent = await update.message.reply_text(
-            "لطفاً از دکمه‌های زیر انتخاب کنید.",
+            get_message("select_from_buttons", lang=lang),
             reply_markup=ReplyKeyboardRemove()
         )
         await delete_previous_messages(sent, context, n=3)
@@ -177,14 +177,27 @@ async def handle_role(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int
             update, 
             context, 
             employer_message,
-            EMPLOYER_MENU_KEYBOARD,
-            reply_markup=ReplyKeyboardRemove()
+            get_employer_menu_keyboard(lang)
         )
         return EMPLOYER_MENU
+    elif text == get_message("role_contractor", lang=lang):
+        # مشابه حالت کارفرما برای پیمانکار
+        context.user_data['state'] = CONTRACTOR_MENU
+        # نمایش منوی مجری
+        sent2 = await update.message.reply_text(
+            get_message("select_from_buttons", lang=lang),
+            reply_markup=ReplyKeyboardRemove()
+        )
+        await delete_previous_messages(sent2, context, n=3)
+        await MenuManager.show_menu(
+            update,
+            context,
+            get_message("contractor_menu_prompt", lang=lang, name=update.effective_user.full_name),
+            get_contractor_menu_keyboard(lang)
+        )
+        return CONTRACTOR_MENU
     
     # اگر پیام غیرمجاز ارسال شد
-    from localization import get_message
-    lang = context.user_data.get('lang', 'fa')
     sent = await update.message.reply_text(
         get_message("only_select_from_buttons", lang=lang),
         reply_markup=ReplyKeyboardRemove()
@@ -193,7 +206,7 @@ async def handle_role(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int
     # نمایش مجدد منوی نقش
     sent2 = await update.message.reply_text(
         get_message("role_select", lang=lang),
-        reply_markup=MAIN_MENU_KEYBOARD
+        reply_markup=get_main_menu_keyboard(lang)
     )
     await delete_previous_messages(sent2, context, n=3)
     return ROLE

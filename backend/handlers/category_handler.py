@@ -1,11 +1,12 @@
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardRemove
 from telegram.ext import ContextTypes, ConversationHandler
-from utils import get_categories, log_chat
+from utils import get_categories, log_chat, delete_previous_messages
 import logging
 from handlers.start_handler import start
-from keyboards import EMPLOYER_MENU_KEYBOARD, MAIN_MENU_KEYBOARD, create_category_keyboard
+from keyboards import EMPLOYER_MENU_KEYBOARD, MAIN_MENU_KEYBOARD, create_category_keyboard, get_employer_menu_keyboard, get_main_menu_keyboard, create_subcategory_keyboard
 from handlers.phone_handler import require_phone
 from handlers.location_handler import handle_location
+from localization import get_message
 import asyncio
 
 logger = logging.getLogger(__name__)
@@ -18,14 +19,20 @@ async def handle_category_selection(update: Update, context: ContextTypes.DEFAUL
     """Handle category and subcategory selection"""
     query = update.callback_query
     message = update.message
-    from localization import get_message
     lang = context.user_data.get('lang', 'fa')
     if not query:
         # اگر کاربر پیام غیرمجاز (متن، عکس و ...) ارسال کرد
-        await message.reply_text(
+        sent = await message.reply_text(
             get_message("only_select_from_buttons", lang=lang),
             reply_markup=ReplyKeyboardRemove()
         )
+        await delete_previous_messages(sent, context, n=3)
+        # نمایش مجدد منوی دسته‌بندی اصلی
+        sent2 = await message.reply_text(
+            get_message("category_main_select", lang=lang),
+            reply_markup=create_category_keyboard(context.user_data.get('categories', {}))
+        )
+        await delete_previous_messages(sent2, context, n=3)
         return CATEGORY
 
     try:
@@ -38,10 +45,12 @@ async def handle_category_selection(update: Update, context: ContextTypes.DEFAUL
         if data == "back_to_menu":
             logger.info("Returning to employer menu")
             context.user_data['state'] = EMPLOYER_MENU
-            await query.message.edit_text(
-                "🎉 عالیه! چه کاری برات انجام بدم؟",
-                reply_markup=EMPLOYER_MENU_KEYBOARD
+            # نمایش مجدد منوی کارفرما
+            sent = await query.message.reply_text(
+                get_message("employer_menu_prompt", lang=lang, name=context.user_data.get('user_name', '')),
+                reply_markup=get_employer_menu_keyboard(lang)
             )
+            await delete_previous_messages(sent, context, n=3)
             return EMPLOYER_MENU
 
         # رفتن به مرحله بعد (انتخاب لوکیشن)
@@ -53,7 +62,7 @@ async def handle_category_selection(update: Update, context: ContextTypes.DEFAUL
                 return await handle_location(update, context)
             else:
                 logger.warning("Cannot proceed to location: No category selected")
-                await query.answer("❌ لطفاً ابتدا یک دسته‌بندی انتخاب کنید.")
+                await query.answer(get_message("category_select_first", lang=lang))
                 return CATEGORY
 
         # پردازش انتخاب دسته‌بندی اصلی
@@ -72,21 +81,10 @@ async def handle_category_selection(update: Update, context: ContextTypes.DEFAUL
             children = selected_category.get('children', [])
             if children:
                 context.user_data['category_group'] = category_id
-                keyboard = []
-                for child_id in children:
-                    child = categories.get(child_id)
-                    if child:
-                        keyboard.append([
-                            InlineKeyboardButton(
-                                child['name'],
-                                callback_data=f"subcat_{child_id}"
-                            )
-                        ])
-                # استفاده از لوکالایزیشن برای دکمه بازگشت
-                keyboard.append([InlineKeyboardButton(get_message("back", lang=lang), callback_data="back_to_categories")])
-                await query.message.edit_text(
-                    f"📋 زیرمجموعه {selected_category['name']} را انتخاب کنید:",
-                    reply_markup=InlineKeyboardMarkup(keyboard)
+                # نمایش کیبورد زیردسته‌ها از طریق تابع متمرکز
+                sent = await query.message.edit_text(
+                    get_message("select_subcategory", lang=lang, category_name=selected_category['name']),
+                    reply_markup=create_subcategory_keyboard(categories, category_id, lang=lang)
                 )
                 return SUBCATEGORY
 
@@ -97,8 +95,7 @@ async def handle_category_selection(update: Update, context: ContextTypes.DEFAUL
             # نمایش پیام تایید با دکمه‌های بازگشت و ادامه
             from keyboards import create_navigation_keyboard
             await query.message.edit_text(
-                f"✅ دسته‌بندی «{selected_category['name']}» انتخاب شد.\n\n"
-                "می‌توانید به مرحله بعدی (انتخاب محل خدمات) بروید یا برای تغییر دسته‌بندی به مرحله قبل بازگردید.",
+                f"{get_message('category_selected', lang=lang)}: {selected_category['name']}\n{get_message('category_submit_or_back', lang=lang)}",
                 reply_markup=create_navigation_keyboard(
                     back_callback="back_to_categories", 
                     continue_callback="continue_to_location", 
@@ -117,26 +114,16 @@ async def handle_category_selection(update: Update, context: ContextTypes.DEFAUL
 
             selected_subcategory = categories.get(subcategory_id)
             if not selected_subcategory:
-                await query.answer("❌ زیردسته نامعتبر")
+                await query.answer(get_message("invalid_subcategory", lang=lang))
                 return SUBCATEGORY
 
             children = selected_subcategory.get('children', [])
             if children:
                 context.user_data['category_group'] = subcategory_id
-                keyboard = []
-                for child_id in children:
-                    child = categories.get(child_id)
-                    if child:
-                        keyboard.append([
-                            InlineKeyboardButton(
-                                child['name'],
-                                callback_data=f"subcat_{child_id}"
-                            )
-                        ])
-                keyboard.append([InlineKeyboardButton(get_message("back", lang=lang), callback_data="back_to_categories")])
-                await query.message.edit_text(
-                    f"📋 زیرمجموعه {selected_subcategory['name']} را انتخاب کنید:",
-                    reply_markup=InlineKeyboardMarkup(keyboard)
+                # نمایش کیبورد زیردسته‌ها از طریق تابع متمرکز
+                sent = await query.message.edit_text(
+                    get_message("select_subcategory", lang=lang, category_name=selected_subcategory['name']),
+                    reply_markup=create_subcategory_keyboard(categories, subcategory_id, lang=lang)
                 )
                 return SUBCATEGORY
 
@@ -147,8 +134,7 @@ async def handle_category_selection(update: Update, context: ContextTypes.DEFAUL
             # نمایش پیام تایید با دکمه‌های بازگشت و ادامه
             from keyboards import create_navigation_keyboard
             await query.message.edit_text(
-                f"✅ دسته‌بندی «{selected_subcategory['name']}» انتخاب شد.\n\n"
-                "می‌توانید به مرحله بعدی (انتخاب محل خدمات) بروید یا برای تغییر دسته‌بندی به مرحله قبل بازگردید.",
+                f"{get_message('category_selected', lang=lang)}: {selected_subcategory['name']}\n{get_message('category_submit_or_back', lang=lang)}",
                 reply_markup=create_navigation_keyboard(
                     back_callback="back_to_categories", 
                     continue_callback="continue_to_location", 
@@ -166,24 +152,14 @@ async def handle_category_selection(update: Update, context: ContextTypes.DEFAUL
                 parent_id = parent.get('parent')
                 
                 if parent_id is not None:
-                    # اگر والد وجود دارد، به منوی آن برمی‌گردیم
+                    # تعیین grandparent برای نمایش نام دسته بالادستی
                     grandparent = categories.get(parent_id)
-                    keyboard = []
-                    for child_id in grandparent.get('children', []):
-                        child = categories.get(child_id)
-                        if child:
-                            keyboard.append([
-                                InlineKeyboardButton(
-                                    child['name'],
-                                    callback_data=f"subcat_{child_id}"
-                                )
-                            ])
-                    keyboard.append([InlineKeyboardButton(get_message("back", lang=lang), callback_data="back_to_menu")])
-                    context.user_data['category_group'] = parent_id
-                    await query.message.edit_text(
-                        f"📋 زیرمجموعه {grandparent['name']} را انتخاب کنید:",
-                        reply_markup=InlineKeyboardMarkup(keyboard)
+                    # نمایش کیبورد زیردسته‌های والد از طریق تابع متمرکز
+                    sent = await query.message.edit_text(
+                        get_message("select_subcategory", lang=lang, category_name=grandparent['name']),
+                        reply_markup=create_subcategory_keyboard(categories, parent_id, lang=lang)
                     )
+                    context.user_data['category_group'] = parent_id
                 else:
                     # اگر در بالاترین سطح هستیم، به منوی اصلی دسته‌بندی‌ها برمی‌گردیم
                     keyboard = create_category_keyboard(categories)
@@ -207,7 +183,11 @@ async def handle_category_selection(update: Update, context: ContextTypes.DEFAUL
 
     except Exception as e:
         logger.error(f"Error in handle_category_selection: {e}", exc_info=True)
-        await query.message.reply_text("❌ خطا در انتخاب دسته‌بندی. لطفاً دوباره تلاش کنید.")
+        sent = await query.message.reply_text(
+            get_message("step_error", lang=lang),
+            reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton(get_message("back", lang=lang), callback_data="back_to_categories")]])
+        )
+        await delete_previous_messages(sent, context, n=3)
         return CATEGORY
 
     return CATEGORY
@@ -219,7 +199,6 @@ async def handle_category_callback(update: Update, context: ContextTypes.DEFAULT
     context.user_data['category_id'] = int(data)
     project = {'category': context.user_data['category_id']}
     cat_name = context.user_data.get('categories', {}).get(project['category'], {}).get('name', 'نامشخص')
-    from localization import get_message
     lang = context.user_data.get('lang', 'fa')
     keyboard = [
         [InlineKeyboardButton(get_message("submit", lang=lang), callback_data="submit_project")],

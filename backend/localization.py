@@ -117,9 +117,77 @@ MESSAGES = {
         "fa": "🌟 لطفاً نقش خود را انتخاب کنید:",
         "en": "🌟 Please select your role:"
     },
+    "role_employer": {
+        "fa": "درخواست خدمات | کارفرما 👔",
+        "en": "Request service | Employer 👔"
+    },
+    "role_contractor": {
+        "fa": "پیشنهاد قیمت | مجری 🦺",
+        "en": "Submit Quote | Contractor 🦺"
+    },
+    "contractor_menu_prompt": {
+        "fa": "🎉 عالیه، {name}! میخوای پیشنهاد کار بدی یا درخواست‌ها رو ببینی؟",
+        "en": "🎉 Great, {name}! Would you like to offer work or view requests?"
+    },
     "employer_menu_prompt": {
         "fa": "🎉 عالیه، {name}! می‌خوای خدمات جدید درخواست کنی یا پیشنهادات رو ببینی؟",
         "en": "🎉 Great, {name}! Would you like to request a new service or view proposals?"
+    },
+    "employer_new_request": {
+        "fa": "📋 درخواست خدمات جدید",
+        "en": "📋 Request new service"
+    },
+    "employer_view_projects": {
+        "fa": "📊 مشاهده درخواست‌ها",
+        "en": "📊 View projects"
+    },
+    "contractor_view_requests": {
+        "fa": "📋 مشاهده درخواست‌ها",
+        "en": "📋 View requests"
+    },
+    "contractor_offer_work": {
+        "fa": "💡 پیشنهاد کار",
+        "en": "💡 Offer work"
+    },
+    "process_active_prompt": {
+        "fa": "⚠️ شما در حال حاضر در یک فرآیند فعال هستید.\nآیا مایل به خروج از فرآیند فعلی و شروع مجدد هستید؟",
+        "en": "⚠️ You are currently in an active process.\nWould you like to exit and restart now?"
+    },
+    "restart_yes": {
+        "fa": "✅ بله، شروع مجدد",
+        "en": "✅ Yes, restart"
+    },
+    "restart_no": {
+        "fa": "❌ خیر، ادامه فرآیند فعلی",
+        "en": "❌ No, continue current process"
+    },
+    "welcome": {
+        "fa": "👋 سلام {name}! به ربات خدمات بی‌واسط خوش آمدید.\nلطفاً یکی از گزینه‌ها را انتخاب کنید:",
+        "en": "👋 Hello {name}! Welcome to Bivaset Service Bot.\nPlease choose one of the options:"
+    },
+    "select_from_buttons": {
+        "fa": "لطفاً از دکمه‌های زیر انتخاب کنید.",
+        "en": "Please select from the buttons below."
+    },
+    "share_phone_prompt": {
+        "fa": "👋 سلام! برای استفاده از امکانات ربات، لطفاً شماره تلفن خود را به اشتراک بگذارید:",
+        "en": "👋 Hello! To use the bot features, please share your phone number:"
+    },
+    "category_select_first": {
+        "fa": "❌ لطفاً ابتدا یک دسته‌بندی انتخاب کنید.",
+        "en": "❌ Please select a category first."
+    },
+    "invalid_subcategory": {
+        "fa": "❌ زیردسته نامعتبر",
+        "en": "❌ Invalid subcategory"
+    },
+    "select_subcategory": {
+        "fa": "📋 زیرمجموعه {category_name} را انتخاب کنید:",
+        "en": "📋 Select submenu of {category_name}:"
+    },
+    "invalid_category": {
+        "fa": "❌ دسته‌بندی نامعتبر",
+        "en": "❌ Invalid category"
     }
 }
 

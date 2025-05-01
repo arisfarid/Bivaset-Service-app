@@ -2,25 +2,28 @@
 from telegram import InlineKeyboardMarkup, InlineKeyboardButton, KeyboardButton, ReplyKeyboardMarkup, ReplyKeyboardRemove
 from localization import get_message
 
-# منوی اصلی 
-MAIN_MENU_KEYBOARD = InlineKeyboardMarkup([
-    [InlineKeyboardButton("درخواست خدمات | کارفرما 👔", callback_data="employer")],
-    [InlineKeyboardButton("پیشنهاد قیمت | مجری 🦺", callback_data="contractor")],
-])
+# تابع ایجاد منوی اصلی با قابلیت لوکالایزیشن
+def get_main_menu_keyboard(lang="fa"):
+    return InlineKeyboardMarkup([
+        [InlineKeyboardButton(get_message("role_employer", lang=lang), callback_data="employer")],
+        [InlineKeyboardButton(get_message("role_contractor", lang=lang), callback_data="contractor")]
+    ])
 
-# منوی کارفرما
-EMPLOYER_MENU_KEYBOARD = InlineKeyboardMarkup([
-    [InlineKeyboardButton("📋 درخواست خدمات جدید", callback_data="new_request")],
-    [InlineKeyboardButton("📊 مشاهده درخواست‌ها", callback_data="view_projects")],
-    [InlineKeyboardButton("⬅️ بازگشت", callback_data="main_menu")]
-])
+# تابع ایجاد منوی کارفرما با قابلیت لوکالایزیشن
+def get_employer_menu_keyboard(lang="fa"):
+    return InlineKeyboardMarkup([
+        [InlineKeyboardButton(get_message("employer_new_request", lang=lang), callback_data="new_request")],
+        [InlineKeyboardButton(get_message("employer_view_projects", lang=lang), callback_data="view_projects")],
+        [InlineKeyboardButton(get_message("back", lang=lang), callback_data="main_menu")]
+    ])
 
-# منوی مجری
-CONTRACTOR_MENU_KEYBOARD = InlineKeyboardMarkup([
-    [InlineKeyboardButton("📋 مشاهده درخواست‌ها", callback_data="view_requests")],
-    [InlineKeyboardButton("💡 پیشنهاد کار", callback_data="offer_work")],
-    [InlineKeyboardButton("⬅️ بازگشت", callback_data="main_menu")]
-])
+# تابع ایجاد منوی مجری با قابلیت لوکالایزیشن
+def get_contractor_menu_keyboard(lang="fa"):
+    return InlineKeyboardMarkup([
+        [InlineKeyboardButton(get_message("contractor_view_requests", lang=lang), callback_data="view_requests")],
+        [InlineKeyboardButton(get_message("contractor_offer_work", lang=lang), callback_data="offer_work")],
+        [InlineKeyboardButton(get_message("back", lang=lang), callback_data="main_menu")]
+    ])
 
 # تابع ایجاد کیبورد انتخاب محل خدمات با قابلیت لوکالایزیشن
 def get_location_type_keyboard(lang="fa"):
@@ -160,6 +163,24 @@ def create_category_keyboard(categories):
             keyboard.append([InlineKeyboardButton(categories[cat_id]['name'], callback_data=f"cat_{cat_id}")])
     
     keyboard.append([InlineKeyboardButton("⬅️ بازگشت", callback_data="back_to_menu")])
+    return InlineKeyboardMarkup(keyboard)
+
+# اضافه کردن تابع ایجاد کیبورد زیردسته‌ها
+def create_subcategory_keyboard(categories: dict, parent_id: int, lang="fa") -> InlineKeyboardMarkup:
+    """
+    ایجاد کیبورد زیردسته‌ها برای دسته‌بندی مشخص
+    """
+    keyboard = []
+    for child_id in categories.get(parent_id, {}).get('children', []):
+        child = categories.get(child_id)
+        if child:
+            keyboard.append([
+                InlineKeyboardButton(child['name'], callback_data=f"subcat_{child_id}")
+            ])
+    # دکمه بازگشت به دسته‌بندی
+    keyboard.append([
+        InlineKeyboardButton(get_message("back", lang=lang), callback_data="back_to_categories")
+    ])
     return InlineKeyboardMarkup(keyboard)
 
 def get_description_short_buttons(lang="fa"):
