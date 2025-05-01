@@ -13,7 +13,7 @@ from telegram.ext import Application, CommandHandler, CallbackQueryHandler, Cont
 from telegram import Update
 from handlers.state_handler import get_conversation_handler, handle_error
 from handlers.callback_handler import handle_callback
-from keyboards import MAIN_MENU_KEYBOARD, RESTART_INLINE_MENU_KEYBOARD
+from keyboards import get_main_menu_keyboard, RESTART_INLINE_MENU_KEYBOARD
 from utils import restart_chat
 
 # تنظیمات لاگ
@@ -152,7 +152,7 @@ async def reset_conversation(update: Update, context: ContextTypes.DEFAULT_TYPE)
     await update.message.reply_text(
         f"👋 سلام {update.effective_user.first_name}! به ربات خدمات بی‌واسط خوش آمدید.\n"
         "لطفاً یکی از گزینه‌ها را انتخاب کنید:",
-        reply_markup=MAIN_MENU_KEYBOARD
+        reply_markup=get_main_menu_keyboard(lang)
     )
     return 2  # ROLE
 
