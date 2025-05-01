@@ -7,7 +7,7 @@ from handlers.edit_handler import handle_edit_callback
 from handlers.view_handler import handle_view_callback
 from handlers.attachment_handler import show_photo_management, handle_photos_command
 from utils import log_chat, get_categories, ensure_active_chat, restart_chat
-from keyboards import create_category_keyboard, EMPLOYER_MENU_KEYBOARD, FILE_MANAGEMENT_MENU_KEYBOARD, RESTART_INLINE_MENU_KEYBOARD, BACK_INLINE_MENU_KEYBOARD, MAIN_MENU_KEYBOARD, create_dynamic_keyboard
+from keyboards import create_category_keyboard, get_employer_menu_keyboard, FILE_MANAGEMENT_MENU_KEYBOARD, RESTART_INLINE_MENU_KEYBOARD, BACK_INLINE_MENU_KEYBOARD, get_main_menu_keyboard, create_dynamic_keyboard
 from helpers.menu_manager import MenuManager
 import asyncio  # برای استفاده از sleep
 from asyncio import Lock
@@ -140,7 +140,7 @@ async def handle_navigation_callback(update: Update, context: ContextTypes.DEFAU
                         update,
                         context,
                         "🎉 عالیه! چه کاری برات انجام بدم؟",
-                        EMPLOYER_MENU_KEYBOARD
+                        get_employer_menu_keyboard()
                     )
                     await query.answer()
                     return EMPLOYER_MENU
@@ -158,7 +158,7 @@ async def handle_navigation_callback(update: Update, context: ContextTypes.DEFAU
                             update,
                             context,
                             "🎉 عالیه! چه کاری برات انجام بدم؟",
-                            EMPLOYER_MENU_KEYBOARD
+                            get_employer_menu_keyboard()
                         )
                     elif previous_state == DETAILS:
                         await MenuManager.show_menu(
@@ -176,7 +176,7 @@ async def handle_navigation_callback(update: Update, context: ContextTypes.DEFAU
                         update,
                         context,
                         "🎉 عالیه! چه کاری برات انجام بدم؟",
-                        EMPLOYER_MENU_KEYBOARD
+                        get_employer_menu_keyboard()
                     )
                     await query.answer()
                     return EMPLOYER_MENU
@@ -275,7 +275,7 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                         update,
                         context,
                         "🎉 عالیه! چه کاری برات انجام بدم؟",
-                        EMPLOYER_MENU_KEYBOARD
+                        get_employer_menu_keyboard()
                     )
                     await query.answer()
                     return EMPLOYER_MENU
@@ -285,7 +285,7 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                         update,
                         context,
                         "🌟 لطفاً یکی از گزینه‌ها را انتخاب کنید:",
-                        MAIN_MENU_KEYBOARD
+                        get_main_menu_keyboard()
                     )
                     await query.answer()
                     return ROLE
@@ -314,7 +314,7 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                         update,
                         context,
                         "🎉 عالیه! چه کاری برات انجام بدم؟",
-                        EMPLOYER_MENU_KEYBOARD
+                        get_employer_menu_keyboard()
                     )
                     await query.answer()
                     return EMPLOYER_MENU
@@ -354,7 +354,7 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     update,
                     context,
                     "🎉 عالیه! چه کاری برات انجام بدم؟",
-                    EMPLOYER_MENU_KEYBOARD
+                    get_employer_menu_keyboard()
                 )
                 await query.answer()
                 return EMPLOYER_MENU
@@ -436,7 +436,7 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     update,
                     context,
                     "🎉 عالیه! چه کاری برات انجام بدم؟",
-                    EMPLOYER_MENU_KEYBOARD
+                    get_employer_menu_keyboard()
                 )
                 await query.answer()
                 return EMPLOYER_MENU
@@ -448,7 +448,7 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     update,
                     context,
                     "🌟 لطفاً یکی از گزینه‌ها را انتخاب کنید:",
-                    MAIN_MENU_KEYBOARD
+                    get_main_menu_keyboard()
                 )
                 await query.answer()
                 return ROLE
@@ -462,7 +462,7 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 update,
                 context,
                 "🌟 لطفاً یکی از گزینه‌ها را انتخاب کنید:",
-                MAIN_MENU_KEYBOARD
+                get_main_menu_keyboard()
             )
             await query.answer()
             return ROLE
@@ -478,7 +478,7 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 update,
                 context,
                 "🎉 عالیه! چه کاری برات انجام بدم؟",
-                EMPLOYER_MENU_KEYBOARD
+                get_employer_menu_keyboard()
             )
             await query.answer()
             return EMPLOYER_MENU
@@ -525,7 +525,7 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     update,
                     context,
                     "🎉 عالیه! چه کاری برات انجام بدم؟",
-                    EMPLOYER_MENU_KEYBOARD
+                    get_employer_menu_keyboard()
                 )
                 await query.answer()
                 return EMPLOYER_MENU
@@ -545,14 +545,11 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             keyboard = create_category_keyboard(categories)
             
             # استفاده از MenuManager
-            from localization import get_message
-            lang = context.user_data.get('lang', 'fa')
             await MenuManager.show_menu(
                 update,
                 context,
-                get_message("category_main_select", lang=lang),
-                keyboard,
-                clear_previous=False
+                "🌟 دسته‌بندی خدماتت رو انتخاب کن:",
+                keyboard
             )
             await query.answer()
             return CATEGORY
@@ -609,7 +606,7 @@ async def handle_new_request(update: Update, context: ContextTypes.DEFAULT_TYPE)
         logger.error(f"Error in new_request handler: {e}")
         await query.message.reply_text(
             "❌ خطا در شروع درخواست جدید. لطفاً دوباره تلاش کنید.",
-            reply_markup=EMPLOYER_MENU_KEYBOARD
+            reply_markup=get_employer_menu_keyboard()
         )
         return EMPLOYER_MENU
 
@@ -619,7 +616,7 @@ async def handle_main_menu(update: Update, context: ContextTypes.DEFAULT_TYPE) -
     # بازگشت به منوی اصلی
     await query.message.reply_text(
         "🌟 چی می‌خوای امروز؟", 
-        reply_markup=MAIN_MENU_KEYBOARD
+        reply_markup=get_main_menu_keyboard()
     )
     return ROLE
 
