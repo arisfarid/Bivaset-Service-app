@@ -1,6 +1,6 @@
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardMarkup, KeyboardButton, ReplyKeyboardRemove
 from telegram.ext import ContextTypes, ConversationHandler
-from utils import log_chat, delete_message_later, delete_last_n_messages
+from utils import log_chat, delete_previous_messages
 import logging
 from keyboards import get_location_input_keyboard, get_location_type_keyboard, LOCATION_TYPE_GUIDANCE_TEXT, BACK_TO_DESCRIPTION_KEYBOARD, REMOVE_KEYBOARD
 from localization import get_message
@@ -15,7 +15,7 @@ CHANGE_PHONE, VERIFY_CODE = range(20, 22)  # states جدید
 # این تابع مسئول مدیریت انتخاب نوع لوکیشن، دریافت لوکیشن، و هدایت به مرحله توضیحات است
 async def handle_location(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     # حذف ۳ پیام آخر (چه از ربات چه از کاربر)
-    await delete_last_n_messages(update, context, n=3)
+    await delete_previous_messages(update, context, n=3)
     # دریافت query و message از آپدیت تلگرام
     query = update.callback_query
     message = update.message
@@ -31,18 +31,19 @@ async def handle_location(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
     # اگر کاربر به مرحله انتخاب نوع لوکیشن منتقل شد (چه با callback و چه با state)
     if current_state == LOCATION_TYPE:
         if query and (not query.data or query.data == "continue_to_location"):
-            await query.message.edit_text(
+            sent = await query.message.edit_text(
                 LOCATION_TYPE_GUIDANCE_TEXT,
                 reply_markup=get_location_type_keyboard(lang=lang),
                 parse_mode="Markdown"
             )
             return LOCATION_TYPE
         elif message:
-            await message.reply_text(
+            sent = await message.reply_text(
                 LOCATION_TYPE_GUIDANCE_TEXT,
                 reply_markup=get_location_type_keyboard(lang=lang),
                 parse_mode="Markdown"
             )
+            await delete_previous_messages(sent, context, n=3)
             return LOCATION_TYPE
 
     # اگر callback دریافت شده (مثلاً دکمه‌ای کلیک شده)
@@ -77,32 +78,37 @@ async def handle_location(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
                 context.user_data['state'] = DESCRIPTION
                 try:
                     from handlers.project_details_handler import send_description_guidance
-                    await send_description_guidance(query.message, context)
+                    sent = await send_description_guidance(query.message, context)
+                    if sent:
+                        await delete_previous_messages(sent, context, n=3)
                 except Exception as e:
                     logger.error(f"Error sending description guidance for remote service: {e}")
-                    await query.message.edit_text(
+                    sent = await query.message.edit_text(
                         get_message("description_guidance", lang=lang),
                         reply_markup=BACK_TO_DESCRIPTION_KEYBOARD
                     )
+                    await delete_previous_messages(sent, context, n=3)
                 return DESCRIPTION
             else:
                 # اگر کاربر خدمات حضوری را انتخاب کند، درخواست ارسال لوکیشن می‌شود
                 context.user_data['state'] = LOCATION_INPUT
                 await query.message.delete()
-                await query.message.reply_text(
+                sent = await query.message.reply_text(
                     get_message("location_request", lang=lang),
                     reply_markup=get_location_input_keyboard(lang=lang)
                 )
+                await delete_previous_messages(sent, context, n=3)
                 return LOCATION_INPUT
 
         # بازگشت به انتخاب نوع لوکیشن
         elif data == "back_to_location_type":
             context.user_data['state'] = LOCATION_TYPE
-            await query.message.edit_text(
+            sent = await query.message.edit_text(
                 LOCATION_TYPE_GUIDANCE_TEXT,
                 reply_markup=get_location_type_keyboard(),
                 parse_mode="Markdown"
             )
+            await delete_previous_messages(sent, context, n=3)
             return LOCATION_TYPE
 
         # رد کردن ارسال لوکیشن و رفتن به مرحله توضیحات
@@ -110,14 +116,17 @@ async def handle_location(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
             context.user_data['state'] = DESCRIPTION
             try:
                 from handlers.project_details_handler import send_description_guidance
-                await send_description_guidance(query.message, context)
+                sent = await send_description_guidance(query.message, context)
+                if sent:
+                    await delete_previous_messages(sent, context, n=3)
             except Exception as e:
                 logger.error(f"Error sending description guidance after skipping location: {e}")
-                await query.message.edit_text(
+                sent = await query.message.edit_text(
                     get_message("description_guidance", lang=lang),
                     reply_markup=BACK_TO_DESCRIPTION_KEYBOARD,
                     parse_mode="Markdown"
                 )
+                await delete_previous_messages(sent, context, n=3)
             return DESCRIPTION
 
     # اگر کاربر موقعیت مکانی خود را ارسال کند
@@ -127,24 +136,26 @@ async def handle_location(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         logger.info(f"Received location: {context.user_data['location']}")
         context.user_data['state'] = DESCRIPTION
         # نمایش پیام موفقیت و هدایت به مرحله توضیحات
-        msg = await update.message.reply_text(
+        sent = await update.message.reply_text(
             get_message("location_success", lang=lang),
             reply_markup=REMOVE_KEYBOARD
         )
-        # حذف خودکار پیام بعد از ۴ ثانیه
-        asyncio.create_task(delete_message_later(context.bot, msg.chat_id, msg.message_id))
+        await delete_previous_messages(sent, context, n=3)
         try:
             from handlers.project_details_handler import send_description_guidance
-            await send_description_guidance(update.message, context)
+            sent2 = await send_description_guidance(update.message, context)
+            if sent2:
+                await delete_previous_messages(sent2, context, n=3)
             logger.info("Successfully sent description guidance")
         except Exception as e:
             logger.error(f"Error sending description guidance: {e}")
-            await update.message.reply_text(
+            sent2 = await update.message.reply_text(
                 get_message("description_guidance", lang=lang),
                 reply_markup=InlineKeyboardMarkup([
                     [InlineKeyboardButton(get_message("back", lang=lang), callback_data="back_to_location_type")]
                 ])
             )
+            await delete_previous_messages(sent2, context, n=3)
         return DESCRIPTION
 
     # اگر پیام متنی یا غیرمتنی دریافت شد (در مرحله LOCATION_INPUT)
@@ -159,34 +170,37 @@ async def handle_location(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
             update.message.voice
         ]):
             logger.info(f"Received non-location content in location input step")
-            await update.message.reply_text(
+            sent = await update.message.reply_text(
                 get_message("location_invalid_type", lang=lang),
                 parse_mode="Markdown",
                 reply_markup=get_location_input_keyboard(lang=lang)
             )
+            await delete_previous_messages(sent, context, n=3)
             return LOCATION_INPUT
         # اگر متن بازگشت ارسال شد
         if update.message.text and update.message.text == get_message("back", lang=lang):
             context.user_data['state'] = LOCATION_TYPE
-            msg = await update.message.reply_text(
+            sent = await update.message.reply_text(
                 get_message("back_to_previous", lang=lang),
                 reply_markup=REMOVE_KEYBOARD
             )
-            asyncio.create_task(delete_message_later(context.bot, msg.chat_id, msg.message_id))
-            await update.message.reply_text(
+            await delete_previous_messages(sent, context, n=3)
+            sent2 = await update.message.reply_text(
                 get_message("location_type_guidance", lang=lang),
                 reply_markup=get_location_type_keyboard(lang=lang),
                 parse_mode="Markdown"
             )
+            await delete_previous_messages(sent2, context, n=3)
             return LOCATION_TYPE
         # اگر متن ارسال شد (و متن بازگشت نبود)
         elif update.message.text:
             logger.info(f"Received text instead of location: {update.message.text}")
-            await update.message.reply_text(
+            sent = await update.message.reply_text(
                 get_message("location_invalid_type", lang=lang),
                 parse_mode="Markdown",
                 reply_markup=get_location_input_keyboard(lang=lang)
             )
+            await delete_previous_messages(sent, context, n=3)
             return LOCATION_INPUT
 
     # در غیر این صورت، state فعلی را حفظ کن

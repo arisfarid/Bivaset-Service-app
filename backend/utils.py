@@ -232,31 +232,19 @@ async def restart_chat(update: Update, context: ContextTypes.DEFAULT_TYPE):
         logger.error(f"Error restarting chat: {e}")
         return False
 
-async def delete_message_later(bot, chat_id, message_id, delay=4):
-    await asyncio.sleep(delay)
-    try:
-        await bot.delete_message(chat_id=chat_id, message_id=message_id)
-    except Exception:
-        pass
-
-async def delete_last_n_messages(update, context, n=3):
+async def delete_previous_messages(sent, context, n=3):
     """
-    حذف n پیام آخر (شامل پیام‌های کاربر و ربات) از چت.
+    بعد از ارسال پیام جدید (sent)، n پیام قبلی (چه از ربات چه از کاربر) را حذف می‌کند.
     """
     try:
-        chat_id = update.effective_chat.id
-        last_msg_id = None
-        if hasattr(update, "message") and update.message:
-            last_msg_id = update.message.message_id
-        elif hasattr(update, "callback_query") and update.callback_query and update.callback_query.message:
-            last_msg_id = update.callback_query.message.message_id
-        if last_msg_id:
-            for i in range(1, n + 1):
-                msg_id = last_msg_id - i
-                if msg_id > 0:
-                    try:
-                        await context.bot.delete_message(chat_id=chat_id, message_id=msg_id)
-                    except Exception:
-                        pass
+        chat_id = sent.chat_id
+        last_msg_id = sent.message_id
+        for i in range(1, n + 1):
+            msg_id = last_msg_id - i
+            if msg_id > 0:
+                try:
+                    await context.bot.delete_message(chat_id=chat_id, message_id=msg_id)
+                except Exception:
+                    pass
     except Exception:
         pass
