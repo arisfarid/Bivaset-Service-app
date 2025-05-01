@@ -234,11 +234,11 @@ async def handle_navigation_callback(update: Update, context: ContextTypes.DEFAU
 # این تابع بر اساس داده callback و state فعلی، منو یا مرحله مناسب را نمایش می‌دهد
 # و همچنین خطاها را مدیریت می‌کند
 async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Main callback handler with improved error handling and universal navigation"""
     query = update.callback_query
     if not query:
         return START
 
+    logger.info(f"[handle_callback] user_id={update.effective_user.id} | state={context.user_data.get('state')} | prev_state={context.user_data.get('previous_state')} | context.user_data={context.user_data}")
     try:
         data = query.data
         current_state = context.user_data.get('state', ROLE)
@@ -246,6 +246,7 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         logger.info(f"Handling callback: {data}")
         logger.info(f"Current state: {current_state}")
         logger.info(f"Previous state: {previous_state}")
+        logger.info(f"context.user_data: {context.user_data}")
         
         # Handle continue_to_description callback (from location input to description)
         if data == "continue_to_description":
@@ -260,6 +261,9 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             )
             await query.answer()
             return DESCRIPTION
+
+        if data == "continue_to_location":
+            logger.info(f"[handle_callback] continue_to_location pressed | context.user_data={context.user_data}")
         
         # Universal back navigation patterns
         if data == "back" or data == "back_to_previous":
@@ -485,7 +489,7 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         # پردازش دسته‌بندی
         if data.startswith(('cat_', 'subcat_')):
-            logger.info(f"Processing category selection: {data}")
+            logger.info(f"[handle_callback] category selection: {data} | context.user_data={context.user_data}")
             from handlers.category_handler import handle_category_selection
             context.user_data['previous_state'] = EMPLOYER_MENU
             context.user_data['state'] = CATEGORY

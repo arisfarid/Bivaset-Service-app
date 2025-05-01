@@ -51,6 +51,7 @@ async def change_phone(update: Update, context: ContextTypes.DEFAULT_TYPE) -> in
 
 async def handle_new_phone(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """بررسی شماره تلفن جدید و ارسال کد تأیید"""
+    logger.info(f"[handle_new_phone] user_id={update.effective_user.id} | context.user_data={context.user_data}")
     new_phone = update.message.text.strip()
     if not new_phone.startswith('09') or not new_phone.isdigit() or len(new_phone) != 11:
         await update.message.reply_text("❌ فرمت شماره نامعتبر است.\nلطفاً شماره را به فرمت 09123456789 وارد کنید.")
@@ -68,6 +69,7 @@ async def handle_new_phone(update: Update, context: ContextTypes.DEFAULT_TYPE) -
         'code_expires_at': datetime.now() + timedelta(minutes=2),
         'verify_attempts': 0
     })
+    logger.info(f"[handle_new_phone] updated context.user_data={context.user_data}")
 
     if await send_verification_code(new_phone, verification_code):
         await update.message.reply_text(
@@ -83,6 +85,7 @@ async def handle_new_phone(update: Update, context: ContextTypes.DEFAULT_TYPE) -
 
 async def verify_new_phone(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """بررسی کد تأیید وارد شده"""
+    logger.info(f"[verify_new_phone] user_id={update.effective_user.id} | context.user_data={context.user_data}")
     code = update.message.text.strip()
     stored_code = context.user_data.get('verification_code')
     expires_at = context.user_data.get('code_expires_at')
@@ -102,6 +105,7 @@ async def verify_new_phone(update: Update, context: ContextTypes.DEFAULT_TYPE) -
         return CHANGE_PHONE
 
     context.user_data['verify_attempts'] += 1
+    logger.info(f"[verify_new_phone] verify_attempts increased: {context.user_data['verify_attempts']}")
     if code != stored_code:
         remaining = MAX_ATTEMPTS - context.user_data['verify_attempts']
         await update.message.reply_text(f"❌ کد وارد شده اشتباه است.\nتعداد تلاش‌های باقیمانده: {remaining}")
@@ -124,6 +128,7 @@ async def verify_new_phone(update: Update, context: ContextTypes.DEFAULT_TYPE) -
                 raise Exception("Failed to update phone number")
         for key in ['verification_code', 'code_expires_at', 'new_phone', 'verify_attempts']:
             context.user_data.pop(key, None)
+        logger.info(f"[verify_new_phone] cleaned up context.user_data={context.user_data}")
     except Exception as e:
         logger.error(f"Error updating phone: {e}")
         await update.message.reply_text("❌ خطا در ثبت شماره تلفن.\nلطفاً دوباره تلاش کنید.")
@@ -150,6 +155,7 @@ def require_phone(func):
     """دکوراتور برای چک کردن شماره تلفن"""
     @wraps(func)
     async def wrapper(update: Update, context: ContextTypes.DEFAULT_TYPE, *args, **kwargs):
+        logger.info(f"[require_phone] user_id={update.effective_user.id} | context.user_data={context.user_data}")
         try:
             if not await check_phone(update, context):
                 if update.callback_query:
@@ -189,6 +195,7 @@ def require_phone(func):
 
 async def handle_contact(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Handle received contact for phone registration"""
+    logger.info(f"[handle_contact] user_id={update.effective_user.id} | context.user_data={context.user_data}")
     contact = update.message.contact
     
     if not contact.phone_number:

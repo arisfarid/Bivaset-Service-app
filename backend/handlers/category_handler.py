@@ -16,6 +16,7 @@ CHANGE_PHONE, VERIFY_CODE = range(20, 22)  # states جدید
 
 @require_phone
 async def handle_category_selection(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    logger.info(f"[handle_category_selection] user_id={update.effective_user.id} | state={context.user_data.get('state')} | context.user_data={context.user_data}")
     """Handle category and subcategory selection"""
     query = update.callback_query
     message = update.message
@@ -55,9 +56,10 @@ async def handle_category_selection(update: Update, context: ContextTypes.DEFAUL
 
         # رفتن به مرحله بعد (انتخاب لوکیشن)
         if data == "continue_to_location":
-            logger.info(f"Processing continue to location. Category ID: {context.user_data.get('category_id')}")
+            logger.info(f"[handle_category_selection] continue_to_location pressed | context.user_data={context.user_data}")
             if context.user_data.get('category_id'):
                 context.user_data['state'] = LOCATION_TYPE
+                logger.info(f"[handle_category_selection] state changed to LOCATION_TYPE | context.user_data={context.user_data}")
                 await query.answer()  # پاسخ به callback
                 return await handle_location(update, context)
             else:

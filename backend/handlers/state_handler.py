@@ -35,11 +35,13 @@ async def handle_navigation_callback(update: Update, context: ContextTypes.DEFAU
     """
     query = update.callback_query
     await query.answer()
+    logger.info(f"[handle_navigation_callback] user_id={update.effective_user.id} | state={context.user_data.get('state')} | context.user_data={context.user_data}")
     
     callback_data = query.data
     if callback_data.startswith("nav_to_"):
         try:
             next_state = int(callback_data.split("_")[-1])
+            logger.info(f"[handle_navigation_callback] nav_to_{next_state} | context.user_data={context.user_data}")
             
             # Update user state
             context.user_data['previous_state'] = context.user_data.get('state')
@@ -61,10 +63,12 @@ async def handle_navigation_callback(update: Update, context: ContextTypes.DEFAU
                 return DESCRIPTION
                 
             elif next_state == LOCATION_TYPE:
+                logger.info(f"[handle_navigation_callback] navigating to LOCATION_TYPE | context.user_data={context.user_data}")
                 from handlers.location_handler import handle_location
                 return await handle_location(update, context)
                 
             elif next_state == LOCATION_INPUT:
+                logger.info(f"[handle_navigation_callback] navigating to LOCATION_INPUT | context.user_data={context.user_data}")
                 from handlers.location_handler import request_location_input
                 return await request_location_input(update, context)
                 
