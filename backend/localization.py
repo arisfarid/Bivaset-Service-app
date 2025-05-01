@@ -112,6 +112,14 @@ MESSAGES = {
     "step_error": {
         "fa": "❌ خطا در نمایش مرحله بعد. لطفاً مجدداً تلاش کنید.",
         "en": "❌ Error displaying the next step. Please try again."
+    },
+    "role_select": {
+        "fa": "🌟 لطفاً نقش خود را انتخاب کنید:",
+        "en": "🌟 Please select your role:"
+    },
+    "employer_menu_prompt": {
+        "fa": "🎉 عالیه، {name}! می‌خوای خدمات جدید درخواست کنی یا پیشنهادات رو ببینی؟",
+        "en": "🎉 Great, {name}! Would you like to request a new service or view proposals?"
     }
 }
 

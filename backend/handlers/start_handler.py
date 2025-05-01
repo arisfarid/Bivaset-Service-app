@@ -162,9 +162,9 @@ async def handle_role(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int
             # در صورت خطا، از روش قبلی استفاده کنیم
             await MenuManager.clear_menus(update, context)
         
-        employer_message = "🎉 عالیه، {}! می‌خوای خدمات جدید درخواست کنی یا پیشنهادات رو ببینی؟".format(
-            update.effective_user.full_name
-        )
+        from localization import get_message
+        lang = context.user_data.get('lang', 'fa')
+        employer_message = get_message("employer_menu_prompt", lang=lang, name=update.effective_user.full_name)
         
         # حذف کیبورد تایپ قبل از نمایش منو
         sent = await update.message.reply_text(
