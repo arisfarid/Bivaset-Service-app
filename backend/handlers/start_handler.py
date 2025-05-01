@@ -190,6 +190,12 @@ async def handle_role(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int
         reply_markup=ReplyKeyboardRemove()
     )
     await delete_previous_messages(sent, context, n=3)
+    # نمایش مجدد منوی نقش
+    sent2 = await update.message.reply_text(
+        get_message("role_select", lang=lang),
+        reply_markup=MAIN_MENU_KEYBOARD
+    )
+    await delete_previous_messages(sent2, context, n=3)
     return ROLE
 
 async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
