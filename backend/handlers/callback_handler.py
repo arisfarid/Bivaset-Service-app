@@ -248,6 +248,15 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         logger.info(f"Previous state: {previous_state}")
         logger.info(f"context.user_data: {context.user_data}")
         
+        # handle continue_to_location: go to location selection directly
+        if data == "continue_to_location":
+            # set previous and current state for navigation
+            context.user_data['previous_state'] = context.user_data.get('state')
+            context.user_data['state'] = LOCATION_TYPE
+            from handlers.location_handler import handle_location
+            await query.answer()
+            return await handle_location(update, context)
+        
         # Handle continue_to_description callback (from location input to description)
         if data == "continue_to_description":
             logger.info("User continuing from location to description")
@@ -262,9 +271,6 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await query.answer()
             return DESCRIPTION
 
-        if data == "continue_to_location":
-            logger.info(f"[handle_callback] continue_to_location pressed | context.user_data={context.user_data}")
-        
         # Universal back navigation patterns
         if data == "back" or data == "back_to_previous":
             if previous_state is not None:

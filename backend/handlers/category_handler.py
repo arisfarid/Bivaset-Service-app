@@ -83,7 +83,6 @@ async def handle_category_selection(update: Update, context: ContextTypes.DEFAUL
             children = selected_category.get('children', [])
             if children:
                 context.user_data['category_group'] = category_id
-                # نمایش کیبورد زیردسته‌ها از طریق تابع متمرکز
                 sent = await query.message.edit_text(
                     get_message("select_subcategory", lang=lang, category_name=selected_category['name']),
                     reply_markup=create_subcategory_keyboard(categories, category_id, lang=lang)
@@ -122,7 +121,6 @@ async def handle_category_selection(update: Update, context: ContextTypes.DEFAUL
             children = selected_subcategory.get('children', [])
             if children:
                 context.user_data['category_group'] = subcategory_id
-                # نمایش کیبورد زیردسته‌ها از طریق تابع متمرکز
                 sent = await query.message.edit_text(
                     get_message("select_subcategory", lang=lang, category_name=selected_subcategory['name']),
                     reply_markup=create_subcategory_keyboard(categories, subcategory_id, lang=lang)

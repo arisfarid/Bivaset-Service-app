@@ -5,12 +5,14 @@ import logging
 from utils import BASE_URL, log_chat
 from keyboards import VIEW_PROJECTS_MENU_KEYBOARD  # اضافه شده
 from handlers.phone_handler import require_phone
-
+from handlers.state_handler import (
+    START, REGISTER, ROLE, EMPLOYER_MENU, CATEGORY, SUBCATEGORY, DESCRIPTION,
+    LOCATION_TYPE, LOCATION_INPUT, DETAILS, DETAILS_FILES, DETAILS_DATE,
+    DETAILS_DEADLINE, DETAILS_BUDGET, DETAILS_QUANTITY, SUBMIT,
+    VIEW_PROJECTS, PROJECT_ACTIONS, CHANGE_PHONE, VERIFY_CODE
+)
 
 logger = logging.getLogger(__name__)
-
-START, REGISTER, ROLE, EMPLOYER_MENU, CATEGORY, SUBCATEGORY, DESCRIPTION, LOCATION_TYPE, LOCATION_INPUT, DETAILS, DETAILS_FILES, DETAILS_DATE, DETAILS_DEADLINE, DETAILS_BUDGET, DETAILS_QUANTITY, SUBMIT, VIEW_PROJECTS, PROJECT_ACTIONS = range(18)
-CHANGE_PHONE, VERIFY_CODE = range(20, 22)  # states جدید
 
 @require_phone
 async def handle_view_projects(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
