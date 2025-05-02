@@ -4,12 +4,10 @@ from utils import BASE_URL, log_chat, ensure_active_chat, delete_previous_messag
 from keyboards import get_main_menu_keyboard, REGISTER_MENU_KEYBOARD, get_employer_menu_keyboard, get_contractor_menu_keyboard
 from handlers.phone_handler import check_phone
 from helpers.menu_manager import MenuManager
+from handlers.states import START, REGISTER, ROLE, EMPLOYER_MENU, CATEGORY, SUBCATEGORY, DESCRIPTION, LOCATION_TYPE, LOCATION_INPUT, DETAILS, DETAILS_FILES, DETAILS_DATE, DETAILS_DEADLINE, DETAILS_BUDGET, DETAILS_QUANTITY, SUBMIT, VIEW_PROJECTS, PROJECT_ACTIONS, CHANGE_PHONE, VERIFY_CODE
 import logging
 
 logger = logging.getLogger(__name__)
-
-# تعریف حالت‌ها
-START, REGISTER, ROLE, EMPLOYER_MENU, CONTRACTOR_MENU = range(5)
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Start the conversation with the bot."""

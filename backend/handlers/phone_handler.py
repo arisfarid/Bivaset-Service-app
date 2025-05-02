@@ -8,13 +8,11 @@ import logging
 import json
 import aiohttp
 from utils import BASE_URL, save_user_phone, log_chat
+from handlers.states import START, REGISTER, ROLE, EMPLOYER_MENU, CATEGORY, SUBCATEGORY, DESCRIPTION, LOCATION_TYPE, LOCATION_INPUT, DETAILS, DETAILS_FILES, DETAILS_DATE, DETAILS_DEADLINE, DETAILS_BUDGET, DETAILS_QUANTITY, SUBMIT, VIEW_PROJECTS, PROJECT_ACTIONS, CHANGE_PHONE, VERIFY_CODE
 from localization import get_message
 from keyboards import get_main_menu_keyboard, REGISTER_MENU_KEYBOARD, REGISTER_INLINE_KEYBOARD
 
 logger = logging.getLogger(__name__)
-
-ROLE, CHANGE_PHONE, VERIFY_CODE, REGISTER = range(4)
-START, EMPLOYER_MENU, CATEGORY, SUBCATEGORY, DESCRIPTION, LOCATION_TYPE, LOCATION_INPUT, DETAILS = range(4, 12)
 
 SMS_API_KEY = "your-api-key"  # تنظیم بعدی
 SMS_URL = "https://api.sms.ir/v1/send/verify"
