@@ -6,11 +6,9 @@ import logging
 from keyboards import create_dynamic_keyboard, FILE_MANAGEMENT_MENU_KEYBOARD
 from django.conf import settings  # اضافه کردن ایمپورت
 import os  # اضافه کردن ایمپورت
+from handlers.states import START, REGISTER, ROLE, EMPLOYER_MENU, CATEGORY, SUBCATEGORY, DESCRIPTION, LOCATION_TYPE, LOCATION_INPUT, DETAILS, DETAILS_FILES, DETAILS_DATE, DETAILS_DEADLINE, DETAILS_BUDGET, DETAILS_QUANTITY, SUBMIT, VIEW_PROJECTS, PROJECT_ACTIONS, CHANGE_PHONE, VERIFY_CODE
 
 logger = logging.getLogger(__name__)
-
-START, REGISTER, ROLE, EMPLOYER_MENU, CATEGORY, SUBCATEGORY, DESCRIPTION, LOCATION_TYPE, LOCATION_INPUT, DETAILS, DETAILS_FILES, DETAILS_DATE, DETAILS_DEADLINE, DETAILS_BUDGET, DETAILS_QUANTITY, SUBMIT, VIEW_PROJECTS, PROJECT_ACTIONS = range(18)
-CHANGE_PHONE, VERIFY_CODE = range(20, 22)  # states جدید
 
 # New interface functions for project_details_handler to use
 async def init_photo_management(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:

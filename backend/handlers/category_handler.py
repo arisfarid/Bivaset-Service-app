@@ -7,12 +7,10 @@ from keyboards import create_category_keyboard, get_employer_menu_keyboard, get_
 from handlers.phone_handler import require_phone
 from handlers.location_handler import handle_location
 from localization import get_message
+from handlers.states import START, REGISTER, ROLE, EMPLOYER_MENU, CATEGORY, SUBCATEGORY, DESCRIPTION, LOCATION_TYPE, LOCATION_INPUT, DETAILS, DETAILS_FILES, DETAILS_DATE, DETAILS_DEADLINE, DETAILS_BUDGET, DETAILS_QUANTITY, SUBMIT, VIEW_PROJECTS, PROJECT_ACTIONS, CHANGE_PHONE, VERIFY_CODE
 import asyncio
 
 logger = logging.getLogger(__name__)
-
-START, REGISTER, ROLE, EMPLOYER_MENU, CATEGORY, SUBCATEGORY, DESCRIPTION, LOCATION_TYPE, LOCATION_INPUT, DETAILS, DETAILS_FILES, DETAILS_DATE, DETAILS_DEADLINE, DETAILS_BUDGET, DETAILS_QUANTITY, SUBMIT, VIEW_PROJECTS, PROJECT_ACTIONS = range(18)
-CHANGE_PHONE, VERIFY_CODE = range(20, 22)  # states جدید
 
 @require_phone
 async def handle_category_selection(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:

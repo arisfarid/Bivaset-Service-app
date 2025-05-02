@@ -11,13 +11,11 @@ from keyboards import create_category_keyboard, get_employer_menu_keyboard, FILE
 from helpers.menu_manager import MenuManager
 import asyncio  # برای استفاده از sleep
 from asyncio import Lock
+from handlers.states import START, REGISTER, ROLE, EMPLOYER_MENU, CATEGORY, SUBCATEGORY, DESCRIPTION, LOCATION_TYPE, LOCATION_INPUT, DETAILS, DETAILS_FILES, DETAILS_DATE, DETAILS_DEADLINE, DETAILS_BUDGET, DETAILS_QUANTITY, SUBMIT, VIEW_PROJECTS, PROJECT_ACTIONS, CHANGE_PHONE, VERIFY_CODE, STATE_NAMES
 # Fix circular import by importing from navigation_utils directly instead of state_handler
-from handlers.navigation_utils import SERVICE_REQUEST_FLOW, STATE_NAMES
+from handlers.navigation_utils import SERVICE_REQUEST_FLOW
 
 logger = logging.getLogger(__name__)
-
-START, REGISTER, ROLE, EMPLOYER_MENU, CATEGORY, SUBCATEGORY, DESCRIPTION, LOCATION_TYPE, LOCATION_INPUT, DETAILS, DETAILS_FILES, DETAILS_DATE, DETAILS_DEADLINE, DETAILS_BUDGET, DETAILS_QUANTITY, SUBMIT, VIEW_PROJECTS, PROJECT_ACTIONS = range(18)
-CHANGE_PHONE, VERIFY_CODE = range(20, 22)  # states جدید
 
 # ایجاد قفل سراسری
 button_lock = Lock()
