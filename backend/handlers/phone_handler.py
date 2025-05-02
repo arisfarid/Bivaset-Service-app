@@ -160,15 +160,9 @@ def require_phone(func):
                     # استفاده از InlineKeyboardMarkup برای callback_query
                     message = update.callback_query.message
                     await update.callback_query.answer("برای ادامه نیاز به ثبت شماره تلفن است")
-                    # ارسال پیام با کیبورد اینلاین
-                    await message.reply_text(
-                        "⚠️ برای استفاده از ربات، باید شماره تلفن خود را به اشتراک بگذارید.\n"
-                        "لطفاً دکمه زیر را انتخاب کنید:",
-                        reply_markup=REGISTER_INLINE_KEYBOARD
-                    )
                     # جداگانه ارسال کیبورد ReplyKeyboardMarkup برای دریافت شماره تلفن
                     await message.reply_text(
-                        "یا از دکمه زیر برای به اشتراک‌گذاری مستقیم شماره استفاده کنید:",
+                        "از دکمه زیر برای به اشتراک‌گذاری مستقیم شماره استفاده کنید:",
                         reply_markup=REGISTER_MENU_KEYBOARD
                     )
                 else:
