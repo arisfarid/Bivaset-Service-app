@@ -51,7 +51,7 @@ REMOVE_KEYBOARD = ReplyKeyboardRemove()
 
 # کیبورد بازگشت به منوی انتخاب محل
 BACK_TO_LOCATION_KEYBOARD = InlineKeyboardMarkup([
-    [InlineKeyboardButton("⬅️ بازگشت", callback_data="back_to_location_type")]
+    [InlineKeyboardButton(get_message("back", lang="fa"), callback_data="back_to_location_type")]
 ])
 
 # تابع ایجاد کیبورد بازگشت به توضیحات با قابلیت لوکالایزیشن
@@ -63,21 +63,32 @@ def get_back_to_description_keyboard(lang="fa"):
 
 # منوی مدیریت فایل‌ها
 FILE_MANAGEMENT_MENU_KEYBOARD = InlineKeyboardMarkup([
-    [InlineKeyboardButton("🏁 اتمام ارسال تصاویر", callback_data="finish_files")],
-    [InlineKeyboardButton("📋 مدیریت عکس‌ها", callback_data="manage_photos")],
-    [InlineKeyboardButton("⬅️ بازگشت", callback_data="back_to_details")]
+    [InlineKeyboardButton(get_message("finish_photos", lang="fa"), callback_data="finish_files")],
+    [InlineKeyboardButton(get_message("manage_photos", lang="fa"), callback_data="manage_photos")],
+    [InlineKeyboardButton(get_message("back", lang="fa"), callback_data="back_to_details")]
 ])
+
+# Photo management keyboards
+def create_photo_management_keyboard(files_list, lang="fa"):
+    """Create keyboard for managing uploaded photos"""
+    keyboard = [
+        [InlineKeyboardButton(f"📸 تصویر {i+1}", callback_data=f"view_photo_{i}"),
+         InlineKeyboardButton(get_message("edit", lang=lang), callback_data=f"edit_photo_{i}")]
+        for i in range(len(files_list))
+    ]
+    keyboard.append([InlineKeyboardButton(get_message("back", lang=lang), callback_data="back_to_upload")])
+    return InlineKeyboardMarkup(keyboard)
 
 # منوی مشاهده پروژه‌ها
 VIEW_PROJECTS_MENU_KEYBOARD = InlineKeyboardMarkup([
     [InlineKeyboardButton("درخواست‌های باز", callback_data="open_projects")],
     [InlineKeyboardButton("درخواست‌های بسته", callback_data="closed_projects")],
-    [InlineKeyboardButton("⬅️ بازگشت", callback_data="back_to_employer_menu")]
+    [InlineKeyboardButton(get_message("back", lang="fa"), callback_data="back_to_employer_menu")]
 ])
 
 # منوی ثبت‌نام با KeyboardButton برای ارسال شماره تماس
 REGISTER_MENU = ReplyKeyboardMarkup([
-    [KeyboardButton("ثبت شماره تلفن", request_contact=True)]
+    [KeyboardButton("📱 به اشتراک گذاشتن شماره تماس", request_contact=True)]
 ], resize_keyboard=True)
 
 # تنظیم کیبورد ثبت شماره به صورت یک دکمه ساده
@@ -89,23 +100,23 @@ REGISTER_MENU_KEYBOARD = ReplyKeyboardMarkup(
 
 # منوی اینلاین کارفرما
 EMPLOYER_INLINE_MENU_KEYBOARD = InlineKeyboardMarkup([
-    [InlineKeyboardButton("📋 درخواست خدمات جدید", callback_data='new_project')],
-    [InlineKeyboardButton("👀 مشاهده درخواست‌ها", callback_data='view_projects')],
+    [InlineKeyboardButton(get_message("employer_new_request", lang="fa"), callback_data='new_project')],
+    [InlineKeyboardButton(get_message("employer_view_projects", lang="fa"), callback_data='view_projects')],
 ])
 
 # منوی اینلاین بازگشت
 BACK_INLINE_MENU_KEYBOARD = InlineKeyboardMarkup([
-    [InlineKeyboardButton("⬅️ برگشت به ارسال", callback_data="back_to_upload")]
+    [InlineKeyboardButton(get_message("back", lang="fa"), callback_data="back_to_upload")]
 ])
 
 # منوی راه‌اندازی مجدد - تغییر به URL دستور برای فراخوانی مستقیم /start
 RESTART_INLINE_MENU_KEYBOARD = InlineKeyboardMarkup([
-    [InlineKeyboardButton("🔄 راه‌اندازی مجدد", url="https://t.me/BivasetBot?start=restart")]
+    [InlineKeyboardButton("🔄 شروع مجدد", url="https://t.me/BivasetBot?start=restart")]
 ])
 
 # منوی بازگشت به توضیحات
 BACK_TO_DESCRIPTION_KEYBOARD = InlineKeyboardMarkup([
-    [InlineKeyboardButton("⬅️ بازگشت", callback_data="back_to_location_type")]
+    [InlineKeyboardButton(get_message("back", lang="fa"), callback_data="back_to_location_type")]
 ])
 
 # منوی اینلاین ثبت شماره تلفن
@@ -122,35 +133,38 @@ def create_restart_keyboard():
     ])
 
 # تابع ایجاد کیبورد دکمه‌های ادامه و بازگشت
-def create_navigation_keyboard(back_callback, continue_callback=None, continue_enabled=False, continue_text="▶️ ادامه"):
+def create_navigation_keyboard(back_callback, continue_callback=None, continue_enabled=False, continue_text="✅ ادامه"):
     """ایجاد کیبورد حاوی دکمه‌های بازگشت و ادامه برای ناوبری بین مراحل"""
     keyboard = []
     
     # اگر دکمه ادامه فعال باشد و آدرس کالبک آن مشخص شده باشد
     if continue_enabled and continue_callback:
         keyboard.append([
-            InlineKeyboardButton("⬅️ بازگشت", callback_data=back_callback),
+            InlineKeyboardButton(get_message("back", lang="fa"), callback_data=back_callback),
             InlineKeyboardButton(continue_text, callback_data=continue_callback)
         ])
     else:
-        keyboard.append([InlineKeyboardButton("⬅️ بازگشت", callback_data=back_callback)])
+        keyboard.append([InlineKeyboardButton(get_message("back", lang="fa"), callback_data=back_callback)])
     
     return InlineKeyboardMarkup(keyboard)
 
 def create_dynamic_keyboard(context):
     buttons = []
     # همیشه دکمه تصاویر رو نشون بده
-    buttons.append([InlineKeyboardButton("📸 تصاویر یا فایل", callback_data="photo_management")])
+    buttons.append([InlineKeyboardButton(get_message("images_button", lang="fa"), callback_data="photo_management")])
     
     if 'need_date' not in context.user_data:
-        buttons.append([InlineKeyboardButton("📅 تاریخ نیاز", callback_data="need_date")])
+        buttons.append([InlineKeyboardButton(get_message("need_date_button", lang="fa"), callback_data="need_date")])
     if 'deadline' not in context.user_data:
-        buttons.append([InlineKeyboardButton("⏳ مهلت انجام", callback_data="deadline")])
+        buttons.append([InlineKeyboardButton(get_message("deadline_button", lang="fa"), callback_data="deadline")])
     if 'budget' not in context.user_data:
-        buttons.append([InlineKeyboardButton("💰 بودجه", callback_data="budget")])
+        buttons.append([InlineKeyboardButton(get_message("budget_button", lang="fa"), callback_data="budget")])
     if 'quantity' not in context.user_data:
-        buttons.append([InlineKeyboardButton("📏 مقدار و واحد", callback_data="quantity")])
-    buttons.append([InlineKeyboardButton("⬅️ بازگشت", callback_data="back_to_description"), InlineKeyboardButton("✅ ثبت درخواست", callback_data="submit_project")])
+        buttons.append([InlineKeyboardButton(get_message("quantity_button", lang="fa"), callback_data="quantity")])
+    buttons.append([
+        InlineKeyboardButton(get_message("back", lang="fa"), callback_data="back_to_description"), 
+        InlineKeyboardButton(get_message("submit_project_button", lang="fa"), callback_data="submit_project")
+    ])
     return InlineKeyboardMarkup(buttons)
 
 def create_category_keyboard(categories):
@@ -162,7 +176,7 @@ def create_category_keyboard(categories):
         if cat_id in categories:
             keyboard.append([InlineKeyboardButton(categories[cat_id]['name'], callback_data=f"cat_{cat_id}")])
     
-    keyboard.append([InlineKeyboardButton("⬅️ بازگشت", callback_data="back_to_menu")])
+    keyboard.append([InlineKeyboardButton(get_message("back", lang="fa"), callback_data="back_to_menu")])
     return InlineKeyboardMarkup(keyboard)
 
 # اضافه کردن تابع ایجاد کیبورد زیردسته‌ها
