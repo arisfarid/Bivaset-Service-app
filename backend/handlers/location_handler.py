@@ -89,7 +89,7 @@ async def handle_location(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
                 context.user_data['state'] = DESCRIPTION
                 await query.message.edit_text(
                     get_message("remote_service_selected", lang=lang) + "\n\n" + 
-                    get_message("enter_description", lang=lang),
+                    get_message("description_guidance", lang=lang),
                     reply_markup=BACK_TO_DESCRIPTION_KEYBOARD
                 )
                 return DESCRIPTION
