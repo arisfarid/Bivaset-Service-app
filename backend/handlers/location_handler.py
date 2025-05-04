@@ -71,9 +71,14 @@ async def handle_location(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
                 'remote': 'remote'
             }[location_type]
 
-            # اگر کاربر غیرحضوری را انتخاب کند، مستقیماً به مرحله توضیحات هدایت شود و هیچ پیام راهنمای مرحله یا navigation ارسال نشود
+            # اگر کاربر غیرحضوری را انتخاب کند، مستقیماً به مرحله توضیحات هدایت شود
             if location_type == 'remote':
                 context.user_data['state'] = DESCRIPTION
+                await query.message.edit_text(
+                    get_message("remote_service_selected", lang=lang) + "\n\n" + 
+                    get_message("enter_description", lang=lang),
+                    reply_markup=BACK_TO_DESCRIPTION_KEYBOARD
+                )
                 return DESCRIPTION
             else:
                 # اگر کاربر خدمات حضوری را انتخاب کند، درخواست ارسال لوکیشن می‌شود

@@ -194,6 +194,21 @@ def create_subcategory_keyboard(categories: dict, parent_id: int, lang="fa") -> 
     ])
     return InlineKeyboardMarkup(keyboard)
 
+def create_category_confirmation_keyboard(selected_category_name: str, lang: str = "fa") -> InlineKeyboardMarkup:
+    """Creates a confirmation keyboard after category selection with continue and back buttons"""
+    return InlineKeyboardMarkup([
+        [
+            InlineKeyboardButton(get_message("back", lang=lang), callback_data="back_to_categories"),
+            InlineKeyboardButton(get_message("continue", lang=lang), callback_data="continue_to_location")
+        ]
+    ])
+
+def create_category_error_keyboard(lang: str = "fa") -> InlineKeyboardMarkup:
+    """Creates an error keyboard with only back button for category selection"""
+    return InlineKeyboardMarkup([
+        [InlineKeyboardButton(get_message("back", lang=lang), callback_data="back_to_categories")]
+    ])
+
 def get_description_short_buttons(lang="fa"):
     return InlineKeyboardMarkup([
         [InlineKeyboardButton(get_message("continue", lang=lang), callback_data="continue_to_details")],

@@ -3,8 +3,16 @@ from telegram.ext import ContextTypes, ConversationHandler
 from utils import get_categories, log_chat, delete_previous_messages
 import logging
 from handlers.start_handler import start
-from keyboards import create_category_keyboard, get_employer_menu_keyboard, get_main_menu_keyboard, create_subcategory_keyboard
+from keyboards import (
+    create_category_keyboard,
+    get_employer_menu_keyboard,
+    create_navigation_keyboard,
+    create_subcategory_keyboard,
+    create_category_confirmation_keyboard,
+    create_category_error_keyboard
+)
 from handlers.phone_handler import require_phone
+from handlers.location_handler import handle_location
 from localization import get_message
 from handlers.states import START, REGISTER, ROLE, EMPLOYER_MENU, CATEGORY, SUBCATEGORY, DESCRIPTION, LOCATION_TYPE, LOCATION_INPUT, DETAILS, DETAILS_FILES, DETAILS_DATE, DETAILS_DEADLINE, DETAILS_BUDGET, DETAILS_QUANTITY, SUBMIT, VIEW_PROJECTS, PROJECT_ACTIONS, CHANGE_PHONE, VERIFY_CODE
 import asyncio
@@ -58,7 +66,6 @@ async def handle_category_selection(update: Update, context: ContextTypes.DEFAUL
                 context.user_data['state'] = LOCATION_TYPE
                 logger.info(f"[handle_category_selection] state changed to LOCATION_TYPE | context.user_data={context.user_data}")
                 await query.answer()  # پاسخ به callback
-                from handlers.location_handler import handle_location
                 return await handle_location(update, context)
             else:
                 logger.warning("Cannot proceed to location: No category selected")
@@ -92,14 +99,9 @@ async def handle_category_selection(update: Update, context: ContextTypes.DEFAUL
             context.user_data['category_name'] = selected_category['name']
             
             # نمایش پیام تایید با دکمه‌های بازگشت و ادامه
-            from keyboards import create_navigation_keyboard
             await query.message.edit_text(
                 f"{get_message('category_selected', lang=lang)}: {selected_category['name']}\n{get_message('category_submit_or_back', lang=lang)}",
-                reply_markup=create_navigation_keyboard(
-                    back_callback="back_to_categories", 
-                    continue_callback="continue_to_location", 
-                    continue_enabled=True
-                )
+                reply_markup=create_category_confirmation_keyboard(selected_category['name'], lang)
             )
             return CATEGORY
 
@@ -130,14 +132,9 @@ async def handle_category_selection(update: Update, context: ContextTypes.DEFAUL
             context.user_data['category_name'] = selected_subcategory['name']
             
             # نمایش پیام تایید با دکمه‌های بازگشت و ادامه
-            from keyboards import create_navigation_keyboard
             await query.message.edit_text(
                 f"{get_message('category_selected', lang=lang)}: {selected_subcategory['name']}\n{get_message('category_submit_or_back', lang=lang)}",
-                reply_markup=create_navigation_keyboard(
-                    back_callback="back_to_categories", 
-                    continue_callback="continue_to_location", 
-                    continue_enabled=True
-                )
+                reply_markup=create_category_confirmation_keyboard(selected_subcategory['name'], lang)
             )
             return CATEGORY
 
@@ -183,7 +180,7 @@ async def handle_category_selection(update: Update, context: ContextTypes.DEFAUL
         logger.error(f"Error in handle_category_selection: {e}", exc_info=True)
         sent = await query.message.reply_text(
             get_message("step_error", lang=lang),
-            reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton(get_message("back", lang=lang), callback_data="back_to_categories")]])
+            reply_markup=create_category_error_keyboard(lang)
         )
         await delete_previous_messages(sent, context, n=3)
         return CATEGORY
@@ -198,13 +195,10 @@ async def handle_category_callback(update: Update, context: ContextTypes.DEFAULT
     project = {'category': context.user_data['category_id']}
     cat_name = context.user_data.get('categories', {}).get(project['category'], {}).get('name', 'نامشخص')
     lang = context.user_data.get('lang', 'fa')
-    keyboard = [
-        [InlineKeyboardButton(get_message("submit", lang=lang), callback_data="submit_project")],
-        [InlineKeyboardButton(get_message("back", lang=lang), callback_data="back_to_categories")]
-    ]
+    
     msg = await query.edit_message_text(
         f"{get_message('category_selected', lang=lang)}: {cat_name}\n{get_message('category_submit_or_back', lang=lang)}",
-        reply_markup=InlineKeyboardMarkup(keyboard)
+        reply_markup=create_category_confirmation_keyboard(cat_name, lang)
     )
     await log_chat(update, context)
     return SUBMIT
