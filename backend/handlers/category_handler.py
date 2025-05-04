@@ -5,7 +5,6 @@ import logging
 from handlers.start_handler import start
 from keyboards import create_category_keyboard, get_employer_menu_keyboard, get_main_menu_keyboard, create_subcategory_keyboard
 from handlers.phone_handler import require_phone
-from handlers.location_handler import handle_location
 from localization import get_message
 from handlers.states import START, REGISTER, ROLE, EMPLOYER_MENU, CATEGORY, SUBCATEGORY, DESCRIPTION, LOCATION_TYPE, LOCATION_INPUT, DETAILS, DETAILS_FILES, DETAILS_DATE, DETAILS_DEADLINE, DETAILS_BUDGET, DETAILS_QUANTITY, SUBMIT, VIEW_PROJECTS, PROJECT_ACTIONS, CHANGE_PHONE, VERIFY_CODE
 import asyncio
@@ -59,6 +58,7 @@ async def handle_category_selection(update: Update, context: ContextTypes.DEFAUL
                 context.user_data['state'] = LOCATION_TYPE
                 logger.info(f"[handle_category_selection] state changed to LOCATION_TYPE | context.user_data={context.user_data}")
                 await query.answer()  # پاسخ به callback
+                from handlers.location_handler import handle_location
                 return await handle_location(update, context)
             else:
                 logger.warning("Cannot proceed to location: No category selected")
