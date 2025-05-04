@@ -35,9 +35,6 @@ def get_location_type_keyboard(lang="fa"):
         [InlineKeyboardButton(get_message("back", lang=lang), callback_data="back_to_categories")]
     ])
 
-# متن راهنمای انتخاب محل خدمات با قابلیت لوکالایزیشن
-LOCATION_TYPE_GUIDANCE_TEXT = get_message("location_type_guidance")
-
 # تابع ایجاد کیبورد ارسال لوکیشن با قابلیت لوکالایزیشن
 def get_location_input_keyboard(lang="fa"):
     """ایجاد کیبورد ارسال لوکیشن با قابلیت لوکالایزیشن"""

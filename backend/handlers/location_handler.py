@@ -2,7 +2,8 @@ from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, ReplyKe
 from telegram.ext import ContextTypes, ConversationHandler
 from utils import log_chat, delete_previous_messages
 import logging
-from keyboards import get_location_input_keyboard, get_location_type_keyboard, LOCATION_TYPE_GUIDANCE_TEXT, BACK_TO_DESCRIPTION_KEYBOARD, REMOVE_KEYBOARD
+from handlers.category_handler import handle_category_selection
+from keyboards import get_location_input_keyboard, get_location_type_keyboard, BACK_TO_DESCRIPTION_KEYBOARD, REMOVE_KEYBOARD
 from localization import get_message
 from handlers.states import START, REGISTER, ROLE, EMPLOYER_MENU, CATEGORY, SUBCATEGORY, DESCRIPTION, LOCATION_TYPE, LOCATION_INPUT, DETAILS, DETAILS_FILES, DETAILS_DATE, DETAILS_DEADLINE, DETAILS_BUDGET, DETAILS_QUANTITY, SUBMIT, VIEW_PROJECTS, PROJECT_ACTIONS, CHANGE_PHONE, VERIFY_CODE
 import asyncio
@@ -30,14 +31,14 @@ async def handle_location(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
     if current_state == LOCATION_TYPE:
         if query and (not query.data or query.data == "continue_to_location"):
             sent = await query.message.edit_text(
-                LOCATION_TYPE_GUIDANCE_TEXT,
+                get_message("location_type_guidance", lang=lang),
                 reply_markup=get_location_type_keyboard(lang=lang),
                 parse_mode="Markdown"
             )
             return LOCATION_TYPE
         elif message:
             sent = await message.reply_text(
-                LOCATION_TYPE_GUIDANCE_TEXT,
+                get_message("location_type_guidance", lang=lang),
                 reply_markup=get_location_type_keyboard(lang=lang),
                 parse_mode="Markdown"
             )
@@ -53,7 +54,6 @@ async def handle_location(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         if data == "back_to_categories":
             logger.info("Returning to category selection")
             context.user_data['state'] = CATEGORY
-            from handlers.category_handler import handle_category_selection
             return await handle_category_selection(update, context)
 
         # بازگشت به مرحله توضیحات
@@ -74,18 +74,6 @@ async def handle_location(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
             # اگر کاربر غیرحضوری را انتخاب کند، مستقیماً به مرحله توضیحات هدایت شود و هیچ پیام راهنمای مرحله یا navigation ارسال نشود
             if location_type == 'remote':
                 context.user_data['state'] = DESCRIPTION
-                try:
-                    from handlers.project_details_handler import send_description_guidance
-                    sent = await send_description_guidance(query.message, context)
-                    if sent:
-                        await delete_previous_messages(sent, context, n=3)
-                except Exception as e:
-                    logger.error(f"Error sending description guidance for remote service: {e}")
-                    sent = await query.message.edit_text(
-                        get_message("description_guidance", lang=lang),
-                        reply_markup=BACK_TO_DESCRIPTION_KEYBOARD
-                    )
-                    await delete_previous_messages(sent, context, n=3)
                 return DESCRIPTION
             else:
                 # اگر کاربر خدمات حضوری را انتخاب کند، درخواست ارسال لوکیشن می‌شود
@@ -102,7 +90,7 @@ async def handle_location(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         elif data == "back_to_location_type":
             context.user_data['state'] = LOCATION_TYPE
             sent = await query.message.edit_text(
-                LOCATION_TYPE_GUIDANCE_TEXT,
+                get_message("location_type_guidance", lang=lang),
                 reply_markup=get_location_type_keyboard(),
                 parse_mode="Markdown"
             )
@@ -112,19 +100,7 @@ async def handle_location(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         # رد کردن ارسال لوکیشن و رفتن به مرحله توضیحات
         elif data == "skip_location":
             context.user_data['state'] = DESCRIPTION
-            try:
-                from handlers.project_details_handler import send_description_guidance
-                sent = await send_description_guidance(query.message, context)
-                if sent:
-                    await delete_previous_messages(sent, context, n=3)
-            except Exception as e:
-                logger.error(f"Error sending description guidance after skipping location: {e}")
-                sent = await query.message.edit_text(
-                    get_message("description_guidance", lang=lang),
-                    reply_markup=BACK_TO_DESCRIPTION_KEYBOARD,
-                    parse_mode="Markdown"
-                )
-                await delete_previous_messages(sent, context, n=3)
+            await delete_previous_messages(sent, context, n=3)
             return DESCRIPTION
 
     # اگر کاربر موقعیت مکانی خود را ارسال کند
@@ -139,21 +115,6 @@ async def handle_location(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
             reply_markup=REMOVE_KEYBOARD
         )
         await delete_previous_messages(sent, context, n=3)
-        try:
-            from handlers.project_details_handler import send_description_guidance
-            sent2 = await send_description_guidance(update.message, context)
-            if sent2:
-                await delete_previous_messages(sent2, context, n=3)
-            logger.info("Successfully sent description guidance")
-        except Exception as e:
-            logger.error(f"Error sending description guidance: {e}")
-            sent2 = await update.message.reply_text(
-                get_message("description_guidance", lang=lang),
-                reply_markup=InlineKeyboardMarkup([
-                    [InlineKeyboardButton(get_message("back", lang=lang), callback_data="back_to_location_type")]
-                ])
-            )
-            await delete_previous_messages(sent2, context, n=3)
         return DESCRIPTION
 
     # اگر پیام متنی یا غیرمتنی دریافت شد (در مرحله LOCATION_INPUT)

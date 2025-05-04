@@ -51,8 +51,8 @@ async def handle_navigation_callback(update: Update, context: ContextTypes.DEFAU
                 return await show_subcategory_selection(update, context)
                 
             elif next_state == DESCRIPTION:
-                from handlers.project_details_handler import send_description_guidance
-                await send_description_guidance(query.message, context)
+                from handlers.project_details_handler import description_handler
+                await description_handler(query.message, context)
                 return DESCRIPTION
                 
             elif next_state == LOCATION_TYPE:

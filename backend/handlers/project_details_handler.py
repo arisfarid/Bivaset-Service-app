@@ -1,6 +1,6 @@
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, ForceReply, ReplyKeyboardMarkup, KeyboardButton
 from telegram.ext import ContextTypes, ConversationHandler, MessageHandler, filters, CallbackQueryHandler
-from keyboards import create_dynamic_keyboard, FILE_MANAGEMENT_MENU_KEYBOARD, create_category_keyboard, get_main_menu_keyboard, get_location_type_keyboard, LOCATION_TYPE_GUIDANCE_TEXT
+from keyboards import create_dynamic_keyboard, FILE_MANAGEMENT_MENU_KEYBOARD, create_category_keyboard, get_main_menu_keyboard, get_location_type_keyboard
 from utils import clean_budget, validate_date, validate_deadline, log_chat, format_price
 from khayyam import JalaliDatetime
 from datetime import datetime, timedelta
@@ -9,6 +9,7 @@ from handlers.phone_handler import require_phone
 from handlers.submission_handler import submit_project
 from handlers.attachment_handler import handle_photo_navigation, init_photo_management
 from handlers.states import START, REGISTER, ROLE, EMPLOYER_MENU, CATEGORY, SUBCATEGORY, DESCRIPTION, LOCATION_TYPE, LOCATION_INPUT, DETAILS, DETAILS_FILES, DETAILS_DATE, DETAILS_DEADLINE, DETAILS_BUDGET, DETAILS_QUANTITY, SUBMIT, VIEW_PROJECTS, PROJECT_ACTIONS, CHANGE_PHONE, VERIFY_CODE
+from localization import get_message
 from handlers.navigation_utils import add_navigation_to_message, SERVICE_REQUEST_FLOW
 from functools import wraps
 import json
@@ -16,21 +17,14 @@ import os
 
 logger = logging.getLogger(__name__)
 
-async def send_description_guidance(message, context):
+async def description_handler(message, context):
     """
     ارسال پیام راهنمای کامل برای مرحله وارد کردن توضیحات
     """
     # دریافت توضیحات قبلی اگر موجود باشد
     last_description = context.user_data.get('description', context.user_data.get('temp_description', ''))
-    
-    guidance_text = (
-        "🌟 لطفاً توضیحات کاملی درباره خدمات موردنظرتان وارد کنید:\n\n"
-        "✅ نکات مهم برای توضیحات بهتر:\n"
-        "- دقیقاً چه خدماتی نیاز دارید؟\n"
-        "- جزئیات فنی یا ویژگی‌های مهم را ذکر کنید\n"
-        "- شرایط خاص و انتظارات خود را بیان کنید\n"
-        "- اگر مهارت یا ابزار خاصی لازم است، ذکر کنید\n\n"
-    )
+    lang = context.user_data.get('lang', 'fa')
+    guidance_text = (get_message("description_guidance", lang=lang))
     
     # اگر توضیحات قبلی موجود باشد، آن را نمایش می‌دهیم
     if last_description:
@@ -79,7 +73,7 @@ async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_T
             # برگشت به انتخاب نوع لوکیشن
             context.user_data['state'] = LOCATION_TYPE
             await query.message.edit_text(
-                LOCATION_TYPE_GUIDANCE_TEXT,
+                get_message("location_type_guidance", lang=lang),
                 reply_markup=get_location_type_keyboard(),
                 parse_mode="Markdown"
             )
@@ -116,7 +110,7 @@ async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_T
         elif data == "back_to_description":
             # برگشت به مرحله توضیحات با پیام راهنمای کامل
             context.user_data['state'] = DESCRIPTION
-            await send_description_guidance(query.message, context)
+            await description_handler(query.message, context)
             return DESCRIPTION
         
         # پردازش مدیریت فایل ها و بازگشت به جزئیات
@@ -459,8 +453,9 @@ async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_T
             if text == "⬅️ بازگشت":
                 # برگشت به انتخاب نوع لوکیشن
                 context.user_data['state'] = LOCATION_TYPE
+                lang = context.user_data.get('lang', 'fa')
                 await message.reply_text(
-                    LOCATION_TYPE_GUIDANCE_TEXT,
+                    get_message("location_type_guidance", lang=lang),
                     reply_markup=get_location_type_keyboard(),
                     parse_mode="Markdown"
                 )
@@ -848,7 +843,7 @@ async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_T
 
     # اگر وارد حالت توضیحات شدیم، پیام راهنما نمایش بده
     if context.user_data.get('state') == DESCRIPTION and not (message or query):
-        await send_description_guidance(update.message or update.callback_query.message, context)
+        await description_handler(update.message or update.callback_query.message, context)
         return DESCRIPTION
 
     return current_state
