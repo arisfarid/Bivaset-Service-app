@@ -9,10 +9,10 @@ from keyboards import (
     create_navigation_keyboard,
     create_subcategory_keyboard,
     create_category_confirmation_keyboard,
-    create_category_error_keyboard
+    create_category_error_keyboard,
+    get_location_type_keyboard
 )
 from handlers.phone_handler import require_phone
-from handlers.location_handler import handle_location
 from localization import get_message
 from handlers.states import START, REGISTER, ROLE, EMPLOYER_MENU, CATEGORY, SUBCATEGORY, DESCRIPTION, LOCATION_TYPE, LOCATION_INPUT, DETAILS, DETAILS_FILES, DETAILS_DATE, DETAILS_DEADLINE, DETAILS_BUDGET, DETAILS_QUANTITY, SUBMIT, VIEW_PROJECTS, PROJECT_ACTIONS, CHANGE_PHONE, VERIFY_CODE
 import asyncio
@@ -66,7 +66,13 @@ async def handle_category_selection(update: Update, context: ContextTypes.DEFAUL
                 context.user_data['state'] = LOCATION_TYPE
                 logger.info(f"[handle_category_selection] state changed to LOCATION_TYPE | context.user_data={context.user_data}")
                 await query.answer()  # پاسخ به callback
-                return await handle_location(update, context)
+                # Instead of directly calling handle_location, we'll show the location type guidance
+                await query.message.edit_text(
+                    get_message("location_type_guidance", lang=lang),
+                    reply_markup=get_location_type_keyboard(lang=lang),
+                    parse_mode="Markdown"
+                )
+                return LOCATION_TYPE
             else:
                 logger.warning("Cannot proceed to location: No category selected")
                 await query.answer(get_message("category_select_first", lang=lang))

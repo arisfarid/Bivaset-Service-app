@@ -2,8 +2,14 @@ from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, ReplyKe
 from telegram.ext import ContextTypes, ConversationHandler
 from utils import log_chat, delete_previous_messages
 import logging
-from handlers.category_handler import handle_category_selection
-from keyboards import get_location_input_keyboard, get_location_type_keyboard, BACK_TO_DESCRIPTION_KEYBOARD, REMOVE_KEYBOARD
+from keyboards import (
+    get_location_input_keyboard,
+    get_location_type_keyboard,
+    BACK_TO_DESCRIPTION_KEYBOARD,
+    REMOVE_KEYBOARD,
+    get_employer_menu_keyboard,
+    create_category_keyboard
+)
 from localization import get_message
 from handlers.states import START, REGISTER, ROLE, EMPLOYER_MENU, CATEGORY, SUBCATEGORY, DESCRIPTION, LOCATION_TYPE, LOCATION_INPUT, DETAILS, DETAILS_FILES, DETAILS_DATE, DETAILS_DEADLINE, DETAILS_BUDGET, DETAILS_QUANTITY, SUBMIT, VIEW_PROJECTS, PROJECT_ACTIONS, CHANGE_PHONE, VERIFY_CODE
 import asyncio
@@ -54,7 +60,14 @@ async def handle_location(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         if data == "back_to_categories":
             logger.info("Returning to category selection")
             context.user_data['state'] = CATEGORY
-            return await handle_category_selection(update, context)
+            # Instead of calling handle_category_selection directly, just show the category selection menu
+            categories = context.user_data.get('categories', {})
+            keyboard = create_category_keyboard(categories)
+            await query.message.edit_text(
+                get_message("category_main_select", lang=lang),
+                reply_markup=keyboard
+            )
+            return CATEGORY
 
         # بازگشت به مرحله توضیحات
         if data == "back_to_description":
