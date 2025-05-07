@@ -1,4 +1,4 @@
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ContextTypes, ConversationHandler
 import logging
 from handlers.start_handler import start, check_phone
@@ -7,12 +7,13 @@ from handlers.edit_handler import handle_edit_callback
 from handlers.view_handler import handle_view_callback
 from handlers.attachment_handler import show_photo_management, handle_photos_command
 from utils import log_chat, get_categories, ensure_active_chat, restart_chat
-from keyboards import create_category_keyboard, get_employer_menu_keyboard, FILE_MANAGEMENT_MENU_KEYBOARD, RESTART_INLINE_MENU_KEYBOARD, BACK_INLINE_MENU_KEYBOARD, get_main_menu_keyboard, create_dynamic_keyboard
+from keyboards import create_category_keyboard, get_custom_input_keyboard, create_photo_management_keyboard, get_employer_menu_keyboard, FILE_MANAGEMENT_MENU_KEYBOARD, RESTART_INLINE_MENU_KEYBOARD, BACK_INLINE_MENU_KEYBOARD, get_main_menu_keyboard, create_dynamic_keyboard, create_service_flow_navigation_keyboard
 from helpers.menu_manager import MenuManager
 import asyncio  # برای استفاده از sleep
 from asyncio import Lock
 from handlers.states import START, REGISTER, ROLE, EMPLOYER_MENU, CATEGORY, SUBCATEGORY, DESCRIPTION, LOCATION_TYPE, LOCATION_INPUT, DETAILS, DETAILS_FILES, DETAILS_DATE, DETAILS_DEADLINE, DETAILS_BUDGET, DETAILS_QUANTITY, SUBMIT, VIEW_PROJECTS, PROJECT_ACTIONS, CHANGE_PHONE, VERIFY_CODE, STATE_NAMES
 from handlers.navigation_utils import SERVICE_REQUEST_FLOW
+from localization import get_message
 
 logger = logging.getLogger(__name__)
 
@@ -35,51 +36,6 @@ async def send_message_with_keyboard(context, chat_id, text, reply_markup):
         text=text,
         reply_markup=reply_markup
     )
-
-# ساخت کیبورد ناوبری (قبلی/بعدی/منو) بر اساس state فعلی
-# این کیبورد در مراحل مختلف ثبت درخواست نمایش داده می‌شود
-# دکمه بازگشت، ادامه و منوی اصلی را بسته به شرایط اضافه می‌کند
-# اگر state خارج از جریان اصلی باشد فقط دکمه منو را نمایش می‌دهد
-# اگر خطایی رخ دهد فقط دکمه منو را نمایش می‌دهد
-def create_navigation_keyboard(current_state, context):
-    """Create navigation keyboard with back and next buttons based on the current state"""
-    keyboard = []
-    
-    # Find current position in flow
-    try:
-        if current_state in SERVICE_REQUEST_FLOW:
-            current_index = SERVICE_REQUEST_FLOW.index(current_state)
-            row = []
-            
-            # Add back button if not at the beginning
-            if current_index > 0 or context.user_data.get('previous_state') is not None:
-                row.append(InlineKeyboardButton("◀️ بازگشت", callback_data="navigate_back"))
-            
-            # Add next button if not at the end and not in DESCRIPTION state
-            if current_index < len(SERVICE_REQUEST_FLOW) - 1:
-                # For description, we only want to show next if they've entered text
-                if current_state == DESCRIPTION and 'description' not in context.user_data:
-                    # Don't add next button if no description has been entered yet
-                    pass
-                else:
-                    row.append(InlineKeyboardButton("ادامه ▶️", callback_data="navigate_next"))
-            
-            # Add the navigation row if it has buttons
-            if row:
-                keyboard.append(row)
-            
-            # Add menu button only if not in DESCRIPTION state
-            if current_state != DESCRIPTION:
-                keyboard.append([InlineKeyboardButton("🏠 منوی اصلی", callback_data="back_to_employer_menu")])
-        else:
-            # For states outside the flow, just add back to menu button
-            keyboard.append([InlineKeyboardButton("🏠 منوی اصلی", callback_data="back_to_employer_menu")])
-    except Exception as e:
-        logger.error(f"Error creating navigation keyboard: {e}")
-        # Fallback to basic navigation
-        keyboard.append([InlineKeyboardButton("🏠 منوی اصلی", callback_data="back_to_employer_menu")])
-    
-    return InlineKeyboardMarkup(keyboard)
 
 # هندلر ناوبری برای مدیریت دکمه‌های قبلی/بعدی در جریان ثبت درخواست
 # این تابع با توجه به state فعلی، کاربر را به مرحله قبلی یا بعدی هدایت می‌کند
@@ -125,7 +81,7 @@ async def handle_navigation_callback(update: Update, context: ContextTypes.DEFAU
                             update,
                             context,
                             "📝 لطفا توضیحات درخواست خود را وارد کنید:",
-                            create_navigation_keyboard(previous_state, context)
+                            create_service_flow_navigation_keyboard(previous_state, context)
                         )
                     await query.answer()
                     return previous_state
@@ -207,7 +163,7 @@ async def handle_navigation_callback(update: Update, context: ContextTypes.DEFAU
                             update,
                             context,
                             "📝 لطفا توضیحات درخواست خود را وارد کنید:",
-                            create_navigation_keyboard(next_state, context)
+                            create_service_flow_navigation_keyboard(next_state, context)
                         )
                     elif next_state == DETAILS:
                         await MenuManager.show_menu(
@@ -263,7 +219,7 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 update,
                 context,
                 "📝 لطفا توضیحات درخواست خود را وارد کنید:",
-                create_navigation_keyboard(DESCRIPTION, context)
+                create_service_flow_navigation_keyboard(DESCRIPTION, context)
             )
             await query.answer()
             return DESCRIPTION
@@ -373,7 +329,7 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 update,
                 context,
                 "⏳ مهلت انجام خدمات را به صورت 'ماه/روز' وارد کنید (مثال: 06/20):",
-                InlineKeyboardMarkup([[InlineKeyboardButton("⬅️ بازگشت", callback_data="back_to_details")]])
+                get_custom_input_keyboard()
             )
             await query.answer()
             return DETAILS_DEADLINE
@@ -387,7 +343,7 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 update,
                 context,
                 "💰 بودجه مورد نظر خود را به تومان وارد کنید (فقط عدد):",
-                InlineKeyboardMarkup([[InlineKeyboardButton("⬅️ بازگشت", callback_data="back_to_details")]])
+                get_custom_input_keyboard()
             )
             await query.answer()
             return DETAILS_BUDGET
@@ -401,7 +357,7 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 update,
                 context,
                 "📏 مقدار و واحد مورد نظر را وارد کنید (مثال: 5 متر، 2 عدد):",
-                InlineKeyboardMarkup([[InlineKeyboardButton("⬅️ بازگشت", callback_data="back_to_details")]])
+                get_custom_input_keyboard()
             )
             await query.answer()
             return DETAILS_QUANTITY
@@ -593,9 +549,7 @@ async def handle_new_request(update: Update, context: ContextTypes.DEFAULT_TYPE)
         context.user_data['categories'] = categories
         
         # نمایش منوی دسته‌بندی‌ها
-        root_cats = [cat_id for cat_id, cat in categories.items() if cat['parent'] is None]
-        keyboard = [[InlineKeyboardButton(categories[cat_id]['name'])] for cat_id in root_cats]
-        keyboard.append([InlineKeyboardButton("⬅️ بازگشت")])
+        keyboard = create_category_keyboard(categories)
         
         # حذف پیام‌های قبلی
         await query.message.delete()
@@ -603,7 +557,7 @@ async def handle_new_request(update: Update, context: ContextTypes.DEFAULT_TYPE)
         # ارسال منوی جدید
         await query.message.reply_text(
             "🌟 دسته‌بندی خدماتت رو انتخاب کن:",
-            reply_markup=InlineKeyboardMarkup(keyboard)
+            reply_markup=keyboard
         )
         
         await query.answer()
@@ -678,16 +632,11 @@ async def handle_photos_command(update: Update, context: ContextTypes.DEFAULT_TY
             index = int(data.split('_')[2])
             files = context.user_data.get('files', [])
             if 0 <= index < len(files):
-                keyboard = [
-                    [InlineKeyboardButton("🗑 حذف", callback_data=f"delete_photo_{index}"),
-                     InlineKeyboardButton("🔄 جایگزینی", callback_data=f"replace_photo_{index}")],
-                    [InlineKeyboardButton("⬅️ بازگشت", callback_data="back_to_management")]
-                ]
                 await context.bot.send_photo(
                     chat_id=chat_id,
                     photo=files[index],
                     caption=f"📸 عکس {index+1} از {len(files)}",
-                    reply_markup=InlineKeyboardMarkup(keyboard)
+                    reply_markup=create_photo_management_keyboard(files, edit_mode=True, edit_index=index)
                 )
             return DETAILS_FILES
 

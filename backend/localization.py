@@ -1,442 +1,258 @@
-# فایل مرکزی پیام‌های چندزبانه (لوکالایزیشن)
+# localization.py
+from typing import Optional
 
-MESSAGES = {
-    "back_to_previous": {
-        "fa": "⬅️ بازگشت به مرحله قبل",
-        "en": "⬅️ Back to previous step"
-    },
-    "location_request": {
-        "fa": "📍 برای اتصال به نزدیک‌ترین مجری، لطفاً موقعیت مکانی خود را مشخص کنید:\n\n📱 اگر در محل مورد نظر برای دریافت خدمات هستید، از دکمه «ارسال موقعیت فعلی» استفاده کنید یا\n📎 روی آیکون پیوست (📎) کلیک کرده و با گزینه «Location» موقعیت دلخواه خود را انتخاب کنید.",
-        "en": "📍 To connect with the nearest service provider, please specify your location:\n\n📱 If you are at the desired location, use the 'Send current location' button or\n📎 click the attachment (📎) icon and select 'Location' to choose your position on the map."
-    },
-    "location_success": {
-        "fa": "✅ موقعیت مکانی شما با موفقیت دریافت شد!",
-        "en": "✅ Your location was successfully received!"
-    },
-    "description_guidance": {
-        "fa": "✍️ لطفاً توضیحات کامل و دقیقی درباره خدمات موردنیاز خود بنویسید تا مجریان بتوانند بهتر و سریع‌تر به شما کمک کنند!\n\nبهتر است به این موارد اشاره کنید:\n• نوع و جزئیات دقیق خدمت موردنیاز\n• توضیح دقیق مشکل یا انتظارات شما از مجری\n• شرایط خاص یا نیازمندی‌های ویژه\n• جزئیات فنی یا ویژگی‌های مهم مدنظرتان\n• اگر مهارت یا ابزار خاصی لازم است\n\nمثال توضیح کامل:\n«سلام، نیاز به تعمیر کولر گازی در منزل دارم. کولر مدل ال‌جی است و باد گرم می‌زند. محل نصب طبقه سوم آپارتمان است. لطفاً هزینه و زمان انجام کار را اعلام کنید. اگر قطعه نیاز به تعویض دارد، لطفاً اطلاع دهید.»\n\nهرچه توضیحات شما کامل‌تر باشد، قیمت و زمان دقیق‌تری دریافت خواهید کرد! 😊",
-        "en": "✍️ Please write a detailed description of the service you need so providers can help you better and faster!\n\nIt's best to mention:\n• The exact type and details of the service you need\n• A clear explanation of the problem or your expectations\n• Any special conditions or requirements\n• Technical details or important features you are looking for\n• If special skills or tools are required\n\nExample of a complete description:\n'Hello, I need my LG air conditioner repaired at home. It's blowing warm air. The unit is on the third floor. Please let me know the cost and time estimate. If any parts need replacement, please inform me.'\n\nThe more complete your description, the more accurate price and timing you'll receive! 😊"
-    },
-    "location_required": {
-        "fa": "❌ لطفاً *موقعیت مکانی* خود را ارسال کنید.\n\nبرای خدمات در {service_location_name} نیاز به دانستن موقعیت شما داریم تا مجری مناسب را پیدا کنیم.\n\n📱 از دکمه «ارسال موقعیت فعلی» استفاده کنید یا\n📎 روی آیکون پیوست (📎) کلیک کرده و گزینه «Location» را انتخاب کنید.",
-        "en": "❌ Please send your *location*.\n\nFor services at {service_location_name}, we need your location to find the right service provider.\n\n📱 Use the 'Send current location' button or\n📎 click the attachment (📎) icon and select 'Location'."
-    },
-    "location_invalid_type": {
-        "fa": "❌ پیام ارسالی موقعیت مکانی نیست.\n\nلطفاً *فقط موقعیت مکانی* خود را ارسال کنید. این اطلاعات برای یافتن نزدیک‌ترین مجری ضروری است.\n\n📱 از دکمه «ارسال موقعیت فعلی» استفاده کنید یا\n📎 روی آیکون پیوست (📎) کلیک کرده و گزینه «Location» را انتخاب کنید.",
-        "en": "❌ The sent message is not a location.\n\nPlease *only send your location*. This is necessary to find the nearest service provider.\n\n📱 Use the 'Send current location' button or\n📎 click the attachment (📎) icon and select 'Location'."
-    },
-    "location_type_client": {
-        "fa": "🏠 محل من",
-        "en": "🏠 My location"
-    },
-    "location_type_contractor": {
-        "fa": "🔧 محل مجری",
-        "en": "🔧 Provider's location"
-    },
-    "location_type_remote": {
-        "fa": "💻 غیرحضوری",
-        "en": "💻 Remote service"
-    },
-    "send_current_location": {
-        "fa": "📍 ارسال موقعیت فعلی",
-        "en": "📍 Send current location"
-    },
-    "back": {
-        "fa": "⬅️ بازگشت",
-        "en": "⬅️ Back"
-    },
-    "location_type_guidance": {
-        "fa": "🌟 لطفاً محل انجام خدمات را انتخاب کنید:\n\n🏠 *محل من*: مجری برای انجام خدمات به محل شما مراجعه می‌کند\n      مانند: نظافت، تعمیرات منزل، باغبانی و خدمات سیار\n\n🔧 *محل مجری*: شما برای دریافت خدمات به محل کار مجری مراجعه می‌کنید\n      مانند: کارواش، تعمیرگاه، آرایشگاه و خدمات کارگاهی\n\n💻 *غیرحضوری*: خدمات بدون نیاز به حضور فیزیکی و از راه دور انجام می‌شود\n      مانند: مشاوره، آموزش، طراحی، برنامه‌نویسی",
-        "en": "🌟 Please select where the service should be performed:\n\n🏠 *My location*: The service provider will come to your place\n      Examples: cleaning, home repairs, gardening, mobile services\n\n🔧 *Provider's location*: You go to the provider's workplace\n      Examples: car wash, repair shop, salon, workshop services\n\n💻 *Remote service*: The service is done remotely without physical presence\n      Examples: consulting, teaching, design, programming"
-    },
-    "category_main_select": {
-        "fa": "🌟 لطفاً دسته‌بندی خدمات موردنیاز خود را انتخاب کنید:",
-        "en": "🌟 Please select your service category:"
-    },
-    "category_selected": {
-        "fa": "✅ دسته‌بندی انتخاب شد",
-        "en": "✅ Category selected"
-    },
-    "category_submit_or_back": {
-        "fa": "برای ادامه ثبت درخواست، دکمه «ثبت» را بزنید یا برای بازگشت، دکمه «بازگشت» را انتخاب کنید.",
-        "en": "To continue, press 'Submit' or select 'Back' to return."
-    },
-    "submit": {
-        "fa": "✅ ثبت درخواست",
-        "en": "✅ Submit request"
-    },
-    "only_select_from_buttons": {
-        "fa": "❌ لطفاً فقط از دکمه‌های منو انتخاب کنید و پیام یا فایل ارسال نکنید.",
-        "en": "❌ Please only select from the menu buttons and do not send messages or files."
-    },
-    "description_only_text": {
-        "fa": "❌ لطفاً فقط متن توضیحات را وارد کنید.\n\nدر این مرحله، نیاز داریم توضیحات متنی دقیقی از خدمات موردنیاز شما دریافت کنیم.\nلطفاً توضیحات خود را به صورت متن بنویسید.",
-        "en": "❌ Please enter only text for the description.\n\nAt this step, we need a precise text description of the service you require.\nPlease write your description as text only."
-    },
-    "description_too_short": {
-        "fa": "⚠️ توضیحات شما کوتاه به نظر می‌رسد.\n\nتوضیحات کامل‌تر به مجریان کمک می‌کند تا پیشنهاد دقیق‌تری ارائه دهند.\nآیا می‌خواهید توضیحات بیشتری اضافه کنید؟\n\nاگر توضیحات کامل است، می‌توانید به مرحله بعد بروید.",
-        "en": "⚠️ Your description seems too short.\n\nA more complete description helps service providers give a more accurate quote.\nWould you like to add more details?\n\nIf your description is complete, you can proceed to the next step."
-    },
-    "invalid_option": {
-        "fa": "❌ گزینه نامعتبر! لطفاً یکی از دکمه‌های منو را انتخاب کنید.",
-        "en": "❌ Invalid option! Please select one of the menu buttons."
-    },
-    "details_prev_description": {
-        "fa": "🌟 توضیحات قبلی:\n{last_description}\n\nمی‌توانید توضیحات را ویرایش کنید:",
-        "en": "🌟 Previous description:\n{last_description}\n\nYou can edit your description:"
-    },
-    "date_must_be_future": {
-        "fa": "❌ تاریخ باید امروز یا پس از امروز باشد!",
-        "en": "❌ The date must be today or a future date!"
-    },
-    "invalid_date_format": {
-        "fa": "❌ فرمت تاریخ نامعتبر است! لطفاً تاریخ را به صورت YYYY/MM/DD (مثال: 1403/10/15) وارد کنید و مطمئن شوید از امروز به بعد است.",
-        "en": "❌ Invalid date format! Please enter the date in YYYY/MM/DD format (e.g., 2024/10/15) and make sure it's today or later."
-    },
-    "invalid_deadline": {
-        "fa": "❌ مهلت نامعتبر است! لطفاً یک عدد وارد کنید (مثال: 7).",
-        "en": "❌ Invalid deadline! Please enter a number (e.g., 7)."
-    },
-    "invalid_budget": {
-        "fa": "❌ بودجه نامعتبر است! لطفاً فقط عدد وارد کنید (مثال: 500000).",
-        "en": "❌ Invalid budget! Please enter only a number (e.g., 500000)."
-    },
-    "continue": {
-        "fa": "✅ ادامه",
-        "en": "✅ Continue"
-    },
-    "edit": {
-        "fa": "✏️ ویرایش",
-        "en": "✏️ Edit"
-    },
-    "step_error": {
-        "fa": "❌ خطا در نمایش مرحله بعد. لطفاً دوباره تلاش کنید.",
-        "en": "❌ Error displaying the next step. Please try again."
-    },
-    "role_select": {
-        "fa": "🌟 لطفاً نقش خود را انتخاب کنید:",
-        "en": "🌟 Please select your role:"
-    },
-    "role_employer": {
-        "fa": "👔 درخواست خدمات | کارفرما",
-        "en": "👔 Request service | Client"
-    },
-    "role_contractor": {
-        "fa": "🦺 ارائه خدمات | مجری",
-        "en": "🦺 Provide service | Contractor"
-    },
-    "contractor_menu_prompt": {
-        "fa": "🎉 خوش آمدید {name}! چه کاری می‌خواهید انجام دهید؟",
-        "en": "🎉 Welcome, {name}! What would you like to do?"
-    },
-    "employer_menu_prompt": {
-        "fa": "🎉 خوش آمدید {name}! چه کاری می‌خواهید انجام دهید؟",
-        "en": "🎉 Welcome, {name}! What would you like to do?"
-    },
-    "employer_new_request": {
-        "fa": "📋 ثبت درخواست جدید",
-        "en": "📋 New service request"
-    },
-    "employer_view_projects": {
-        "fa": "📊 مشاهده درخواست‌های من",
-        "en": "📊 View my requests"
-    },
-    "contractor_view_requests": {
-        "fa": "📋 مشاهده درخواست‌های موجود",
-        "en": "📋 View available requests"
-    },
-    "contractor_offer_work": {
-        "fa": "💡 پیشنهاد خدمات",
-        "en": "💡 Offer services"
-    },
-    "process_active_prompt": {
-        "fa": "⚠️ شما در حال انجام یک فرآیند هستید.\nآیا می‌خواهید از فرآیند فعلی خارج شوید و دوباره شروع کنید؟",
-        "en": "⚠️ You are currently in an active process.\nWould you like to exit and restart?"
-    },
-    "restart_yes": {
-        "fa": "✅ بله، شروع مجدد",
-        "en": "✅ Yes, restart"
-    },
-    "restart_no": {
-        "fa": "❌ خیر، ادامه فرآیند فعلی",
-        "en": "❌ No, continue current process"
-    },
-    "welcome": {
-        "fa": "👋 سلام {name}! به سامانه خدمات بی‌واسط خوش آمدید.\nلطفاً یکی از گزینه‌های زیر را انتخاب کنید:",
-        "en": "👋 Hello {name}! Welcome to Bivaset Service Platform.\nPlease choose one of the options below:"
-    },
-    "select_from_buttons": {
-        "fa": "لطفاً از دکمه‌های زیر انتخاب کنید.",
-        "en": "Please select from the buttons below."
-    },
-    "share_phone_prompt": {
-        "fa": "👋 سلام! برای استفاده از امکانات سامانه، لطفاً شماره تلفن خود را به اشتراک بگذارید:",
-        "en": "👋 Hello! To use the platform features, please share your phone number:"
-    },
-    "category_select_first": {
-        "fa": "❌ لطفاً ابتدا یک دسته‌بندی انتخاب کنید.",
-        "en": "❌ Please select a category first."
-    },
-    "invalid_subcategory": {
-        "fa": "❌ زیردسته نامعتبر است",
-        "en": "❌ Invalid subcategory"
-    },
-    "select_subcategory": {
-        "fa": "📋 لطفاً زیرمجموعه «{category_name}» را انتخاب کنید:",
-        "en": "📋 Please select a subcategory of \"{category_name}\":"
-    },
-    "invalid_category": {
-        "fa": "❌ دسته‌بندی نامعتبر است",
-        "en": "❌ Invalid category"
-    },
-    "finish_photos": {
-        "fa": "🏁 پایان ارسال تصاویر",
-        "en": "🏁 Finish uploading images"
-    },
-    "manage_photos": {
-        "fa": "📋 مدیریت تصاویر",
-        "en": "📋 Manage images"
-    },
-    "photos_uploaded": {
-        "fa": "📸 تصاویر ارسال‌شده ({count} از 5)",
-        "en": "📸 Uploaded images ({count} of 5)"
-    },
-    "photo_upload_max": {
-        "fa": "❌ حداکثر تعداد تصاویر مجاز (5) ارسال شده است. برای مدیریت تصاویر از گزینه «مدیریت تصاویر» استفاده کنید.",
-        "en": "❌ Maximum number of images (5) reached. Use 'Manage images' to modify your uploads."
-    },
-    "photo_upload_success": {
-        "fa": "✅ تصویر با موفقیت اضافه شد ({count} از 5)",
-        "en": "✅ Image successfully added ({count} of 5)"
-    },
-    "photo_already_exists": {
-        "fa": "❌ این تصویر قبلاً ارسال شده است",
-        "en": "❌ This image has already been uploaded"
-    },
-    "photo_list_empty": {
-        "fa": "📭 هنوز تصویری ارسال نکرده‌اید",
-        "en": "📭 No images uploaded yet"
-    },
-    "photo_replaced": {
-        "fa": "🔄 تصویر با موفقیت جایگزین شد",
-        "en": "🔄 Image successfully replaced"
-    },
-    "video_not_supported": {
-        "fa": "❌ فقط عکس پشتیبانی می‌شود. ویدیو قابل ثبت نیست.",
-        "en": "❌ Only images are supported. Videos cannot be processed."
-    },
-    "project_details": {
-        "fa": "📋 جزئیات درخواست:\nمی‌توانید برای راهنمایی بهتر مجریان، اطلاعات تکمیلی زیر را وارد کنید:",
-        "en": "📋 Request details:\nYou can provide the following additional information to help service providers:"
-    },
-    "back_to_details": {
-        "fa": "بازگشت به منوی جزئیات",
-        "en": "Return to details menu"
-    },
-    "images_button": {
-        "fa": "📸 تصاویر و فایل‌ها",
-        "en": "📸 Images & Files"
-    },
-    "need_date_button": {
-        "fa": "📅 تاریخ نیاز",
-        "en": "📅 Required date"
-    },
-    "deadline_button": {
-        "fa": "⏳ مهلت انجام",
-        "en": "⏳ Deadline"
-    },
-    "budget_button": {
-        "fa": "💰 بودجه",
-        "en": "💰 Budget"
-    },
-    "quantity_button": {
-        "fa": "📏 مقدار و واحد",
-        "en": "📏 Quantity & Unit"
-    },
-    "submit_project_button": {
-        "fa": "✅ ثبت نهایی درخواست",
-        "en": "✅ Submit request"
-    },
-    "no_images_found": {
-        "fa": "❌ برای این درخواست تصویری یافت نشد",
-        "en": "❌ No images found for this request"
-    },
-    "error_loading_images": {
-        "fa": "❌ خطا در بارگیری تصاویر",
-        "en": "❌ Error loading images"
-    },
-    "error_processing_request": {
-        "fa": "❌ خطا در پردازش درخواست",
-        "en": "❌ Error processing request"
-    },
-    "error_fetching_project": {
-        "fa": "❌ خطا در دریافت اطلاعات درخواست",
-        "en": "❌ Error fetching request information"
-    },
-    "photos_command": {
-        "fa": "📸 تصاویر را یکی‌یکی ارسال کنید (حداکثر ۵ تصویر). فقط عکس پذیرفته می‌شود!",
-        "en": "📸 Please send photos one by one (maximum 5 photos). Only images are accepted!"
-    },
-    "photo_management_title": {
-        "fa": "📸 تصاویر ارسال‌شده:",
-        "en": "📸 Uploaded images:"
-    },
-    "original_image": {
-        "fa": "تصویر اصلی",
-        "en": "Main image"
-    },
-    "previous_description_with_confirm": {
-        "fa": "✍️ توضیحات قبلی شما:\n{last_description}\n\nمی‌توانید آن را ویرایش کنید یا همین را تایید کنید:",
-        "en": "✍️ Your previous description:\n{last_description}\n\nYou can edit it or confirm it as is:"
-    },
-    "write_description_prompt": {
-        "fa": "لطفاً توضیحات خود را بنویسید:",
-        "en": "Please write your description:"
-    },
-    "confirm_and_continue": {
-        "fa": "✅ تأیید و ادامه",
-        "en": "✅ Confirm and continue"
-    },
-    "continue_to_next_step": {
-        "fa": "✅ ادامه به مرحله بعد",
-        "en": "✅ Continue to next step"
-    },
-    "revise_description": {
-        "fa": "✏️ اصلاح توضیحات",
-        "en": "✏️ Revise description"
-    },
-    "previous_description_edit": {
-        "fa": "🌟 توضیحات قبلی:\n{last_description}\n\nمی‌تونی توضیحات رو ویرایش کنی:",
-        "en": "🌟 Previous description:\n{last_description}\n\nYou can edit the description:"
-    },
-    "description_required": {
-        "fa": "⚠️ لطفاً ابتدا توضیحات خدمات را وارد کنید!",
-        "en": "⚠️ Please enter the service description first!"
-    },
-    "submitting_request": {
-        "fa": "در حال ثبت درخواست شما...",
-        "en": "Submitting your request..."
-    },
-    "select_need_date_prompt": {
-        "fa": "📅 تاریخ نیاز رو انتخاب کن یا دستی وارد کن (مثلاً 1403/10/15):",
-        "en": "📅 Select the required date or enter it manually (e.g., 2024/10/15):"
-    },
-    "enter_custom_date_prompt": {
-        "fa": "📅 لطفاً تاریخ مورد نظر خود را به فرمت 1403/10/15 وارد کنید:",
-        "en": "📅 Please enter your desired date in the format 2024/10/15:"
-    },
-    "need_date_saved": {
-        "fa": "📅 تاریخ نیاز ثبت شد: {date_str}",
-        "en": "📅 Required date saved: {date_str}"
-    },
-    "date_saved_success": {
-        "fa": "✅ تاریخ با موفقیت ثبت شد!",
-        "en": "✅ Date saved successfully!"
-    },
-    "select_deadline_prompt": {
-        "fa": "⏳ مهلت انجام (برحسب روز) را انتخاب کنید:",
-        "en": "⏳ Select the deadline (in days):"
-    },
-    "enter_custom_deadline_prompt": {
-        "fa": "⏳ لطفاً مهلت انجام مورد نظر خود را به روز وارد کنید (مثلاً: 7):",
-        "en": "⏳ Please enter your desired deadline in days (e.g., 7):"
-    },
-    "deadline_saved": {
-        "fa": "⏳ مهلت انجام ثبت شد: {deadline} روز",
-        "en": "⏳ Deadline saved: {deadline} days"
-    },
-    "deadline_saved_success": {
-        "fa": "✅ مهلت انجام با موفقیت ثبت شد!",
-        "en": "✅ Deadline saved successfully!"
-    },
-    "select_budget_prompt": {
-        "fa": "💰 بودجه‌ای که برای این خدمات در نظر دارید را انتخاب کنید:",
-        "en": "💰 Select the budget for this service:"
-    },
-    "enter_custom_budget_prompt": {
-        "fa": "💰 لطفاً بودجه مورد نظر خود را به تومان وارد کنید (مثلاً: 500000):",
-        "en": "💰 Please enter your desired budget in Tomans (e.g., 500000):"
-    },
-    "budget_saved": {
-        "fa": "💰 بودجه ثبت شد: {formatted_budget} تومان",
-        "en": "💰 Budget saved: {formatted_budget} Tomans"
-    },
-    "budget_saved_success": {
-        "fa": "✅ بودجه با موفقیت ثبت شد!",
-        "en": "✅ Budget saved successfully!"
-    },
-    "select_quantity_prompt": {
-        "fa": "📏 مقدار و واحد مورد نیاز را انتخاب کنید:",
-        "en": "📏 Select the required quantity and unit:"
-    },
-    "enter_custom_quantity_prompt": {
-        "fa": "📏 لطفاً مقدار و واحد مورد نظر خود را وارد کنید (مثلاً: 2 عدد، 5 متر مربع، 3 ساعت):",
-        "en": "📏 Please enter your desired quantity and unit (e.g., 2 pieces, 5 square meters, 3 hours):"
-    },
-    "quantity_saved": {
-        "fa": "📏 مقدار و واحد ثبت شد: {quantity}",
-        "en": "📏 Quantity and unit saved: {quantity}"
-    },
-    "quantity_saved_success": {
-        "fa": "✅ مقدار و واحد با موفقیت ثبت شد!",
-        "en": "✅ Quantity and unit saved successfully!"
-    },
-    "today_date": {
-        "fa": "📅 امروز ({today})",
-        "en": "📅 Today ({today})"
-    },
-    "tomorrow_date": {
-        "fa": "📅 فردا ({tomorrow})",
-        "en": "📅 Tomorrow ({tomorrow})"
-    },
-    "day_after_date": {
-        "fa": "📅 پس‌فردا ({day_after})",
-        "en": "📅 Day after tomorrow ({day_after})"
-    },
-    "custom_date": {
-        "fa": "✏️ تاریخ دلخواه",
-        "en": "✏️ Custom date"
-    },
-    "custom_amount": {
-        "fa": "✏️ مقدار دلخواه",
-        "en": "✏️ Custom amount"
-    },
-    "day_unit": {
-        "fa": "روز",
-        "en": "day"
-    },
-    "days_unit": {
-        "fa": "روز",
-        "en": "days"
-    },
-    "piece_unit": {
-        "fa": "عدد",
-        "en": "piece"
-    },
-    "pieces_unit": {
-        "fa": "عدد",
-        "en": "pieces"
-    },
-    "meter_unit": {
-        "fa": "متر",
-        "en": "meter"
-    },
-    "meters_unit": {
-        "fa": "متر",
-        "en": "meters"
-    },
-    "hour_unit": {
-        "fa": "ساعت",
-        "en": "hour"
-    },
-    "toman_unit": {
-        "fa": "تومان",
-        "en": "Tomans"
+def get_message(key: str, lang: str = "fa", **kwargs) -> str:
+    """
+    دریافت پیام با توجه به کلید و زبان مورد نظر با پشتیبانی از قالب‌بندی پویا
+    """
+    messages = {
+        "fa": {
+            # پیام‌های خوش‌آمدگویی و منوی اصلی
+            "welcome": "🌟 به بات بی‌واسط خوش اومدی! لطفاً یکی از گزینه‌ها رو انتخاب کن:",
+            "role_employer": "👷 کارفرما",
+            "role_contractor": "🛠 مجری",
+            "main_menu_button": "منوی اصلی",
+            "main_menu_with_icon": "🏠 منوی اصلی",
+
+            # پیام‌های منوی کارفرما
+            "employer_menu": "🎉 عالیه! چه کاری برات انجام بدم؟",
+            "employer_new_request": "📝 درخواست جدید",
+            "employer_view_projects": "📋 مشاهده پروژه‌ها",
+
+            # پیام‌های منوی مجری
+            "contractor_menu": "🛠 به عنوان مجری چه کاری می‌تونی انجام بدی؟",
+            "contractor_view_requests": "📋 مشاهده درخواست‌ها",
+            "contractor_offer_work": "💼 پیشنهاد کار",
+
+            # پیام‌های ناوبری
+            "back": "⬅️ بازگشت",
+            "continue": "✅ ادامه",
+            "continue_to_next_step": "➡️ ادامه به مرحله بعد",
+            "confirm_and_continue": "✅ تأیید و ادامه",
+            "revise_description": "✏️ ویرایش توضیحات",
+            "edit": "✏️ ویرایش",
+
+            # پیام‌های دسته‌بندی
+            "select_category": "🌟 دسته‌بندی خدماتت رو انتخاب کن:",
+            "select_subcategory": "📚 زیرمجموعه رو انتخاب کن:",
+            "category_selected": "دسته‌بندی '{category_name}' انتخاب شد. ادامه می‌خوای یا تغییر؟",
+            "category_error": "❌ لطفاً یک دسته‌بندی معتبر انتخاب کنید!",
+
+            # پیام‌های توضیحات پروژه
+            "description_guidance": "📝 لطفاً توضیحات کامل درخواستت رو بنویس (مثال: نوع خدمات، جزئیات کار، مواد مورد نیاز و ...).\n\nحداقل 20 کاراکتر بنویس تا بتونیم ادامه بدیم.",
+            "description_too_short": "⚠️ توضیحات خیلی کوتاهه! لطفاً بیشتر توضیح بده یا ادامه بده.",
+            "write_description_prompt": "✏️ توضیحاتت رو اینجا بنویس:",
+            "previous_description_with_confirm": "\n\nتوضیحات قبلی:\n'{last_description}'\n\nاگه اوکیه، می‌تونی تأیید کنی یا دوباره بنویسی.",
+            "previous_description_edit": "توضیحات قبلی:\n'{last_description}'\n\nلطفاً توضیحات جدید رو بنویس یا برای بازگشت گزینه رو انتخاب کن:",
+            "description_only_text": "⚠️ لطفاً فقط متن بنویس! (عکس، ویدیو یا چیز دیگه قبول نیست)",
+            "description_required": "⚠️ لطفاً ابتدا توضیحات درخواست رو وارد کنید!",
+
+            # پیام‌های انتخاب محل خدمات
+            "location_type_guidance": "📍 محل انجام خدمات رو مشخص کن:",
+            "location_type_client": "🏠 محل کارفرما",
+            "location_type_contractor": "🏭 محل مجری",
+            "location_type_remote": "🌐 از راه دور",
+            "send_current_location": "📍 ارسال موقعیت فعلی",
+            "location_saved": "📍 موقعیت با موفقیت ذخیره شد!",
+
+            # پیام‌های جزئیات پروژه
+            "project_details": "📋 حالا جزئیات درخواستت رو مشخص کن:",
+            "images_button": "📸 تصاویر",
+            "need_date_button": "📅 تاریخ نیاز",
+            "deadline_button": "⏳ مهلت انجام",
+            "budget_button": "💰 بودجه",
+            "quantity_button": "📏 مقدار و واحد",
+            "submit_project_button": "✅ ثبت درخواست",
+
+            # پیام‌های تاریخ نیاز
+            "select_need_date_prompt": "📅 تاریخ نیاز به خدمات رو انتخاب کن (مثال: 1403/06/20):",
+            "today_date": "امروز ({today})",
+            "tomorrow_date": "فردا ({tomorrow})",
+            "day_after_date": "پس‌فردا ({day_after})",
+            "custom_date": "📅 تاریخ دلخواه",
+            "enter_custom_date_prompt": "📅 تاریخ دلخواه رو به صورت 'سال/ماه/روز' وارد کن (مثال: 1403/06/20):",
+            "need_date_saved": "📅 تاریخ نیاز ذخیره شد: {date_str}",
+            "date_saved_success": "✅ تاریخ با موفقیت ذخیره شد!",
+            "invalid_date_format": "⚠️ فرمت تاریخ اشتباهه! لطفاً به صورت 'سال/ماه/روز' وارد کن (مثال: 1403/06/20).",
+            "date_must_be_future": "⚠️ تاریخ باید در آینده باشه! لطفاً تاریخ معتبر وارد کن.",
+
+            # پیام‌های مهلت انجام
+            "select_deadline_prompt": "⏳ مهلت انجام خدمات رو انتخاب کن:",
+            "enter_custom_deadline_prompt": "⏳ مهلت دلخواه رو به تعداد روز وارد کن (مثال: 5):",
+            "deadline_saved": "⏳ مهلت انجام ذخیره شد: {deadline} روز",
+            "deadline_saved_success": "✅ مهلت با موفقیت ذخیره شد!",
+            "invalid_deadline": "⚠️ مهلت نامعتبره! لطفاً عدد مثبتی وارد کن (مثال: 5).",
+
+            # پیام‌های بودجه
+            "select_budget_prompt": "💰 بودجه مورد نظرت رو انتخاب کن:",
+            "enter_custom_budget_prompt": "💰 بودجه دلخواه رو به تومان وارد کن (مثال: 1000000):",
+            "budget_saved": "💰 بودجه ذخیره شد: {formatted_budget} تومان",
+            "budget_saved_success": "✅ بودجه با موفقیت ذخیره شد!",
+            "invalid_budget": "⚠️ بودجه نامعتبره! لطفاً فقط عدد وارد کن (مثال: 1000000).",
+
+            # پیام‌های مقدار و واحد
+            "select_quantity_prompt": "📏 مقدار و واحد مورد نظرت رو انتخاب کن:",
+            "enter_custom_quantity_prompt": "📏 مقدار و واحد دلخواه رو وارد کن (مثال: 5 متر):",
+            "quantity_saved": "📏 مقدار ذخیره شد: {quantity}",
+            "quantity_saved_success": "✅ مقدار با موفقیت ذخیره شد!",
+
+            # واحدهای اندازه‌گیری
+            "day_unit": "روز",
+            "days_unit": "روز",
+            "toman_unit": "تومان",
+            "piece_unit": "عدد",
+            "pieces_unit": "عدد",
+            "meter_unit": "متر",
+            "meters_unit": "متر",
+            "hour_unit": "ساعت",
+            "hours_unit": "ساعت",
+
+            # پیام‌های عمومی
+            "custom_amount": "🔢 مقدار دلخواه",
+            "invalid_option": "⚠️ گزینه نامعتبر! لطفاً یکی از گزینه‌های موجود رو انتخاب کن.",
+            "submitting_request": "📤 در حال ثبت درخواست...",
+
+            # پیام‌های مدیریت فایل
+            "finish_photos": "✅ اتمام بارگذاری",
+            "manage_photos": "🖼 مدیریت تصاویر",
+            "delete_with_icon": "🗑 حذف",
+            "replace_with_icon": "🔄 جایگزینی",
+
+            # پیام‌های ثبت‌نام
+            "phone_share_prompt": "📱 لطفاً شماره تلفن خود را به اشتراک بگذارید:",
+            "phone_registered": "✅ شماره تلفن شما با موفقیت ثبت شد!",
+            "phone_already_registered": "⚠️ این شماره قبلاً ثبت شده است!",
+            "invalid_phone": "⚠️ شماره تلفن نامعتبر است! لطفاً دوباره تلاش کنید.",
+        },
+        "en": {
+            # Welcome and main menu messages
+            "welcome": "🌟 Welcome to the Bivaset Bot! Please select an option:",
+            "role_employer": "👷 Employer",
+            "role_contractor": "🛠 Contractor",
+            "main_menu_button": "Main Menu",
+            "main_menu_with_icon": "🏠 Main Menu",
+
+            # Employer menu messages
+            "employer_menu": "🎉 Great! What can I do for you?",
+            "employer_new_request": "📝 New Request",
+            "employer_view_projects": "📋 View Projects",
+
+            # Contractor menu messages
+            "contractor_menu": "🛠 As a contractor, what can you do?",
+            "contractor_view_requests": "📋 View Requests",
+            "contractor_offer_work": "💼 Offer Work",
+
+            # Navigation messages
+            "back": "⬅️ Back",
+            "continue": "✅ Continue",
+            "continue_to_next_step": "➡️ Continue to Next Step",
+            "confirm_and_continue": "✅ Confirm and Continue",
+            "revise_description": "✏️ Revise Description",
+            "edit": "✏️ Edit",
+
+            # Category messages
+            "select_category": "🌟 Select the service category:",
+            "select_subcategory": "📚 Select a subcategory:",
+            "category_selected": "Category '{category_name}' selected. Continue or change?",
+            "category_error": "❌ Please select a valid category!",
+
+            # Project description messages
+            "description_guidance": "📝 Please provide a detailed description of your request (e.g., type of service, work details, required materials, etc.).\n\nWrite at least 20 characters to proceed.",
+            "description_too_short": "⚠️ Description is too short! Please provide more details or continue.",
+            "write_description_prompt": "✏️ Write your description here:",
+            "previous_description_with_confirm": "\n\nPrevious description:\n'{last_description}'\n\nIf it's okay, you can confirm or rewrite.",
+            "previous_description_edit": "Previous description:\n'{last_description}'\n\nPlease write a new description or select back:",
+            "description_only_text": "⚠️ Please send only text! (Photos, videos, or other content are not accepted)",
+            "description_required": "⚠️ Please enter the request description first!",
+
+            # Location selection messages
+            "location_type_guidance": "📍 Specify the service location:",
+            "location_type_client": "🏠 Employer's Location",
+            "location_type_contractor": "🏭 Contractor's Location",
+            "location_type_remote": "🌐 Remote",
+            "send_current_location": "📍 Send Current Location",
+            "location_saved": "📍 Location saved successfully!",
+
+            # Project details messages
+            "project_details": "📋 Now specify the details of your request:",
+            "images_button": "📸 Images",
+            "need_date_button": "📅 Required Date",
+            "deadline_button": "⏳ Deadline",
+            "budget_button": "💰 Budget",
+            "quantity_button": "📏 Quantity and Unit",
+            "submit_project_button": "✅ Submit Request",
+
+            # Required date messages
+            "select_need_date_prompt": "📅 Select the required date (e.g., 2024/09/10):",
+            "today_date": "Today ({today})",
+            "tomorrow_date": "Tomorrow ({tomorrow})",
+            "day_after_date": "Day After ({day_after})",
+            "custom_date": "📅 Custom Date",
+            "enter_custom_date_prompt": "📅 Enter the custom date in 'YYYY/MM/DD' format (e.g., 2024/09/10):",
+            "need_date_saved": "📅 Required date saved: {date_str}",
+            "date_saved_success": "✅ Date saved successfully!",
+            "invalid_date_format": "⚠️ Invalid date format! Please enter in 'YYYY/MM/DD' format (e.g., 2024/09/10).",
+            "date_must_be_future": "⚠️ Date must be in the future! Please enter a valid date.",
+
+            # Deadline messages
+            "select_deadline_prompt": "⏳ Select the deadline for the service:",
+            "enter_custom_deadline_prompt": "⏳ Enter the custom deadline in days (e.g., 5):",
+            "deadline_saved": "⏳ Deadline saved: {deadline} days",
+            "deadline_saved_success": "✅ Deadline saved successfully!",
+            "invalid_deadline": "⚠️ Invalid deadline! Please enter a positive number (e.g., 5).",
+
+            # Budget messages
+            "select_budget_prompt": "💰 Select your budget:",
+            "enter_custom_budget_prompt": "💰 Enter the custom budget in Toman (e.g., 1000000):",
+            "budget_saved": "💰 Budget saved: {formatted_budget} Toman",
+            "budget_saved_success": "✅ Budget saved successfully!",
+            "invalid_budget": "⚠️ Invalid budget! Please enter only numbers (e.g., 1000000).",
+
+            # Quantity and unit messages
+            "select_quantity_prompt": "📏 Select the quantity and unit:",
+            "enter_custom_quantity_prompt": "📏 Enter the custom quantity and unit (e.g., 5 meters):",
+            "quantity_saved": "📏 Quantity saved: {quantity}",
+            "quantity_saved_success": "✅ Quantity saved successfully!",
+
+            # Unit messages
+            "day_unit": "day",
+            "days_unit": "days",
+            "toman_unit": "Toman",
+            "piece_unit": "piece",
+            "pieces_unit": "pieces",
+            "meter_unit": "meter",
+            "meters_unit": "meters",
+            "hour_unit": "hour",
+            "hours_unit": "hours",
+
+            # General messages
+            "custom_amount": "🔢 Custom Amount",
+            "invalid_option": "⚠️ Invalid option! Please select one of the available options.",
+            "submitting_request": "📤 Submitting request...",
+
+            # File management messages
+            "finish_photos": "✅ Finish Uploading",
+            "manage_photos": "🖼 Manage Images",
+            "delete_with_icon": "🗑 Delete",
+            "replace_with_icon": "🔄 Replace",
+
+            # Registration messages
+            "phone_share_prompt": "📱 Please share your phone number:",
+            "phone_registered": "✅ Your phone number has been successfully registered!",
+            "phone_already_registered": "⚠️ This phone number is already registered!",
+            "invalid_phone": "⚠️ Invalid phone number! Please try again.",
+        }
     }
-}
 
-def get_message(key, lang="fa", **kwargs):
-    msg = MESSAGES.get(key, {}).get(lang, "")
-    if kwargs:
-        return msg.format(**kwargs)
-    return msg
+    try:
+        # دریافت پیام از دیکشنری پیام‌ها
+        message = messages.get(lang, messages["fa"]).get(key, "پیام یافت نشد!")
+        # قالب‌بندی پیام با متغیرهای ارسالی
+        return message.format(**kwargs) if kwargs else message
+    except KeyError:
+        # در صورت نبود کلید، پیام پیش‌فرض
+        return "پیام یافت نشد!"
+    except Exception as e:
+        # لاگ خطا برای دیباگ
+        print(f"Error in get_message: {e}")
+        return "خطا در دریافت پیام!"

@@ -3,6 +3,8 @@ from telegram import InlineKeyboardMarkup, InlineKeyboardButton, KeyboardButton,
 from localization import get_message
 from khayyam import JalaliDatetime
 from datetime import datetime, timedelta
+from handlers.navigation_utils import SERVICE_REQUEST_FLOW
+from handlers.states import DESCRIPTION
 
 # تابع ایجاد منوی اصلی با قابلیت لوکالایزیشن
 def get_main_menu_keyboard(lang="fa"):
@@ -68,14 +70,28 @@ FILE_MANAGEMENT_MENU_KEYBOARD = InlineKeyboardMarkup([
 ])
 
 # Photo management keyboards
-def create_photo_management_keyboard(files_list, lang="fa"):
-    """Create keyboard for managing uploaded photos"""
-    keyboard = [
-        [InlineKeyboardButton(f"📸 تصویر {i+1}", callback_data=f"view_photo_{i}"),
-         InlineKeyboardButton(get_message("edit", lang=lang), callback_data=f"edit_photo_{i}")]
-        for i in range(len(files_list))
-    ]
-    keyboard.append([InlineKeyboardButton(get_message("back", lang=lang), callback_data="back_to_upload")])
+def create_photo_management_keyboard(files_list, lang="fa", edit_mode=False, edit_index=None):
+    """Create keyboard for managing uploaded photos, with optional edit mode for delete/replace"""
+    keyboard = []
+    if edit_mode and edit_index is not None:
+        # Edit mode: show delete and replace buttons for the selected photo
+        keyboard = [
+            [
+                InlineKeyboardButton(get_message("delete_with_icon", lang=lang), callback_data=f"delete_photo_{edit_index}"),
+                InlineKeyboardButton(get_message("replace_with_icon", lang=lang), callback_data=f"replace_photo_{edit_index}")
+            ],
+            [InlineKeyboardButton(get_message("back", lang=lang), callback_data="back_to_management")]
+        ]
+    else:
+        # Normal mode: show view and edit buttons for each photo
+        keyboard = [
+            [
+                InlineKeyboardButton(f"📸 تصویر {i+1}", callback_data=f"view_photo_{i}"),
+                InlineKeyboardButton(get_message("edit", lang=lang), callback_data=f"edit_photo_{i}")
+            ]
+            for i in range(len(files_list))
+        ]
+        keyboard.append([InlineKeyboardButton(get_message("back", lang=lang), callback_data="back_to_upload")])
     return InlineKeyboardMarkup(keyboard)
 
 # منوی مشاهده پروژه‌ها
@@ -305,4 +321,43 @@ def get_custom_input_keyboard(lang="fa"):
     keyboard = [
         [InlineKeyboardButton(get_message("back", lang=lang), callback_data="back_to_details")]
     ]
+    return InlineKeyboardMarkup(keyboard)
+
+# تابع ایجاد کیبورد ناوبری برای جریان درخواست خدمات
+def create_service_flow_navigation_keyboard(current_state, context, lang="fa"):
+    """Create navigation keyboard with back and next buttons based on the current state for service request flow"""
+    keyboard = []
+    
+    # Find current position in flow
+    try:
+        if current_state in SERVICE_REQUEST_FLOW:
+            current_index = SERVICE_REQUEST_FLOW.index(current_state)
+            row = []
+            
+            # Add back button if not at the beginning
+            if current_index > 0 or context.user_data.get('previous_state') is not None:
+                row.append(InlineKeyboardButton(get_message("back", lang=lang), callback_data="navigate_back"))
+            
+            # Add next button if not at the end and not in DESCRIPTION state
+            if current_index < len(SERVICE_REQUEST_FLOW) - 1:
+                # For description, only show next if description is entered
+                if current_state == DESCRIPTION and 'description' not in context.user_data:
+                    pass
+                else:
+                    row.append(InlineKeyboardButton(get_message("continue", lang=lang), callback_data="navigate_next"))
+            
+            # Add the navigation row if it has buttons
+            if row:
+                keyboard.append(row)
+            
+            # Add menu button only if not in DESCRIPTION state
+            if current_state != DESCRIPTION:
+                keyboard.append([InlineKeyboardButton(get_message("main_menu_with_icon", lang=lang), callback_data="back_to_employer_menu")])
+        else:
+            # For states outside the flow, just add back to menu button
+            keyboard.append([InlineKeyboardButton(get_message("main_menu_with_icon", lang=lang), callback_data="back_to_employer_menu")])
+    except Exception as e:
+        # Fallback to basic navigation
+        keyboard.append([InlineKeyboardButton(get_message("main_menu_with_icon", lang=lang), callback_data="back_to_employer_menu")])
+    
     return InlineKeyboardMarkup(keyboard)
