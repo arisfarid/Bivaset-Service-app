@@ -284,6 +284,154 @@ MESSAGES = {
     "original_image": {
         "fa": "تصویر اصلی",
         "en": "Main image"
+    },
+    "previous_description_with_confirm": {
+        "fa": "✍️ توضیحات قبلی شما:\n{last_description}\n\nمی‌توانید آن را ویرایش کنید یا همین را تایید کنید:",
+        "en": "✍️ Your previous description:\n{last_description}\n\nYou can edit it or confirm it as is:"
+    },
+    "write_description_prompt": {
+        "fa": "لطفاً توضیحات خود را بنویسید:",
+        "en": "Please write your description:"
+    },
+    "confirm_and_continue": {
+        "fa": "✅ تأیید و ادامه",
+        "en": "✅ Confirm and continue"
+    },
+    "continue_to_next_step": {
+        "fa": "✅ ادامه به مرحله بعد",
+        "en": "✅ Continue to next step"
+    },
+    "revise_description": {
+        "fa": "✏️ اصلاح توضیحات",
+        "en": "✏️ Revise description"
+    },
+    "previous_description_edit": {
+        "fa": "🌟 توضیحات قبلی:\n{last_description}\n\nمی‌تونی توضیحات رو ویرایش کنی:",
+        "en": "🌟 Previous description:\n{last_description}\n\nYou can edit the description:"
+    },
+    "description_required": {
+        "fa": "⚠️ لطفاً ابتدا توضیحات خدمات را وارد کنید!",
+        "en": "⚠️ Please enter the service description first!"
+    },
+    "submitting_request": {
+        "fa": "در حال ثبت درخواست شما...",
+        "en": "Submitting your request..."
+    },
+    "select_need_date_prompt": {
+        "fa": "📅 تاریخ نیاز رو انتخاب کن یا دستی وارد کن (مثلاً 1403/10/15):",
+        "en": "📅 Select the required date or enter it manually (e.g., 2024/10/15):"
+    },
+    "enter_custom_date_prompt": {
+        "fa": "📅 لطفاً تاریخ مورد نظر خود را به فرمت 1403/10/15 وارد کنید:",
+        "en": "📅 Please enter your desired date in the format 2024/10/15:"
+    },
+    "need_date_saved": {
+        "fa": "📅 تاریخ نیاز ثبت شد: {date_str}",
+        "en": "📅 Required date saved: {date_str}"
+    },
+    "date_saved_success": {
+        "fa": "✅ تاریخ با موفقیت ثبت شد!",
+        "en": "✅ Date saved successfully!"
+    },
+    "select_deadline_prompt": {
+        "fa": "⏳ مهلت انجام (برحسب روز) را انتخاب کنید:",
+        "en": "⏳ Select the deadline (in days):"
+    },
+    "enter_custom_deadline_prompt": {
+        "fa": "⏳ لطفاً مهلت انجام مورد نظر خود را به روز وارد کنید (مثلاً: 7):",
+        "en": "⏳ Please enter your desired deadline in days (e.g., 7):"
+    },
+    "deadline_saved": {
+        "fa": "⏳ مهلت انجام ثبت شد: {deadline} روز",
+        "en": "⏳ Deadline saved: {deadline} days"
+    },
+    "deadline_saved_success": {
+        "fa": "✅ مهلت انجام با موفقیت ثبت شد!",
+        "en": "✅ Deadline saved successfully!"
+    },
+    "select_budget_prompt": {
+        "fa": "💰 بودجه‌ای که برای این خدمات در نظر دارید را انتخاب کنید:",
+        "en": "💰 Select the budget for this service:"
+    },
+    "enter_custom_budget_prompt": {
+        "fa": "💰 لطفاً بودجه مورد نظر خود را به تومان وارد کنید (مثلاً: 500000):",
+        "en": "💰 Please enter your desired budget in Tomans (e.g., 500000):"
+    },
+    "budget_saved": {
+        "fa": "💰 بودجه ثبت شد: {formatted_budget} تومان",
+        "en": "💰 Budget saved: {formatted_budget} Tomans"
+    },
+    "budget_saved_success": {
+        "fa": "✅ بودجه با موفقیت ثبت شد!",
+        "en": "✅ Budget saved successfully!"
+    },
+    "select_quantity_prompt": {
+        "fa": "📏 مقدار و واحد مورد نیاز را انتخاب کنید:",
+        "en": "📏 Select the required quantity and unit:"
+    },
+    "enter_custom_quantity_prompt": {
+        "fa": "📏 لطفاً مقدار و واحد مورد نظر خود را وارد کنید (مثلاً: 2 عدد، 5 متر مربع، 3 ساعت):",
+        "en": "📏 Please enter your desired quantity and unit (e.g., 2 pieces, 5 square meters, 3 hours):"
+    },
+    "quantity_saved": {
+        "fa": "📏 مقدار و واحد ثبت شد: {quantity}",
+        "en": "📏 Quantity and unit saved: {quantity}"
+    },
+    "quantity_saved_success": {
+        "fa": "✅ مقدار و واحد با موفقیت ثبت شد!",
+        "en": "✅ Quantity and unit saved successfully!"
+    },
+    "today_date": {
+        "fa": "📅 امروز ({today})",
+        "en": "📅 Today ({today})"
+    },
+    "tomorrow_date": {
+        "fa": "📅 فردا ({tomorrow})",
+        "en": "📅 Tomorrow ({tomorrow})"
+    },
+    "day_after_date": {
+        "fa": "📅 پس‌فردا ({day_after})",
+        "en": "📅 Day after tomorrow ({day_after})"
+    },
+    "custom_date": {
+        "fa": "✏️ تاریخ دلخواه",
+        "en": "✏️ Custom date"
+    },
+    "custom_amount": {
+        "fa": "✏️ مقدار دلخواه",
+        "en": "✏️ Custom amount"
+    },
+    "day_unit": {
+        "fa": "روز",
+        "en": "day"
+    },
+    "days_unit": {
+        "fa": "روز",
+        "en": "days"
+    },
+    "piece_unit": {
+        "fa": "عدد",
+        "en": "piece"
+    },
+    "pieces_unit": {
+        "fa": "عدد",
+        "en": "pieces"
+    },
+    "meter_unit": {
+        "fa": "متر",
+        "en": "meter"
+    },
+    "meters_unit": {
+        "fa": "متر",
+        "en": "meters"
+    },
+    "hour_unit": {
+        "fa": "ساعت",
+        "en": "hour"
+    },
+    "toman_unit": {
+        "fa": "تومان",
+        "en": "Tomans"
     }
 }
 

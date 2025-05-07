@@ -1,6 +1,8 @@
 # keyboards.py
 from telegram import InlineKeyboardMarkup, InlineKeyboardButton, KeyboardButton, ReplyKeyboardMarkup, ReplyKeyboardRemove
 from localization import get_message
+from khayyam import JalaliDatetime
+from datetime import datetime, timedelta
 
 # تابع ایجاد منوی اصلی با قابلیت لوکالایزیشن
 def get_main_menu_keyboard(lang="fa"):
@@ -214,3 +216,93 @@ def get_description_short_buttons(lang="fa"):
         [InlineKeyboardButton(get_message("continue", lang=lang), callback_data="continue_to_details")],
         [InlineKeyboardButton(get_message("edit", lang=lang), callback_data="back_to_description")]
     ])
+
+# تابع ایجاد کیبورد انتخاب تاریخ نیاز
+def get_date_selection_keyboard(lang="fa"):
+    """ایجاد کیبورد انتخاب تاریخ نیاز با تاریخ‌های پیش‌فرض و گزینه دلخواه"""
+    today = JalaliDatetime(datetime.now()).strftime('%Y/%m/%d')
+    tomorrow = JalaliDatetime(datetime.now() + timedelta(days=1)).strftime('%Y/%m/%d')
+    day_after = JalaliDatetime(datetime.now() + timedelta(days=2)).strftime('%Y/%m/%d')
+    keyboard = [
+        [InlineKeyboardButton(get_message("today_date", lang=lang, today=today), callback_data=f"date_today_{today}")],
+        [InlineKeyboardButton(get_message("tomorrow_date", lang=lang, tomorrow=tomorrow), callback_data=f"date_tomorrow_{tomorrow}")],
+        [InlineKeyboardButton(get_message("day_after_date", lang=lang, day_after=day_after), callback_data=f"date_day_after_{day_after}")],
+        [InlineKeyboardButton(get_message("custom_date", lang=lang), callback_data="date_custom")],
+        [InlineKeyboardButton(get_message("back", lang=lang), callback_data="back_to_details")]
+    ]
+    return InlineKeyboardMarkup(keyboard)
+
+# تابع ایجاد کیبورد انتخاب مهلت انجام
+def get_deadline_selection_keyboard(lang="fa"):
+    """ایجاد کیبورد انتخاب مهلت انجام با گزینه‌های پیش‌فرض و دلخواه"""
+    keyboard = [
+        [
+            InlineKeyboardButton(f"1 {get_message('day_unit', lang=lang)}", callback_data="deadline_1"),
+            InlineKeyboardButton(f"2 {get_message('days_unit', lang=lang)}", callback_data="deadline_2"),
+            InlineKeyboardButton(f"3 {get_message('days_unit', lang=lang)}", callback_data="deadline_3")
+        ],
+        [
+            InlineKeyboardButton(f"5 {get_message('days_unit', lang=lang)}", callback_data="deadline_5"),
+            InlineKeyboardButton(f"7 {get_message('days_unit', lang=lang)}", callback_data="deadline_7"),
+            InlineKeyboardButton(f"10 {get_message('days_unit', lang=lang)}", callback_data="deadline_10")
+        ],
+        [
+            InlineKeyboardButton(f"14 {get_message('days_unit', lang=lang)}", callback_data="deadline_14"),
+            InlineKeyboardButton(f"30 {get_message('days_unit', lang=lang)}", callback_data="deadline_30")
+        ],
+        [InlineKeyboardButton(get_message("custom_amount", lang=lang), callback_data="deadline_custom")],
+        [InlineKeyboardButton(get_message("back", lang=lang), callback_data="back_to_details")]
+    ]
+    return InlineKeyboardMarkup(keyboard)
+
+# تابع ایجاد کیبورد انتخاب بودجه
+def get_budget_selection_keyboard(lang="fa"):
+    """ایجاد کیبورد انتخاب بودجه با گزینه‌های پیش‌فرض و دلخواه"""
+    keyboard = [
+        [
+            InlineKeyboardButton(f"100,000 {get_message('toman_unit', lang=lang)}", callback_data="budget_100000"),
+            InlineKeyboardButton(f"200,000 {get_message('toman_unit', lang=lang)}", callback_data="budget_200000")
+        ],
+        [
+            InlineKeyboardButton(f"500,000 {get_message('toman_unit', lang=lang)}", callback_data="budget_500000"),
+            InlineKeyboardButton(f"1,000,000 {get_message('toman_unit', lang=lang)}", callback_data="budget_1000000")
+        ],
+        [
+            InlineKeyboardButton(f"2,000,000 {get_message('toman_unit', lang=lang)}", callback_data="budget_2000000"),
+            InlineKeyboardButton(f"5,000,000 {get_message('toman_unit', lang=lang)}", callback_data="budget_5000000")
+        ],
+        [InlineKeyboardButton(get_message("custom_amount", lang=lang), callback_data="budget_custom")],
+        [InlineKeyboardButton(get_message("back", lang=lang), callback_data="back_to_details")]
+    ]
+    return InlineKeyboardMarkup(keyboard)
+
+# تابع ایجاد کیبورد انتخاب مقدار و واحد
+def get_quantity_selection_keyboard(lang="fa"):
+    """ایجاد کیبورد انتخاب مقدار و واحد با گزینه‌های پیش‌فرض و دلخواه"""
+    keyboard = [
+        [
+            InlineKeyboardButton(f"1 {get_message('piece_unit', lang=lang)}", callback_data="quantity_1_عدد"),
+            InlineKeyboardButton(f"2 {get_message('pieces_unit', lang=lang)}", callback_data="quantity_2_عدد"),
+            InlineKeyboardButton(f"3 {get_message('pieces_unit', lang=lang)}", callback_data="quantity_3_عدد")
+        ],
+        [
+            InlineKeyboardButton(f"1 {get_message('meter_unit', lang=lang)}", callback_data="quantity_1_متر"),
+            InlineKeyboardButton(f"5 {get_message('meters_unit', lang=lang)}", callback_data="quantity_5_متر"),
+            InlineKeyboardButton(f"10 {get_message('meters_unit', lang=lang)}", callback_data="quantity_10_متر")
+        ],
+        [
+            InlineKeyboardButton(f"1 {get_message('day_unit', lang=lang)}", callback_data="quantity_1_روز"),
+            InlineKeyboardButton(f"1 {get_message('hour_unit', lang=lang)}", callback_data="quantity_1_ساعت")
+        ],
+        [InlineKeyboardButton(get_message("custom_amount", lang=lang), callback_data="quantity_custom")],
+        [InlineKeyboardButton(get_message("back", lang=lang), callback_data="back_to_details")]
+    ]
+    return InlineKeyboardMarkup(keyboard)
+
+# تابع ایجاد کیبورد برای ورودی دلخواه (با دکمه بازگشت)
+def get_custom_input_keyboard(lang="fa"):
+    """ایجاد کیبورد برای ورودی دلخواه با دکمه بازگشت"""
+    keyboard = [
+        [InlineKeyboardButton(get_message("back", lang=lang), callback_data="back_to_details")]
+    ]
+    return InlineKeyboardMarkup(keyboard)
