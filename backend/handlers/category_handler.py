@@ -53,7 +53,7 @@ async def handle_category_selection(update: Update, context: ContextTypes.DEFAUL
             context.user_data['state'] = EMPLOYER_MENU
             # نمایش مجدد منوی کارفرما
             sent = await query.message.reply_text(
-                get_message("employer_menu_prompt", lang=lang, name=context.user_data.get('user_name', '')),
+                get_message("employer_menu_prompt", lang=lang),
                 reply_markup=get_employer_menu_keyboard(lang)
             )
             await delete_previous_messages(sent, context, n=3)
@@ -88,7 +88,7 @@ async def handle_category_selection(update: Update, context: ContextTypes.DEFAUL
 
             selected_category = categories.get(category_id)
             if not selected_category:
-                await query.answer("❌ دسته‌بندی نامعتبر")
+                await query.answer(get_message("category_error", lang=lang))
                 return CATEGORY
 
             children = selected_category.get('children', [])
@@ -106,7 +106,7 @@ async def handle_category_selection(update: Update, context: ContextTypes.DEFAUL
             
             # نمایش پیام تایید با دکمه‌های بازگشت و ادامه
             await query.message.edit_text(
-                f"{get_message('category_selected', lang=lang)}: {selected_category['name']}\n{get_message('category_submit_or_back', lang=lang)}",
+                get_message("category_confirmation", lang=lang, category_name=selected_category['name']),
                 reply_markup=create_category_confirmation_keyboard(selected_category['name'], lang)
             )
             return CATEGORY
@@ -139,7 +139,7 @@ async def handle_category_selection(update: Update, context: ContextTypes.DEFAUL
             
             # نمایش پیام تایید با دکمه‌های بازگشت و ادامه
             await query.message.edit_text(
-                f"{get_message('category_selected', lang=lang)}: {selected_subcategory['name']}\n{get_message('category_submit_or_back', lang=lang)}",
+                get_message("category_confirmation", lang=lang, category_name=selected_subcategory['name']),
                 reply_markup=create_category_confirmation_keyboard(selected_subcategory['name'], lang)
             )
             return CATEGORY
@@ -203,7 +203,7 @@ async def handle_category_callback(update: Update, context: ContextTypes.DEFAULT
     lang = context.user_data.get('lang', 'fa')
     
     msg = await query.edit_message_text(
-        f"{get_message('category_selected', lang=lang)}: {cat_name}\n{get_message('category_submit_or_back', lang=lang)}",
+        get_message("category_confirmation", lang=lang, category_name=cat_name),
         reply_markup=create_category_confirmation_keyboard(cat_name, lang)
     )
     await log_chat(update, context)
