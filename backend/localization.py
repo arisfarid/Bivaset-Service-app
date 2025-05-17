@@ -9,6 +9,7 @@ def get_message(key: str, lang: str = "fa", **kwargs) -> str:
         "fa": {
             # پیام‌های خوش‌آمدگویی و منوی اصلی
             "welcome": "👋 سلام {name}! به سامانه خدمات بی‌واسط خوش آمدید.\nلطفاً یکی از گزینه‌های زیر را انتخاب کنید:",
+            "bot_updated": "🔄 *ربات بی‌واسط به‌روزرسانی شد!*\n\n✨ امکانات جدید اضافه شده\n🛠 بهبود عملکرد و رفع باگ‌ها\n\nبرای استفاده از نسخه جدید، لطفاً روی دکمه زیر کلیک کنید. این دکمه شما را به صفحه اصلی ربات منتقل می‌کند و می‌توانید از ابتدا استفاده از ربات را شروع کنید:",
             "role_employer": "👔 درخواست خدمات | کارفرما",
             "role_contractor": "🦺 پیشنهاد قیمت | مجری",
             "main_menu_button": "منوی اصلی",
@@ -92,7 +93,7 @@ def get_message(key: str, lang: str = "fa", **kwargs) -> str:
             "date_must_be_future": "❌ تاریخ باید امروز یا پس از امروز باشد!",
 
             # پیام‌های مهلت انجام
-            "select_deadline_prompt": "⏳ مهلت انجام (برحسب روز) را انتخاب کنید:",
+            "select_deadline_prompt": "⏳ مهلت انجام (بر حسب روز) را انتخاب کنید:",
             "enter_custom_deadline_prompt": "⏳ لطفاً مهلت انجام مورد نظر خود را به روز وارد کنید (مثلاً: 7):",
             "deadline_saved": "⏳ مهلت انجام ثبت شد: {deadline} روز",
             "deadline_saved_success": "✅ مهلت انجام با موفقیت ثبت شد!",
@@ -168,6 +169,7 @@ def get_message(key: str, lang: str = "fa", **kwargs) -> str:
         "en": {
             # Welcome and main menu messages
             "welcome": "👋 Hello {name}! Welcome to Bivaset Service Platform.\nPlease choose one of the options below:",
+            "bot_updated": "🔄 *Bivaset Bot Updated!*\n\n✨ New features added\n🛠 Performance improvements and bug fixes\n\nTo use the new version, please click the button below. This will take you to the main menu, and you can start using the bot from the beginning:",
             "role_employer": "👔 Request service | Client",
             "role_contractor": "🦺 Provide service | Contractor",
             "main_menu_button": "Main Menu",
