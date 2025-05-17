@@ -34,6 +34,10 @@ def get_message(key: str, lang: str = "fa", **kwargs) -> str:
             "confirm_and_continue": "✅ تأیید و ادامه",
             "revise_description": "✏️ اصلاح توضیحات",
             "edit": "✏️ ویرایش",
+            "cancel": "❌ لغو",
+            "skip": "رد کردن »",
+            "progress_indicator": "📊 مرحله {current_step} از {total_steps}",
+            "back_instruction": "می‌توانید از دکمه «قبلی» برای بازگشت استفاده کنید",
 
             # پیام‌های دسته‌بندی
             "category_main_select": "🌟 لطفاً دسته‌بندی خدمات موردنیاز خود را انتخاب کنید:",
@@ -46,6 +50,7 @@ def get_message(key: str, lang: str = "fa", **kwargs) -> str:
             "invalid_subcategory": "❌ زیردسته نامعتبر است",
             "only_select_from_buttons": "❌ لطفاً فقط از دکمه‌های منو انتخاب کنید و پیام یا فایل ارسال نکنید.",
             "step_error": "❌ خطا در نمایش مرحله بعد. لطفاً دوباره تلاش کنید.",
+            "error_fetching_categories": "❌ خطا در دریافت دسته‌بندی‌ها",
 
             # پیام‌های توضیحات پروژه
             "description_guidance": "✍️ لطفاً توضیحات کامل و دقیقی درباره خدمات موردنیاز خود بنویسید تا مجریان بتوانند بهتر و سریع‌تر به شما کمک کنند!\n\nبهتر است به این موارد اشاره کنید:\n• نوع و جزئیات دقیق خدمت موردنیاز\n• توضیح دقیق مشکل یا انتظارات شما از مجری\n• شرایط خاص یا نیازمندی‌های ویژه\n• جزئیات فنی یا ویژگی‌های مهم مدنظرتان\n• اگر مهارت یا ابزار خاصی لازم است\n\nمثال توضیح کامل:\n«سلام، نیاز به تعمیر کولر گازی در منزل دارم. کولر مدل ال‌جی است و باد گرم می‌زند. محل نصب طبقه سوم آپارتمان است. لطفاً هزینه و زمان انجام کار را اعلام کنید. اگر قطعه نیاز به تعویض دارد، لطفاً اطلاع دهید.»\n\nهرچه توضیحات شما کامل‌تر باشد، قیمت و زمان دقیق‌تری دریافت خواهید کرد! 😊",
@@ -125,9 +130,11 @@ def get_message(key: str, lang: str = "fa", **kwargs) -> str:
 
             # پیام‌های عمومی
             "custom_amount": "✏️ مقدار دلخواه",
-            "invalid_option": "❌ گزینه نامعتبر! لطفاً یکی از دکمه‌های منو را انتخاب کنید.",
+            "invalid_option": "❌ گزینه نامعتبر! لطفاً یکی از دکمه‌های منو را انتخاب کنید。",
             "submitting_request": "در حال ثبت درخواست شما...",
             "submit": "✅ ثبت درخواست",
+            "operation_cancelled": "عملیات لغو شد. دوباره شروع کن!",
+            "general_error": "خطایی رخ داد. لطفاً دوباره تلاش کنید.",
 
             # پیام‌های مدیریت فایل
             "photos_command": "📸 تصاویر را یکی‌یکی ارسال کنید (حداکثر ۵ تصویر). فقط عکس پذیرفته می‌شود!",
@@ -150,10 +157,20 @@ def get_message(key: str, lang: str = "fa", **kwargs) -> str:
             "replace_with_icon": "🔄 جایگزینی",
 
             # پیام‌های ثبت‌نام
-            "share_phone_prompt": "👋 سلام! برای استفاده از امکانات سامانه، لطفاً شماره تلفن خود را به اشتراک بگذارید:",
+            "share_phone_prompt": "⚠️ برای استفاده از ربات، لطفاً شماره تلفن خود را به اشتراک بگذارید:\nاز دکمه زیر استفاده کنید:",
             "phone_registered": "✅ شماره تلفن شما با موفقیت ثبت شد!",
             "phone_already_registered": "⚠️ این شماره قبلاً ثبت شده است!",
-            "invalid_phone": "⚠️ شماره تلفن نامعتبر است! لطفاً دوباره تلاش کنید.",
+            "invalid_phone": "⚠️ فرمت شماره نامعتبر است!\nلطفاً شماره را به فرمت 09123456789 وارد کنید.",
+            "phone_required": "برای ادامه نیاز به ثبت شماره تلفن است",
+            "share_phone_instruction": "از دکمه زیر برای به اشتراک‌گذاری مستقیم شماره استفاده کنید:",
+            "enter_new_phone_prompt": "📱 لطفاً شماره تلفن جدید خود را وارد کنید:\nمثال: 09123456789",
+            "verification_code_sent": "📤 کد تأیید 4 رقمی به شماره شما ارسال شد.\n⏰ مهلت وارد کردن کد: 2 دقیقه\n📱 شماره: {phone}",
+            "error_sending_verification_code": "❌ خطا در ارسال کد تأیید.\nلطفاً دوباره تلاش کنید.",
+            "invalid_verification_info": "❌ اطلاعات تأیید نامعتبر است.",
+            "max_attempts_reached": "❌ تعداد تلاش‌های مجاز به پایان رسید.\nلطفاً دوباره درخواست کد کنید.",
+            "verification_code_expired": "⏰ کد تأیید منقضی شده است.\nلطفاً دوباره درخواست کد کنید.",
+            "incorrect_verification_code": "❌ کد وارد شده اشتباه است.\nتعداد تلاش‌های باقیمانده: {remaining}",
+            "error_registering_phone": "❌ خطا در ثبت شماره تلفن.\nلطفاً دوباره تلاش کنید.",
 
             # پیام‌های نقش
             "role_select": "🌟 لطفاً نقش خود را انتخاب کنید:",
@@ -194,6 +211,10 @@ def get_message(key: str, lang: str = "fa", **kwargs) -> str:
             "confirm_and_continue": "✅ Confirm and continue",
             "revise_description": "✏️ Revise description",
             "edit": "✏️ Edit",
+            "cancel": "❌ Cancel",
+            "skip": "Skip »",
+            "progress_indicator": "📊 Step {current_step} of {total_steps}",
+            "back_instruction": "You can use the 'Back' button to return",
 
             # Category messages
             "category_main_select": "🌟 Please select your service category:",
@@ -206,6 +227,7 @@ def get_message(key: str, lang: str = "fa", **kwargs) -> str:
             "invalid_subcategory": "❌ Invalid subcategory",
             "only_select_from_buttons": "❌ Please only select from the menu buttons and do not send messages or files.",
             "step_error": "❌ Error displaying the next step. Please try again.",
+            "error_fetching_categories": "❌ Error fetching categories",
 
             # Project description messages
             "description_guidance": "✍️ Please write a detailed description of the service you need so providers can help you better and faster!\n\nIt's best to mention:\n• The exact type and details of the service you need\n• A clear explanation of the problem or your expectations\n• Any special conditions or requirements\n• Technical details or important features you are looking for\n• If special skills or tools are required\n\nExample of a complete description:\n'Hello, I need my LG air conditioner repaired at home. It's blowing warm air. The unit is on the third floor. Please let me know the cost and time estimate. If any parts need replacement, please inform me.'\n\nThe more complete your description, the more accurate price and timing you'll receive! 😊",
@@ -288,6 +310,8 @@ def get_message(key: str, lang: str = "fa", **kwargs) -> str:
             "invalid_option": "❌ Invalid option! Please select one of the menu buttons.",
             "submitting_request": "Submitting your request...",
             "submit": "✅ Submit request",
+            "operation_cancelled": "Operation cancelled. Start again!",
+            "general_error": "An error occurred. Please try again.",
 
             # File management messages
             "photos_command": "📸 Please send photos one by one (maximum 5 photos). Only images are accepted!",
@@ -310,10 +334,20 @@ def get_message(key: str, lang: str = "fa", **kwargs) -> str:
             "replace_with_icon": "🔄 Replace",
 
             # Registration messages
-            "share_phone_prompt": "👋 Hello! To use the platform features, please share your phone number:",
+            "share_phone_prompt": "⚠️ To use the bot, please share your phone number:\nUse the button below:",
             "phone_registered": "✅ Your phone number has been successfully registered!",
             "phone_already_registered": "⚠️ This phone number is already registered!",
-            "invalid_phone": "⚠️ Invalid phone number! Please try again.",
+            "invalid_phone": "⚠️ Invalid phone format!\nPlease enter the number in the format 09123456789.",
+            "phone_required": "Phone number registration is required to continue",
+            "share_phone_instruction": "Use the button below to share your phone number directly:",
+            "enter_new_phone_prompt": "📱 Please enter your new phone number:\nExample: 09123456789",
+            "verification_code_sent": "📤 A 4-digit verification code has been sent to your number.\n⏰ Code entry deadline: 2 minutes\n📱 Number: {phone}",
+            "error_sending_verification_code": "❌ Error sending verification code.\nPlease try again.",
+            "invalid_verification_info": "❌ Invalid verification information.",
+            "max_attempts_reached": "❌ Maximum allowed attempts reached.\nPlease request a new code.",
+            "verification_code_expired": "⏰ Verification code has expired.\nPlease request a new code.",
+            "incorrect_verification_code": "❌ Incorrect code entered.\nRemaining attempts: {remaining}",
+            "error_registering_phone": "❌ Error registering phone number.\nPlease try again.",
 
             # Role messages
             "role_select": "🌟 Please select your role:",
