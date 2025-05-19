@@ -195,6 +195,13 @@ async def log_chat(update: Update, context: ContextTypes.DEFAULT_TYPE):
     elif update.callback_query:
         logger.info(f"Callback from user {update.effective_user.id}: {update.callback_query.data}")
 
+def format_price(number):
+    """تبدیل اعداد مبلغ به فرمت هزارگان با کاما"""
+    try:
+        return "{:,}".format(int(number))
+    except (ValueError, TypeError):
+        return number
+
 async def ensure_active_chat(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """اطمینان از افزودن چت به لیست چت‌های فعال"""
     chat_id = update.effective_chat.id
