@@ -231,7 +231,6 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 # Store current state as the next previous state
                 context.user_data['previous_state'] = current_state
                 context.user_data['state'] = previous_state
-                lang = context.user_data.get('lang', 'fa')
                 
                 # Handle back navigation to specific states
                 if previous_state == EMPLOYER_MENU:
@@ -248,7 +247,7 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     await MenuManager.show_menu(
                         update,
                         context,
-                        get_message("welcome", lang=lang, name=update.effective_user.first_name),
+                        get_message("welcome", lang='fa', name=update.effective_user.first_name),
                         get_main_menu_keyboard()
                     )
                     await query.answer()
@@ -277,7 +276,7 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     await MenuManager.show_menu(
                         update,
                         context,
-                        get_message("employer_menu_prompt", lang=lang),
+                        get_message("employer_menu_prompt", lang='fa'),
                         get_employer_menu_keyboard()
                     )
                     await query.answer()
@@ -411,7 +410,7 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 await MenuManager.show_menu(
                     update,
                     context,
-                    get_message("welcome", lang=lang, name=update.effective_user.first_name),
+                    get_message("welcome", lang='fa', name=update.effective_user.first_name),
                     get_main_menu_keyboard()
                 )
                 await query.answer()
@@ -425,7 +424,7 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await MenuManager.show_menu(
                 update,
                 context,
-                get_message("welcome", lang=lang, name=update.effective_user.first_name),
+                get_message("welcome", lang='fa', name=update.effective_user.first_name),
                 get_main_menu_keyboard()
             )
             await query.answer()
