@@ -83,5 +83,6 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
 
 async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     context.user_data.clear()
-    await update.message.reply_text(get_message("operation_cancelled", lang="fa"))
+    lang = context.user_data.get('lang', 'fa')
+    await update.message.reply_text(get_message("operation_cancelled", lang=lang))
     return ConversationHandler.END

@@ -59,7 +59,7 @@ async def post_init(application: Application):
                 # ارسال پیام آپدیت بی‌صدا
                 sent_message = await application.bot.send_message(
                     chat_id=chat_id,
-                    text=get_message("bot_updated", lang="fa"),
+                    text=get_message("bot_updated", lang='fa'),
                     parse_mode='Markdown',
                     disable_notification=True,
                     reply_markup=RESTART_INLINE_MENU_KEYBOARD
@@ -126,7 +126,7 @@ def build_application():
 async def reset_conversation(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Reset conversation state and start over"""
     chat_id = update.effective_chat.id
-    lang = "fa"  # زبان پیش‌فرض
+    lang = context.user_data.get('lang', 'fa')
     
     # اضافه کردن به لیست چت‌های فعال
     bot_data = context.bot_data
