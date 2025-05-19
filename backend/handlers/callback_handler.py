@@ -577,7 +577,7 @@ async def handle_main_menu(update: Update, context: ContextTypes.DEFAULT_TYPE) -
     query = update.callback_query
     # بازگشت به منوی اصلی
     await query.message.reply_text(
-        get_message("welcome", lang=lang, name=update.effective_user.first_name), 
+        get_message("welcome", lang='fa', name=update.effective_user.first_name), 
         reply_markup=get_main_menu_keyboard()
     )
     return ROLE
