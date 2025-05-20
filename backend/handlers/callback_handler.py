@@ -80,7 +80,7 @@ async def handle_navigation_callback(update: Update, context: ContextTypes.DEFAU
                         await MenuManager.show_menu(
                             update,
                             context,
-                            get_message("description_prompt", lang="fa"),
+                            get_message("write_description_prompt", context, update),
                             create_service_flow_navigation_keyboard(previous_state, context)
                         )
                     await query.answer()
@@ -92,7 +92,7 @@ async def handle_navigation_callback(update: Update, context: ContextTypes.DEFAU
                     await MenuManager.show_menu(
                         update,
                         context,
-                        get_message("employer_menu_prompt", lang="fa", name=update.effective_user.full_name),
+                        get_message("employer_menu_prompt", context, update),
                         get_employer_menu_keyboard()
                     )
                     await query.answer()
@@ -110,14 +110,14 @@ async def handle_navigation_callback(update: Update, context: ContextTypes.DEFAU
                         await MenuManager.show_menu(
                             update,
                             context,
-                            get_message("employer_menu_prompt", lang="fa", name=update.effective_user.full_name),
+                            get_message("employer_menu_prompt", context, update),
                             get_employer_menu_keyboard()
                         )
                     elif previous_state == DETAILS:
                         await MenuManager.show_menu(
                             update,
                             context,
-                            get_message("project_details", lang="fa"),
+                            get_message("project_details", context, update),
                             create_dynamic_keyboard(context)
                         )
                     await query.answer()
@@ -128,7 +128,7 @@ async def handle_navigation_callback(update: Update, context: ContextTypes.DEFAU
                     await MenuManager.show_menu(
                         update,
                         context,
-                        get_message("employer_menu_prompt", lang="fa", name=update.effective_user.full_name),
+                        get_message("employer_menu_prompt", context, update),
                         get_employer_menu_keyboard()
                     )
                     await query.answer()
@@ -162,14 +162,14 @@ async def handle_navigation_callback(update: Update, context: ContextTypes.DEFAU
                         await MenuManager.show_menu(
                             update,
                             context,
-                            get_message("description_prompt", lang="fa"),
+                            get_message("write_description_prompt", context, update),
                             create_service_flow_navigation_keyboard(next_state, context)
                         )
                     elif next_state == DETAILS:
                         await MenuManager.show_menu(
                             update,
                             context,
-                            get_message("project_details", lang="fa"),
+                            get_message("project_details", context, update),
                             create_dynamic_keyboard(context)
                         )
                     await query.answer()
@@ -180,7 +180,7 @@ async def handle_navigation_callback(update: Update, context: ContextTypes.DEFAU
     
     except Exception as e:
         logger.error(f"Error in navigation handler: {e}", exc_info=True)
-        await query.answer(get_message("step_error", lang="fa"))
+        await query.answer(get_message("step_error", context, update))
         return current_state
 
 # هندلر اصلی callback برای مدیریت همه callback ها و ناوبری کلی
@@ -218,7 +218,7 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await MenuManager.show_menu(
                 update,
                 context,
-                get_message("description_prompt", lang="fa"),
+                get_message("write_description_prompt", context, update),
                 create_service_flow_navigation_keyboard(DESCRIPTION, context)
             )
             await query.answer()
@@ -237,36 +237,32 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     await MenuManager.show_menu(
                         update,
                         context,
-                        get_message("employer_menu_prompt", lang="fa", name=update.effective_user.full_name),
+                        get_message("employer_menu_prompt", context, update),
                         get_employer_menu_keyboard()
                     )
                     await query.answer()
                     return EMPLOYER_MENU
-                    
                 elif previous_state == ROLE:
                     await MenuManager.show_menu(
                         update,
                         context,
-                        get_message("welcome", lang='fa', name=update.effective_user.first_name),
+                        get_message("welcome", context, update),
                         get_main_menu_keyboard()
                     )
                     await query.answer()
                     return ROLE
-                    
                 elif previous_state == CATEGORY:
                     from handlers.category_handler import show_category_selection
                     return await show_category_selection(update, context)
-                    
                 elif previous_state == DETAILS:
                     await MenuManager.show_menu(
                         update,
                         context,
-                        get_message("project_details", lang="fa"),
+                        get_message("project_details", context, update),
                         create_dynamic_keyboard(context)
                     )
                     await query.answer()
                     return DETAILS
-                    
                 # Let the conversation handler handle other states
                 return previous_state
             else:
@@ -276,7 +272,7 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     await MenuManager.show_menu(
                         update,
                         context,
-                        get_message("employer_menu_prompt", lang='fa', name=update.effective_user.full_name),
+                        get_message("employer_menu_prompt", context, update),
                         get_employer_menu_keyboard()
                     )
                     await query.answer()
@@ -300,10 +296,10 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await MenuManager.show_menu(
                 update,
                 context,
-                get_message("project_details", lang="fa"),
+                get_message("project_details", context, update),
                 create_dynamic_keyboard(context)
             )
-            await query.answer(get_message("back_to_details", lang="fa"))
+            await query.answer(get_message("back_to_details", context, update))
             return DETAILS
 
         if data == "back_to_menu":
@@ -316,7 +312,7 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 await MenuManager.show_menu(
                     update,
                     context,
-                    get_message("employer_menu_prompt", lang="fa", name=update.effective_user.full_name),
+                    get_message("employer_menu_prompt", context, update),
                     get_employer_menu_keyboard()
                 )
                 await query.answer()
@@ -328,7 +324,7 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await MenuManager.show_menu(
                 update,
                 context,
-                get_message("select_deadline_prompt", lang="fa"),
+                get_message("select_deadline_prompt", context, update),
                 get_custom_input_keyboard()
             )
             await query.answer()
@@ -342,7 +338,7 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await MenuManager.show_menu(
                 update,
                 context,
-                get_message("enter_custom_budget_prompt", lang="fa"),
+                get_message("enter_custom_budget_prompt", context, update),
                 get_custom_input_keyboard()
             )
             await query.answer()
@@ -356,7 +352,7 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await MenuManager.show_menu(
                 update,
                 context,
-                get_message("enter_custom_quantity_prompt", lang="fa"),
+                get_message("enter_custom_quantity_prompt", context, update),
                 get_custom_input_keyboard()
             )
             await query.answer()
@@ -375,7 +371,7 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await MenuManager.show_menu(
                 update,
                 context,
-                get_message("photos_command", lang="fa"),
+                get_message("photos_command", context, update),
                 FILE_MANAGEMENT_MENU_KEYBOARD
             )
             await query.answer()
@@ -398,7 +394,7 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 await MenuManager.show_menu(
                     update,
                     context,
-                    get_message("employer_menu_prompt", lang="fa", name=update.effective_user.full_name),
+                    get_message("employer_menu_prompt", context, update),
                     get_employer_menu_keyboard()
                 )
                 await query.answer()
@@ -410,7 +406,7 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 await MenuManager.show_menu(
                     update,
                     context,
-                    get_message("welcome", lang='fa', name=update.effective_user.first_name),
+                    get_message("welcome", context, update),
                     get_main_menu_keyboard()
                 )
                 await query.answer()
@@ -424,7 +420,7 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await MenuManager.show_menu(
                 update,
                 context,
-                get_message("welcome", lang='fa', name=update.effective_user.first_name),
+                get_message("welcome", context, update),
                 get_main_menu_keyboard()
             )
             await query.answer()
@@ -440,7 +436,7 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await MenuManager.show_menu(
                 update,
                 context,
-                get_message("employer_menu_prompt", lang="fa", name=update.effective_user.full_name),
+                get_message("employer_menu_prompt", context, update),
                 get_employer_menu_keyboard()
             )
             await query.answer()
@@ -455,7 +451,7 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             categories = await get_categories()
             if not categories:
                 logger.error("Failed to fetch categories")
-                await query.answer(get_message("category_error", lang="fa"))
+                await query.answer(get_message("error_fetching_categories", context, update))
                 return EMPLOYER_MENU
             
             context.user_data['categories'] = categories
@@ -464,16 +460,16 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         # بررسی وضعیت ثبت‌نام کاربر
         if not await check_phone(update, context):
             logger.info("User needs to register phone first")
-            await query.answer(get_message("phone_share_prompt", lang="fa"))
+            await query.answer(get_message("share_phone_prompt", context, update))
             return REGISTER
             
         # پردازش دکمه ثبت شماره تلفن از طریق کیبورد اینلاین
         if data == "register_phone":
             logger.info("User clicked register_phone button")
-            await query.answer(get_message("phone_share_prompt", lang="fa"))
+            await query.answer(get_message("share_phone_prompt", context, update))
             from keyboards import REGISTER_MENU_KEYBOARD
             await query.message.reply_text(
-                get_message("phone_share_prompt", lang="fa"),
+                get_message("share_phone_prompt", context, update),
                 reply_markup=REGISTER_MENU_KEYBOARD
             )
             context.user_data['state'] = REGISTER
@@ -487,14 +483,14 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 await MenuManager.show_menu(
                     update,
                     context,
-                    get_message("employer_menu_prompt", lang="fa", name=update.effective_user.full_name),
+                    get_message("employer_menu_prompt", context, update),
                     get_employer_menu_keyboard()
                 )
                 await query.answer()
                 return EMPLOYER_MENU
             except Exception as e:
                 logger.error(f"Error editing message for employer menu: {e}")
-                await query.answer(get_message("step_error", lang="fa"))
+                await query.answer(get_message("step_error", context, update))
                 return context.user_data.get('state')
             
         elif data == "new_request":
@@ -511,7 +507,7 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await MenuManager.show_menu(
                 update,
                 context,
-                get_message("category_main_select", lang="fa"),
+                get_message("category_main_select", context, update),
                 keyboard
             )
             await query.answer()
@@ -523,7 +519,7 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     except Exception as e:
         logger.error(f"Error in callback handler: {e}", exc_info=True)
         try:
-            await query.answer(get_message("step_error", lang="fa"))
+            await query.answer(get_message("step_error", context, update))
         except Exception:
             pass
         return START
@@ -543,7 +539,7 @@ async def handle_new_request(update: Update, context: ContextTypes.DEFAULT_TYPE)
         # دریافت دسته‌بندی‌ها
         categories = await get_categories()
         if not categories:
-            await query.message.reply_text(get_message("category_error", lang="fa"))
+            await query.message.reply_text(get_message("error_fetching_categories", context, update))
             return EMPLOYER_MENU
             
         context.user_data['categories'] = categories
@@ -556,7 +552,7 @@ async def handle_new_request(update: Update, context: ContextTypes.DEFAULT_TYPE)
         
         # ارسال منوی جدید
         await query.message.reply_text(
-            get_message("category_main_select", lang="fa"),
+            get_message("category_main_select", context, update),
             reply_markup=keyboard
         )
         
@@ -566,7 +562,7 @@ async def handle_new_request(update: Update, context: ContextTypes.DEFAULT_TYPE)
     except Exception as e:
         logger.error(f"Error in new_request handler: {e}")
         await query.message.reply_text(
-            get_message("step_error", lang="fa"),
+            get_message("step_error", context, update),
             reply_markup=get_employer_menu_keyboard()
         )
         return EMPLOYER_MENU
@@ -576,7 +572,7 @@ async def handle_main_menu(update: Update, context: ContextTypes.DEFAULT_TYPE) -
     query = update.callback_query
     # بازگشت به منوی اصلی
     await query.message.reply_text(
-        get_message("welcome", lang='fa', name=update.effective_user.first_name), 
+        get_message("welcome", context, update), 
         reply_markup=get_main_menu_keyboard()
     )
     return ROLE
@@ -606,7 +602,7 @@ async def handle_photos_command(update: Update, context: ContextTypes.DEFAULT_TY
             
         except Exception as e:
             logger.error(f"Error processing view_photos callback: {e}")  # لاگ خطا
-            await query.answer(get_message("error_processing_request", lang="fa"))
+            await query.answer(get_message("error_processing_request", context, update))
             return PROJECT_ACTIONS
 
     await query.answer()
@@ -648,10 +644,10 @@ async def handle_photos_command(update: Update, context: ContextTypes.DEFAULT_TY
                 logger.info(f"Deleted photo {deleted_file} at index {index}")
                 await context.bot.send_message(
                     chat_id=chat_id,
-                    text=get_message("photo_replaced", lang="fa"),
+                    text=get_message("photo_replaced", context, update),
                 )
             return DETAILS_FILES
     except Exception as e:
         logger.error(f"Error processing photo management callback: {e}")
-        await query.answer(get_message("error_processing_request", lang="fa"))
+        await query.answer(get_message("error_processing_request", context, update))
         return DETAILS_FILES

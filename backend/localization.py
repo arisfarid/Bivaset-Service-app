@@ -1,9 +1,11 @@
 # localization.py
 from typing import Optional
+from telegram import Update
+from telegram.ext import ContextTypes
 
-def get_message(key: str, lang: str = "fa", **kwargs) -> str:
+def get_message(key: str, context: ContextTypes.DEFAULT_TYPE, update: Update = None) -> str:
     """
-    دریافت پیام با توجه به کلید و زبان مورد نظر با پشتیبانی از قالب‌بندی پویا
+    دریافت پیام با توجه به کلید و استخراج خودکار زبان و متغیرهای پارامتریک از context
     """
     messages = {
         "fa": {
@@ -67,7 +69,7 @@ def get_message(key: str, lang: str = "fa", **kwargs) -> str:
             "location_type_client": "🏠 محل من",
             "location_type_contractor": "🔧 محل مجری",
             "location_type_remote": "💻 غیرحضوری",
-            "location_request": "📍 برای اتصال به نزدیک‌ترین مجری، لطفاً موقعیت مکانی خود را مشخص کنید:\n\n📱 اگر در محل مورد نظر برای دریافت خدمات هستید، از دکمه «ارسال موقعیت فعلی» استفاده کنید یا\n📎 روی آیکون پیوست (📎) کلیک کرده و با گزینه «Location» موقعیت دلخواه خود را انتخاب کنید。",
+            "location_request": "📍 برای ارتباط با نزدیک‌ترین مجری، لطفاً موقعیت مکانی خود را مشخص کنید:\n\n📱 اگر در محل مورد نظر برای دریافت خدمات هستید، از دکمه «ارسال موقعیت فعلی» استفاده کنید یا\n📎 روی آیکون پیوست (📎) کلیک کرده و با گزینه «Location» موقعیت دلخواه خود را انتخاب کنید。",
             "location_success": "✅ موقعیت مکانی شما با موفقیت دریافت شد!",
             "location_invalid_type": "❌ پیام ارسالی موقعیت مکانی نیست.\n\nلطفاً *فقط موقعیت مکانی* خود را ارسال کنید. این اطلاعات برای یافتن نزدیک‌ترین مجری ضروری است.\n\n📱 از دکمه «ارسال موقعیت فعلی» استفاده کنید یا\n📎 روی آیکون پیوست (📎) کلیک کرده و گزینه «Location» را انتخاب کنید。",
             "location_required": "❌ لطفاً *موقعیت مکانی* خود را ارسال کنید.\n\nبرای خدمات در {service_location_name} نیاز به دانستن موقعیت شما داریم تا مجری مناسب را پیدا کنیم.\n\n📱 از دکمه «ارسال موقعیت فعلی» استفاده کنید یا\n📎 روی آیکون پیوست (📎) کلیک کرده و گزینه «Location» را انتخاب کنید。",
@@ -187,10 +189,10 @@ def get_message(key: str, lang: str = "fa", **kwargs) -> str:
             "select_from_buttons": "لطفاً از دکمه‌های زیر انتخاب کنید.",
 
             # پیام‌های جدید برای submission_handler
-            "location_required_for_onsite": "❌ برای خدمات حضوری، باید لوکیشن را وارد کنید.",
+            "location_required_for_onsite": "❌ برای خدمات حضوری، باید لوکیشن را وارد کنید。",
             "submit_request_error": "❌ خطا در ثبت درخواست\n",
             "budget_too_large": "❌ مبلغ وارد شده خیلی بزرگ است. لطفاً مبلغ کمتری وارد کنید。",
-            "submit_request_general_error": "❌ خطا در ثبت درخواست. لطفاً دوباره تلاش کنید.",
+            "submit_request_general_error": "❌ خطا در ثبت درخواست. لطفاً دوباره تلاش کنید。",
             "submit_project_summary_template": "🎉 تبریک! درخواست شما با کد {project_id} ثبت شد!\n<b>📌 دسته‌بندی:</b> {category_name}\n<b>📝 توضیحات:</b> {description}\n<b>📍 محل خدمات:</b> {location_text}",
             "photos_count": "<b>📸 تعداد عکس‌ها:</b> {count}",
             "close_project": "بستن",
@@ -419,10 +421,109 @@ def get_message(key: str, lang: str = "fa", **kwargs) -> str:
     }
 
     try:
+        # استخراج زبان از context
+        lang = context.user_data.get('lang', 'fa')
+        
         # دریافت پیام از دیکشنری پیام‌ها
         message = messages.get(lang, messages["fa"]).get(key, "پیام یافت نشد!")
-        # قالب‌بندی پیام با متغیرهای ارسالی
-        return message.format(**kwargs) if kwargs else message
+        
+        # اگر پیام نیازی به قالب‌بندی نداشته باشد، مستقیم برگردان
+        if '{' not in message or '}' not in message:
+            return message
+            
+        # استخراج متغیرهای پارامتریک از context
+        kwargs = {}
+        
+        # نام کاربر
+        if '{name}' in message and update:
+            kwargs['name'] = update.effective_user.first_name or ''
+            
+        # نام دسته‌بندی
+        if '{category_name}' in message:
+            category_id = context.user_data.get('category_id')
+            categories = context.user_data.get('categories', {})
+            kwargs['category_name'] = categories.get(category_id, {}).get('name', '') if category_id else ''
+            
+        # توضیحات قبلی
+        if '{last_description}' in message:
+            kwargs['last_description'] = context.user_data.get('description', '')
+            
+        # نام محل خدمات
+        if '{service_location_name}' in message:
+            kwargs['service_location_name'] = context.user_data.get('service_location', '')
+            
+        # نشانگر پیشرفت
+        if '{current_step}' in message or '{total_steps}' in message:
+            kwargs['current_step'] = context.user_data.get('current_step', '')
+            kwargs['total_steps'] = context.user_data.get('total_steps', '')
+            
+        # مختصات موقعیت
+        if '{latitude}' in message or '{longitude}' in message:
+            location = context.user_data.get('location', {})
+            kwargs['latitude'] = str(location.get('latitude', '')) if location else ''
+            kwargs['longitude'] = str(location.get('longitude', '')) if location else ''
+            
+        # تاریخ‌ها
+        if '{date_str}' in message:
+            kwargs['date_str'] = context.user_data.get('need_date', '')
+        if '{today}' in message:
+            kwargs['today'] = context.user_data.get('today', '')
+        if '{tomorrow}' in message:
+            kwargs['tomorrow'] = context.user_data.get('tomorrow', '')
+        if '{day_after}' in message:
+            kwargs['day_after'] = context.user_data.get('day_after', '')
+            
+        # مهلت انجام
+        if '{deadline}' in message:
+            kwargs['deadline'] = context.user_data.get('deadline', '')
+            
+        # بودجه
+        if '{formatted_budget}' in message:
+            kwargs['formatted_budget'] = context.user_data.get('budget', '')
+            
+        # مقدار و واحد
+        if '{quantity}' in message:
+            kwargs['quantity'] = context.user_data.get('quantity', '')
+            
+        # تعداد (مثلاً تعداد عکس‌ها)
+        if '{count}' in message:
+            kwargs['count'] = str(len(context.user_data.get('files', [])))
+            
+        # شماره تلفن
+        if '{phone}' in message:
+            kwargs['phone'] = context.user_data.get('phone', '')
+            
+        # تعداد تلاش‌های باقی‌مانده
+        if '{remaining}' in message:
+            kwargs['remaining'] = context.user_data.get('remaining_attempts', '')
+            
+        # شناسه درخواست
+        if '{project_id}' in message:
+            kwargs['project_id'] = context.user_data.get('project_id', '')
+            
+        # توضیحات درخواست
+        if '{description}' in message:
+            kwargs['description'] = context.user_data.get('description', '')
+            
+        # متن موقعیت
+        if '{location_text}' in message:
+            kwargs['location_text'] = context.user_data.get('location_text', '')
+            
+        # موقعیت
+        if '{location}' in message:
+            kwargs['location'] = context.user_data.get('location', '')
+            
+        # تصاویر
+        if '{images}' in message:
+            kwargs['images'] = context.user_data.get('images', '')
+            
+        # کد وضعیت خطا
+        if '{status_code}' in message:
+            kwargs['status_code'] = context.user_data.get('status_code', '')
+        
+        # قالب‌بندی پیام با متغیرهای استخراج‌شده
+        return message.format(**kwargs)
+        
     except KeyError:
         # در صورت نبود کلید، پیام پیش‌فرض
         return "پیام یافت نشد!"
