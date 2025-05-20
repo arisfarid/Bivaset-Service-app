@@ -59,7 +59,7 @@ async def post_init(application: Application):
                 # ارسال پیام آپدیت بی‌صدا
                 sent_message = await application.bot.send_message(
                     chat_id=chat_id,
-                    text=get_message("bot_updated", lang='fa'),
+                    text=get_message("bot_updated", context=application, update=None),
                     parse_mode='Markdown',
                     disable_notification=True,
                     reply_markup=RESTART_INLINE_MENU_KEYBOARD
@@ -143,8 +143,8 @@ async def reset_conversation(update: Update, context: ContextTypes.DEFAULT_TYPE)
     
     # ارسال پیام خوش‌آمدگویی و منوی اصلی
     await update.message.reply_text(
-        get_message("welcome", lang=lang, name=update.effective_user.first_name),
-        reply_markup=get_main_menu_keyboard(lang)
+        get_message("welcome", context, update),
+        reply_markup=get_main_menu_keyboard(context, update)
     )
     return 2  # ROLE
 

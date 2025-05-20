@@ -25,18 +25,17 @@ async def handle_category_selection(update: Update, context: ContextTypes.DEFAUL
     """Handle category and subcategory selection"""
     query = update.callback_query
     message = update.message
-    lang = context.user_data.get('lang', 'fa')
     if not query:
         # اگر کاربر پیام غیرمجاز (متن، عکس و ...) ارسال کرد
         sent = await message.reply_text(
-            get_message("only_select_from_buttons", lang=lang),
+            get_message("only_select_from_buttons", context, update),
             reply_markup=ReplyKeyboardRemove()
         )
         await delete_previous_messages(sent, context, n=3)
         # نمایش مجدد منوی دسته‌بندی اصلی
         sent2 = await message.reply_text(
-            get_message("category_main_select", lang=lang),
-            reply_markup=create_category_keyboard(context.user_data.get('categories', {}))
+            get_message("category_main_select", context, update),
+            reply_markup=create_category_keyboard(context.user_data.get('categories', {}), context, update)
         )
         await delete_previous_messages(sent2, context, n=3)
         return CATEGORY
@@ -53,8 +52,8 @@ async def handle_category_selection(update: Update, context: ContextTypes.DEFAUL
             context.user_data['state'] = EMPLOYER_MENU
             # نمایش مجدد منوی کارفرما
             sent = await query.message.reply_text(
-                get_message("employer_menu_prompt", lang=lang, name=update.effective_user.full_name),
-                reply_markup=get_employer_menu_keyboard(lang)
+                get_message("employer_menu_prompt", context, update),
+                reply_markup=get_employer_menu_keyboard(context, update)
             )
             await delete_previous_messages(sent, context, n=3)
             return EMPLOYER_MENU
@@ -68,14 +67,14 @@ async def handle_category_selection(update: Update, context: ContextTypes.DEFAUL
                 await query.answer()  # پاسخ به callback
                 # Instead of directly calling handle_location, we'll show the location type guidance
                 await query.message.edit_text(
-                    get_message("location_type_guidance", lang=lang),
-                    reply_markup=get_location_type_keyboard(lang=lang),
+                    get_message("location_type_guidance", context, update),
+                    reply_markup=get_location_type_keyboard(context, update),
                     parse_mode="Markdown"
                 )
                 return LOCATION_TYPE
             else:
                 logger.warning("Cannot proceed to location: No category selected")
-                await query.answer(get_message("category_select_first", lang=lang))
+                await query.answer(get_message("category_select_first", context, update))
                 return CATEGORY
 
         # پردازش انتخاب دسته‌بندی اصلی
@@ -88,15 +87,15 @@ async def handle_category_selection(update: Update, context: ContextTypes.DEFAUL
 
             selected_category = categories.get(category_id)
             if not selected_category:
-                await query.answer(get_message("category_error", lang=lang))
+                await query.answer(get_message("category_error", context, update))
                 return CATEGORY
 
             children = selected_category.get('children', [])
             if children:
                 context.user_data['category_group'] = category_id
                 sent = await query.message.edit_text(
-                    get_message("select_subcategory", lang=lang, category_name=selected_category['name']),
-                    reply_markup=create_subcategory_keyboard(categories, category_id, lang=lang)
+                    get_message("select_subcategory", context, update),
+                    reply_markup=create_subcategory_keyboard(categories, category_id, context, update)
                 )
                 return SUBCATEGORY
 
@@ -106,8 +105,8 @@ async def handle_category_selection(update: Update, context: ContextTypes.DEFAUL
             
             # نمایش پیام تایید با دکمه‌های بازگشت و ادامه
             await query.message.edit_text(
-                get_message("category_confirmation", lang=lang, category_name=selected_category['name']),
-                reply_markup=create_category_confirmation_keyboard(selected_category['name'], lang)
+                get_message("category_confirmation", context, update),
+                reply_markup=create_category_confirmation_keyboard(selected_category['name'], context, update)
             )
             return CATEGORY
 
@@ -121,15 +120,15 @@ async def handle_category_selection(update: Update, context: ContextTypes.DEFAUL
 
             selected_subcategory = categories.get(subcategory_id)
             if not selected_subcategory:
-                await query.answer(get_message("invalid_subcategory", lang=lang))
+                await query.answer(get_message("invalid_subcategory", context, update))
                 return SUBCATEGORY
 
             children = selected_subcategory.get('children', [])
             if children:
                 context.user_data['category_group'] = subcategory_id
                 sent = await query.message.edit_text(
-                    get_message("select_subcategory", lang=lang, category_name=selected_subcategory['name']),
-                    reply_markup=create_subcategory_keyboard(categories, subcategory_id, lang=lang)
+                    get_message("select_subcategory", context, update),
+                    reply_markup=create_subcategory_keyboard(categories, subcategory_id, context, update)
                 )
                 return SUBCATEGORY
 
@@ -139,8 +138,8 @@ async def handle_category_selection(update: Update, context: ContextTypes.DEFAUL
             
             # نمایش پیام تایید با دکمه‌های بازگشت و ادامه
             await query.message.edit_text(
-                get_message("category_confirmation", lang=lang, category_name=selected_subcategory['name']),
-                reply_markup=create_category_confirmation_keyboard(selected_subcategory['name'], lang)
+                get_message("category_confirmation", context, update),
+                reply_markup=create_category_confirmation_keyboard(selected_subcategory['name'], context, update)
             )
             return CATEGORY
 
@@ -157,23 +156,23 @@ async def handle_category_selection(update: Update, context: ContextTypes.DEFAUL
                     grandparent = categories.get(parent_id)
                     # نمایش کیبورد زیردسته‌های والد از طریق تابع متمرکز
                     sent = await query.message.edit_text(
-                        get_message("select_subcategory", lang=lang, category_name=grandparent['name']),
-                        reply_markup=create_subcategory_keyboard(categories, parent_id, lang=lang)
+                        get_message("select_subcategory", context, update),
+                        reply_markup=create_subcategory_keyboard(categories, parent_id, context, update)
                     )
                     context.user_data['category_group'] = parent_id
                 else:
                     # اگر در بالاترین سطح هستیم، به منوی اصلی دسته‌بندی‌ها برمی‌گردیم
-                    keyboard = create_category_keyboard(categories)
+                    keyboard = create_category_keyboard(categories, context, update)
                     await query.message.edit_text(
-                        get_message("category_main_select", lang=lang),
+                        get_message("category_main_select", context, update),
                         reply_markup=keyboard
                     )
                     context.user_data['category_group'] = None
             else:
                 # برگشت به منوی اصلی دسته‌بندی‌ها
-                keyboard = create_category_keyboard(categories)
+                keyboard = create_category_keyboard(categories, context, update)
                 await query.message.edit_text(
-                    get_message("category_main_select", lang=lang),
+                    get_message("category_main_select", context, update),
                     reply_markup=keyboard
                 )
                 context.user_data['category_group'] = None
@@ -185,8 +184,8 @@ async def handle_category_selection(update: Update, context: ContextTypes.DEFAUL
     except Exception as e:
         logger.error(f"Error in handle_category_selection: {e}", exc_info=True)
         sent = await query.message.reply_text(
-            get_message("step_error", lang=lang),
-            reply_markup=create_category_error_keyboard(lang)
+            get_message("step_error", context, update),
+            reply_markup=create_category_error_keyboard(context, update)
         )
         await delete_previous_messages(sent, context, n=3)
         return CATEGORY
@@ -200,11 +199,10 @@ async def handle_category_callback(update: Update, context: ContextTypes.DEFAULT
     context.user_data['category_id'] = int(data)
     project = {'category': context.user_data['category_id']}
     cat_name = context.user_data.get('categories', {}).get(project['category'], {}).get('name', 'نامشخص')
-    lang = context.user_data.get('lang', 'fa')
     
     msg = await query.edit_message_text(
-        get_message("category_confirmation", lang=lang, category_name=cat_name),
-        reply_markup=create_category_confirmation_keyboard(cat_name, lang)
+        get_message("category_confirmation", context, update),
+        reply_markup=create_category_confirmation_keyboard(cat_name, context, update)
     )
     await log_chat(update, context)
     return SUBMIT

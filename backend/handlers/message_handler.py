@@ -34,7 +34,6 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     
     chat_id = update.effective_chat.id
     text = update.message.text
-    lang = context.user_data.get('lang', 'fa')
     
     # اضافه کردن به لیست چت‌های فعال
     if 'active_chats' not in context.bot_data:
@@ -47,34 +46,34 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     if update.message.location:
         return await handle_location(update, context)
         
-    if text == get_message("role_employer", lang=lang):
+    if text == get_message("role_employer", context, update):
         # پاک کردن context و تنظیم state جدید
         context.user_data.clear()
         context.user_data['state'] = EMPLOYER_MENU
         
         # ارسال منوی کارفرما
         await update.message.reply_text(
-            get_message("employer_menu_prompt", lang=lang, name=update.effective_user.full_name),
-            reply_markup=get_employer_menu_keyboard(lang)
+            get_message("employer_menu_prompt", context, update),
+            reply_markup=get_employer_menu_keyboard(context, update)
         )
         logger.info(f"User {update.effective_user.id} entered employer menu")
         return EMPLOYER_MENU
 
-    elif text == get_message("employer_new_request", lang=lang):
+    elif text == get_message("employer_new_request", context, update):
         context.user_data.clear()
         context.user_data['state'] = CATEGORY
         categories = await get_categories()
         
         if not categories:
-            await update.message.reply_text(get_message("error_fetching_categories", lang=lang))
+            await update.message.reply_text(get_message("error_fetching_categories", context, update))
             return EMPLOYER_MENU
             
         context.user_data['categories'] = categories
-        keyboard = create_category_keyboard(categories)
+        keyboard = create_category_keyboard(categories, context, update)
         
         # حذف پیام "چی میخوای امروز؟" و مستقیماً نمایش دسته‌بندی‌ها
         await update.message.reply_text(
-            get_message("category_main_select", lang=lang),
+            get_message("category_main_select", context, update),
             reply_markup=keyboard
         )
         return CATEGORY
@@ -83,6 +82,5 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
 
 async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     context.user_data.clear()
-    lang = context.user_data.get('lang', 'fa')
-    await update.message.reply_text(get_message("operation_cancelled", lang=lang))
+    await update.message.reply_text(get_message("operation_cancelled", context, update))
     return ConversationHandler.END

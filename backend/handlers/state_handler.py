@@ -34,7 +34,6 @@ async def handle_navigation_callback(update: Update, context: ContextTypes.DEFAU
     logger.info(f"[handle_navigation_callback] user_id={update.effective_user.id} | state={context.user_data.get('state')} | context.user_data={context.user_data}")
     
     callback_data = query.data
-    lang = context.user_data.get('lang', 'fa')
     
     if callback_data.startswith("nav_to_"):
         try:
@@ -57,7 +56,7 @@ async def handle_navigation_callback(update: Update, context: ContextTypes.DEFAU
                 
             elif next_state == DESCRIPTION:
                 from handlers.project_details_handler import description_handler
-                await description_handler(query.message, context)
+                await description_handler(query.message, context, update)
                 return DESCRIPTION
                 
             elif next_state == LOCATION_TYPE:
@@ -74,8 +73,8 @@ async def handle_navigation_callback(update: Update, context: ContextTypes.DEFAU
                 await MenuManager.show_menu(
                     update,
                     context,
-                    get_message("project_details", lang=lang),
-                    create_dynamic_keyboard(context)
+                    get_message("project_details", context, update),
+                    create_dynamic_keyboard(context, update)
                 )
                 return DETAILS
                 
@@ -87,8 +86,8 @@ async def handle_navigation_callback(update: Update, context: ContextTypes.DEFAU
                 await MenuManager.show_menu(
                     update,
                     context,
-                    get_message("select_need_date_short_prompt", lang=lang),
-                    create_navigation_keyboard("back_to_details")
+                    get_message("select_need_date_short_prompt", context, update),
+                    create_navigation_keyboard(context, update, back_callback="back_to_details")
                 )
                 return DETAILS_DATE
                 
@@ -96,8 +95,8 @@ async def handle_navigation_callback(update: Update, context: ContextTypes.DEFAU
                 await MenuManager.show_menu(
                     update,
                     context,
-                    get_message("select_deadline_short_prompt", lang=lang),
-                    create_navigation_keyboard("back_to_details")
+                    get_message("select_deadline_short_prompt", context, update),
+                    create_navigation_keyboard(context, update, back_callback="back_to_details")
                 )
                 return DETAILS_DEADLINE
                 
@@ -105,8 +104,8 @@ async def handle_navigation_callback(update: Update, context: ContextTypes.DEFAU
                 await MenuManager.show_menu(
                     update,
                     context,
-                    get_message("enter_custom_budget_prompt", lang=lang),
-                    create_navigation_keyboard("back_to_details")
+                    get_message("enter_custom_budget_prompt", context, update),
+                    create_navigation_keyboard(context, update, back_callback="back_to_details")
                 )
                 return DETAILS_BUDGET
                 
@@ -114,8 +113,8 @@ async def handle_navigation_callback(update: Update, context: ContextTypes.DEFAU
                 await MenuManager.show_menu(
                     update,
                     context,
-                    get_message("enter_custom_quantity_prompt", lang=lang),
-                    create_navigation_keyboard("back_to_details")
+                    get_message("enter_custom_quantity_prompt", context, update),
+                    create_navigation_keyboard(context, update, back_callback="back_to_details")
                 )
                 return DETAILS_QUANTITY
                 
@@ -150,9 +149,8 @@ async def handle_non_contact(update: Update, context: ContextTypes.DEFAULT_TYPE)
         return REGISTER
         
     logger.info(f"User {update.effective_user.id} sent non-contact message in REGISTER state")
-    lang = context.user_data.get('lang', 'fa')
     await message.reply_text(
-        get_message("share_phone_prompt", lang=lang),
+        get_message("share_phone_prompt", context, update),
         reply_markup=REGISTER_MENU_KEYBOARD
     )
     context.user_data['state'] = REGISTER
@@ -336,9 +334,8 @@ async def handle_error(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
                 )
         
         if update and update.effective_message:
-            lang = context.user_data.get('lang', 'fa')
             await update.effective_message.reply_text(
-                get_message("error_restart_prompt", lang=lang)
+                get_message("error_restart_prompt", context, update)
             )
             
     except Exception as e:

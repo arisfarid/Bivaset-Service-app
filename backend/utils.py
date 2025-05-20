@@ -220,10 +220,9 @@ async def restart_chat(update: Update, context: ContextTypes.DEFAULT_TYPE):
         context.user_data['state'] = 2  # ROLE
         
         # ارسال پیام خوش‌آمدگویی و منوی اصلی
-        lang = context.user_data.get('lang', 'fa')
         await update.message.reply_text(
-            get_message("welcome", lang=lang, name=update.effective_user.first_name),
-            reply_markup=get_main_menu_keyboard(lang=lang)
+            get_message("welcome", context, update),
+            reply_markup=get_main_menu_keyboard(lang=context.user_data.get('lang', 'fa'))
         )
         logger.info(f"Chat restarted for user {update.effective_user.id}")
         return True

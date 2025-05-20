@@ -5,13 +5,13 @@ from utils import upload_files, log_chat, BASE_URL
 import logging
 from keyboards import (
     create_dynamic_keyboard, 
-    FILE_MANAGEMENT_MENU_KEYBOARD, 
+    get_file_management_menu_keyboard, 
     create_photo_management_keyboard
 )
 from django.conf import settings
 import os
 from handlers.states import START, REGISTER, ROLE, EMPLOYER_MENU, CATEGORY, SUBCATEGORY, DESCRIPTION, LOCATION_TYPE, LOCATION_INPUT, DETAILS, DETAILS_FILES, DETAILS_DATE, DETAILS_DEADLINE, DETAILS_BUDGET, DETAILS_QUANTITY, SUBMIT, VIEW_PROJECTS, PROJECT_ACTIONS, CHANGE_PHONE, VERIFY_CODE
-from localization import get_message  # Add import for localization
+from localization import get_message
 
 logger = logging.getLogger(__name__)
 
@@ -24,13 +24,13 @@ async def init_photo_management(update: Update, context: ContextTypes.DEFAULT_TY
     
     if files:
         await message.reply_text(
-            get_message("photos_uploaded", lang="fa").format(count=len(files)),
-            reply_markup=FILE_MANAGEMENT_MENU_KEYBOARD
+            get_message("photos_uploaded", context, update),
+            reply_markup=get_file_management_menu_keyboard(context, update)
         )
     else:
         await message.reply_text(
-            get_message("photos_command", lang="fa"),
-            reply_markup=FILE_MANAGEMENT_MENU_KEYBOARD
+            get_message("photos_command", context, update),
+            reply_markup=get_file_management_menu_keyboard(context, update)
         )
     return DETAILS_FILES
 
@@ -40,11 +40,11 @@ async def handle_photo_navigation(update: Update, context: ContextTypes.DEFAULT_
         context.user_data['state'] = DETAILS
         message = update.message or update.callback_query.message
         await message.reply_text(
-            get_message("project_details", lang="fa"),
-            reply_markup=create_dynamic_keyboard(context)
+            get_message("project_details", context, update),
+            reply_markup=create_dynamic_keyboard(context, update)
         )
         if update.callback_query:
-            await update.callback_query.answer(get_message("back_to_details", lang="fa"))
+            await update.callback_query.answer(get_message("back_to_details", context, update))
         return DETAILS
     elif action == "manage_photos":
         return await init_photo_management(update, context)
@@ -56,7 +56,7 @@ async def handle_attachment(update: Update, context: ContextTypes.DEFAULT_TYPE) 
     telegram_id = str(update.effective_user.id)
 
     if update.message and update.message.video:
-        await update.message.reply_text(get_message("video_not_supported", lang="fa"))
+        await update.message.reply_text(get_message("video_not_supported", context, update))
         await log_chat(update, context)
         return current_state
 
@@ -66,12 +66,12 @@ async def handle_attachment(update: Update, context: ContextTypes.DEFAULT_TYPE) 
         files = context.user_data.get('files', [])
         if 0 <= index < len(files):
             if new_photo in files:
-                await update.message.reply_text(get_message("photo_already_exists", lang="fa"))
+                await update.message.reply_text(get_message("photo_already_exists", context, update))
             else:
                 old_photo = files[index]
                 files[index] = new_photo
                 logger.info(f"Replaced photo {old_photo} with {new_photo} at index {index}")
-                await update.message.reply_text(get_message("photo_replaced", lang="fa"))
+                await update.message.reply_text(get_message("photo_replaced", context, update))
             await show_photo_management(update, context)
             context.user_data['state'] = DETAILS_FILES
         return DETAILS_FILES
@@ -85,20 +85,20 @@ async def handle_attachment(update: Update, context: ContextTypes.DEFAULT_TYPE) 
             remaining_slots = 5 - len(files)
             if remaining_slots <= 0:
                 await update.message.reply_text(
-                    get_message("photo_upload_max", lang="fa"),
-                    reply_markup=FILE_MANAGEMENT_MENU_KEYBOARD
+                    get_message("photo_upload_max", context, update),
+                    reply_markup=get_file_management_menu_keyboard(context, update)
                 )
             else:
                 files.append(new_photo)
                 logger.info(f"Photo received from {telegram_id}: {new_photo}")
                 await update.message.reply_text(
-                    get_message("photo_upload_success", lang="fa").format(count=len(files)),
-                    reply_markup=FILE_MANAGEMENT_MENU_KEYBOARD
+                    get_message("photo_upload_success", context, update),
+                    reply_markup=get_file_management_menu_keyboard(context, update)
                 )
         else:
             await update.message.reply_text(
-                get_message("photo_already_exists", lang="fa"),
-                reply_markup=FILE_MANAGEMENT_MENU_KEYBOARD
+                get_message("photo_already_exists", context, update),
+                reply_markup=get_file_management_menu_keyboard(context, update)
             )
         context.user_data['files'] = files
         await log_chat(update, context)
@@ -106,22 +106,22 @@ async def handle_attachment(update: Update, context: ContextTypes.DEFAULT_TYPE) 
 
     text = update.message.text if update.message else None
     if current_state in [DETAILS_FILES, 'managing_photos']:
-        if text == get_message("finish_photos", lang="fa"):
+        if text == get_message("finish_photos", context, update):
             context.user_data['state'] = DETAILS
             await update.message.reply_text(
-                get_message("project_details", lang="fa"),
-                reply_markup=create_dynamic_keyboard(context)
+                get_message("project_details", context, update),
+                reply_markup=create_dynamic_keyboard(context, update)
             )
             await log_chat(update, context)
             return DETAILS
-        elif text == get_message("manage_photos", lang="fa"):
+        elif text == get_message("manage_photos", context, update):
             await show_photo_management(update, context)
             return DETAILS_FILES
-        elif text == get_message("back", lang="fa"):
+        elif text == get_message("back", context, update):
             context.user_data['state'] = DETAILS
             await update.message.reply_text(
-                get_message("project_details", lang="fa"),
-                reply_markup=create_dynamic_keyboard(context)
+                get_message("project_details", context, update),
+                reply_markup=create_dynamic_keyboard(context, update)
             )
             await log_chat(update, context)
             return DETAILS
@@ -132,15 +132,15 @@ async def show_photo_management(update: Update, context: ContextTypes.DEFAULT_TY
     files = context.user_data.get('files', [])
     if not files:
         await update.message.reply_text(
-            get_message("photo_list_empty", lang="fa"),
-            reply_markup=FILE_MANAGEMENT_MENU_KEYBOARD
+            get_message("photo_list_empty", context, update),
+            reply_markup=get_file_management_menu_keyboard(context, update)
         )
         await log_chat(update, context)
         return
 
-    keyboard_markup = create_photo_management_keyboard(files, lang="fa")
+    keyboard_markup = create_photo_management_keyboard(files, context, update)
     await update.message.reply_text(
-        get_message("photo_management_title", lang="fa"),
+        get_message("photo_management_title", context, update),
         reply_markup=keyboard_markup
     )
     context.user_data['state'] = DETAILS_FILES
@@ -173,7 +173,7 @@ async def handle_photos_command(update: Update, context: ContextTypes.DEFAULT_TY
             
             if not project_files:
                 logger.warning("No files found for project")
-                message = get_message("no_images_found", lang="fa")
+                message = get_message("no_images_found", context, update)
                 if update.callback_query:
                     await update.callback_query.message.reply_text(message)
                 else:
@@ -193,7 +193,7 @@ async def handle_photos_command(update: Update, context: ContextTypes.DEFAULT_TY
                     if photo_response.status_code == 200:
                         media_group.append(InputMediaPhoto(
                             media=photo_response.content,
-                            caption=get_message("original_image", lang="fa") if i == 0 else ""
+                            caption=get_message("original_image", context, update) if i == 0 else ""
                         ))
                         logger.info(f"Successfully added file {i+1} to media group")
                     else:
@@ -209,7 +209,7 @@ async def handle_photos_command(update: Update, context: ContextTypes.DEFAULT_TY
                     await update.message.reply_media_group(media=media_group)
                 logger.info("Successfully sent all photos")
             else:
-                message = get_message("error_loading_images", lang="fa")
+                message = get_message("error_loading_images", context, update)
                 if update.callback_query:
                     await update.callback_query.message.reply_text(message)
                 else:
@@ -217,7 +217,7 @@ async def handle_photos_command(update: Update, context: ContextTypes.DEFAULT_TY
                 logger.error("No photos were successfully processed")
         else:
             logger.error(f"Failed to fetch project data. Status: {response.status_code}")
-            message = get_message("error_fetching_project", lang="fa")
+            message = get_message("error_fetching_project", context, update)
             if update.callback_query:
                 await update.callback_query.message.reply_text(message)
             else:
@@ -225,7 +225,7 @@ async def handle_photos_command(update: Update, context: ContextTypes.DEFAULT_TY
                 
     except Exception as e:
         logger.error(f"Error in handle_photos_command: {e}")
-        message = get_message("error_processing_request", lang="fa")
+        message = get_message("error_processing_request", context, update)
         if update.callback_query:
             await update.callback_query.message.reply_text(message)
         else:

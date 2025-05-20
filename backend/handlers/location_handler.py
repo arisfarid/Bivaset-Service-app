@@ -5,8 +5,8 @@ import logging
 from keyboards import (
     get_location_input_keyboard,
     get_location_type_keyboard,
-    BACK_TO_DESCRIPTION_KEYBOARD,
-    REMOVE_KEYBOARD,
+    get_back_to_description_keyboard,
+    get_remove_keyboard,
     get_employer_menu_keyboard,
     create_category_keyboard
 )
@@ -26,8 +26,6 @@ async def handle_location(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
     message = update.message
     # تعیین state فعلی کاربر (پیش‌فرض LOCATION_TYPE)
     current_state = context.user_data.get('state', LOCATION_TYPE)
-    # تعیین زبان کاربر (پیش‌فرض فارسی)
-    lang = context.user_data.get('lang', 'fa')
     logger.info(f"handle_location called. current_state={current_state}, message={update.message}")
     if update.message:
         logger.info(f"update.message.text={getattr(update.message, 'text', None)} | photo={bool(getattr(update.message, 'photo', None))} | video={bool(getattr(update.message, 'video', None))} | document={bool(getattr(update.message, 'document', None))}")
@@ -37,15 +35,15 @@ async def handle_location(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
     if current_state == LOCATION_TYPE:
         if query and (not query.data or query.data == "continue_to_location"):
             sent = await query.message.edit_text(
-                get_message("location_type_guidance", lang=lang),
-                reply_markup=get_location_type_keyboard(lang=lang),
+                get_message("location_type_guidance", context, update),
+                reply_markup=get_location_type_keyboard(context, update),
                 parse_mode="Markdown"
             )
             return LOCATION_TYPE
         elif message:
             sent = await message.reply_text(
-                get_message("location_type_guidance", lang=lang),
-                reply_markup=get_location_type_keyboard(lang=lang),
+                get_message("location_type_guidance", context, update),
+                reply_markup=get_location_type_keyboard(context, update),
                 parse_mode="Markdown"
             )
             await delete_previous_messages(sent, context, n=3)
@@ -62,9 +60,9 @@ async def handle_location(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
             context.user_data['state'] = CATEGORY
             # Instead of calling handle_category_selection directly, just show the category selection menu
             categories = context.user_data.get('categories', {})
-            keyboard = create_category_keyboard(categories)
+            keyboard = create_category_keyboard(categories, context, update)
             await query.message.edit_text(
-                get_message("category_main_select", lang=lang),
+                get_message("category_main_select", context, update),
                 reply_markup=keyboard
             )
             return CATEGORY
@@ -88,9 +86,9 @@ async def handle_location(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
             if location_type == 'remote':
                 context.user_data['state'] = DESCRIPTION
                 await query.message.edit_text(
-                    get_message("remote_service_selected", lang=lang) + "\n\n" + 
-                    get_message("description_guidance", lang=lang),
-                    reply_markup=BACK_TO_DESCRIPTION_KEYBOARD
+                    get_message("remote_service_selected", context, update) + "\n\n" + 
+                    get_message("description_guidance", context, update),
+                    reply_markup=get_back_to_description_keyboard(context, update)
                 )
                 return DESCRIPTION
             else:
@@ -98,8 +96,8 @@ async def handle_location(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
                 context.user_data['state'] = LOCATION_INPUT
                 await query.message.delete()
                 sent = await query.message.reply_text(
-                    get_message("location_request", lang=lang),
-                    reply_markup=get_location_input_keyboard(lang=lang)
+                    get_message("location_request", context, update),
+                    reply_markup=get_location_input_keyboard(context, update)
                 )
                 await delete_previous_messages(sent, context, n=3)
                 return LOCATION_INPUT
@@ -108,8 +106,8 @@ async def handle_location(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         elif data == "back_to_location_type":
             context.user_data['state'] = LOCATION_TYPE
             sent = await query.message.edit_text(
-                get_message("location_type_guidance", lang=lang),
-                reply_markup=get_location_type_keyboard(),
+                get_message("location_type_guidance", context, update),
+                reply_markup=get_location_type_keyboard(context, update),
                 parse_mode="Markdown"
             )
             await delete_previous_messages(sent, context, n=3)
@@ -129,8 +127,8 @@ async def handle_location(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         context.user_data['state'] = DESCRIPTION
         # نمایش پیام موفقیت و هدایت به مرحله توضیحات
         sent = await update.message.reply_text(
-            get_message("location_success", lang=lang),
-            reply_markup=REMOVE_KEYBOARD
+            get_message("location_success", context, update),
+            reply_markup=get_remove_keyboard(context, update)
         )
         await delete_previous_messages(sent, context, n=3)
         return DESCRIPTION
@@ -148,23 +146,23 @@ async def handle_location(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         ]):
             logger.info(f"Received non-location content in location input step")
             sent = await update.message.reply_text(
-                get_message("location_invalid_type", lang=lang),
+                get_message("location_invalid_type", context, update),
                 parse_mode="Markdown",
-                reply_markup=get_location_input_keyboard(lang=lang)
+                reply_markup=get_location_input_keyboard(context, update)
             )
             await delete_previous_messages(sent, context, n=3)
             return LOCATION_INPUT
         # اگر متن بازگشت ارسال شد
-        if update.message.text and update.message.text == get_message("back", lang=lang):
+        if update.message.text and update.message.text == get_message("back", context, update):
             context.user_data['state'] = LOCATION_TYPE
             sent = await update.message.reply_text(
-                get_message("back_to_previous", lang=lang),
-                reply_markup=REMOVE_KEYBOARD
+                get_message("back_to_previous", context, update),
+                reply_markup=get_remove_keyboard(context, update)
             )
             await delete_previous_messages(sent, context, n=3)
             sent2 = await update.message.reply_text(
-                get_message("location_type_guidance", lang=lang),
-                reply_markup=get_location_type_keyboard(lang=lang),
+                get_message("location_type_guidance", context, update),
+                reply_markup=get_location_type_keyboard(context, update),
                 parse_mode="Markdown"
             )
             await delete_previous_messages(sent2, context, n=3)
@@ -173,9 +171,9 @@ async def handle_location(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         elif update.message.text:
             logger.info(f"Received text instead of location: {update.message.text}")
             sent = await update.message.reply_text(
-                get_message("location_invalid_type", lang=lang),
+                get_message("location_invalid_type", context, update),
                 parse_mode="Markdown",
-                reply_markup=get_location_input_keyboard(lang=lang)
+                reply_markup=get_location_input_keyboard(context, update)
             )
             await delete_previous_messages(sent, context, n=3)
             return LOCATION_INPUT

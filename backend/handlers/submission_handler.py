@@ -14,8 +14,7 @@ logger = logging.getLogger(__name__)
 
 @require_phone
 async def submit_project(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    lang = context.user_data.get('lang', 'fa')
-    if update.message.text != get_message("submit", lang=lang):
+    if update.message.text != get_message("submit", context, update):
         return DETAILS
 
     try:
@@ -39,7 +38,7 @@ async def submit_project(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
             if location := context.user_data.get('location'):
                 data['location'] = [location['longitude'], location['latitude']]
             else:
-                await update.message.reply_text(get_message("location_required_for_onsite", lang=lang))
+                await update.message.reply_text(get_message("location_required_for_onsite", context, update))
                 return DETAILS
 
         # اضافه کردن فیلدهای اختیاری
@@ -86,8 +85,8 @@ async def submit_project(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
                 logger.error(f"Error handling animation: {e}")
 
             # آماده‌سازی و ارسال پیام نهایی
-            message = prepare_final_message(context, project_id)
-            keyboard = prepare_inline_keyboard(project_id, bool(files))
+            message = prepare_final_message(context, project_id, update)
+            keyboard = prepare_inline_keyboard(project_id, bool(files), context, update)
             
             if files:
                 try:
@@ -113,8 +112,8 @@ async def submit_project(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
 
             # ارسال منوی اصلی به صورت کیبورد ساده
             await update.message.reply_text(
-                get_message("employer_menu_prompt", lang=lang, name=update.effective_user.full_name),
-                reply_markup=get_main_menu_keyboard(lang)
+                get_message("employer_menu_prompt", context, update),
+                reply_markup=get_main_menu_keyboard(context, update)
             )
 
             # پاک کردن داده‌های قبلی
@@ -123,16 +122,16 @@ async def submit_project(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
             return ROLE
 
         else:
-            error_msg = get_message("submit_request_error", lang=lang)
+            error_msg = get_message("submit_request_error", context, update)
             if response.status_code == 400:
                 try:
                     errors = response.json()
                     if 'budget' in errors:
-                        error_msg = get_message("budget_too_large", lang=lang)
+                        error_msg = get_message("budget_too_large", context, update)
                         context.user_data['state'] = DETAILS_BUDGET
                         await update.message.reply_text(
                             error_msg,
-                            reply_markup=create_dynamic_keyboard(context)
+                            reply_markup=create_dynamic_keyboard(context, update)
                         )
                         return DETAILS_BUDGET
                 except:
@@ -140,21 +139,20 @@ async def submit_project(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
             
             await update.message.reply_text(
                 error_msg,
-                reply_markup=get_main_menu_keyboard(lang)
+                reply_markup=get_main_menu_keyboard(context, update)
             )
             return ROLE
 
     except Exception as e:
         logger.error(f"Error in submit_project: {e}")
         await update.message.reply_text(
-            get_message("submit_request_general_error", lang=lang),
-            reply_markup=get_main_menu_keyboard(lang)
+            get_message("submit_request_general_error", context, update),
+            reply_markup=get_main_menu_keyboard(context, update)
         )
         return ROLE
 
-def prepare_final_message(context, project_id):
+def prepare_final_message(context: ContextTypes.DEFAULT_TYPE, project_id: int, update: Update) -> str:
     """آماده‌سازی پیام نهایی"""
-    lang = context.user_data.get('lang', 'fa')
     category_id = context.user_data.get('category_id')
     category_name = context.user_data.get('categories', {}).get(str(category_id), {}).get('name') or \
                    context.user_data.get('categories', {}).get(category_id, {}).get('name', 'نامشخص')
@@ -168,55 +166,53 @@ def prepare_final_message(context, project_id):
     }.get(service_location, 'نامشخص')
     
     message_lines = [
-        get_message("submit_project_summary_template", lang=lang, project_id=project_id, category_name=category_name,
-                    description=context.user_data.get('description', ''), location_text=location_text)
+        get_message("submit_project_summary_template", context, update)
     ]
 
     # اضافه کردن لینک لوکیشن اگر غیرحضوری نیست
     if service_location in ['client_site', 'contractor_site'] and context.user_data.get('location'):
         location = context.user_data['location']
         message_lines.append(
-            f"<b>📍 موقعیت:</b> {get_message('location_map_link', lang=lang, latitude=location['latitude'], longitude=location['longitude'])}"
+            f"<b>📍 موقعیت:</b> {get_message('location_map_link', context, update)}"
         )
     
     # اضافه کردن اطلاعات عکس‌ها
     files = context.user_data.get('files', [])
     if files:
-        message_lines.append(get_message("photos_count", lang=lang, count=len(files)))
+        message_lines.append(get_message("photos_count", context, update))
     
     # سایر اطلاعات
     if context.user_data.get('need_date'):
-        message_lines.append(get_message("need_date_saved", lang=lang, date_str=context.user_data['need_date']))
+        message_lines.append(get_message("need_date_saved", context, update))
     if context.user_data.get('budget'):
-        message_lines.append(get_message("budget_saved", lang=lang, formatted_budget=context.user_data['budget']))
+        message_lines.append(get_message("budget_saved", context, update))
     if context.user_data.get('deadline'):
-        message_lines.append(get_message("deadline_saved", lang=lang, deadline=context.user_data['deadline']))
+        message_lines.append(get_message("deadline_saved", context, update))
     if context.user_data.get('quantity'):
-        message_lines.append(get_message("quantity_saved", lang=lang, quantity=context.user_data['quantity']))
+        message_lines.append(get_message("quantity_saved", context, update))
     
     return "\n".join(message_lines)
 
-def prepare_inline_keyboard(project_id, has_files):
+def prepare_inline_keyboard(project_id: int, has_files: bool, context: ContextTypes.DEFAULT_TYPE, update: Update) -> list:
     """آماده‌سازی دکمه‌های inline"""
-    lang = 'fa'  # زبان پیش‌فرض
     keyboard = [
         [
-            InlineKeyboardButton(get_message("edit", lang=lang), callback_data=f"edit_{project_id}"),
-            InlineKeyboardButton(f"⛔ {get_message('close_project', lang=lang)}", callback_data=f"close_{project_id}")
+            InlineKeyboardButton(get_message("edit", context, update), callback_data=f"edit_{project_id}"),
+            InlineKeyboardButton(f"⛔ {get_message('close_project', context, update)}", callback_data=f"close_{project_id}")
         ],
         [
-            InlineKeyboardButton(get_message("delete_with_icon", lang=lang), callback_data=f"delete_{project_id}"),
-            InlineKeyboardButton(f"⏰ {get_message('extend_project', lang=lang)}", callback_data=f"extend_{project_id}")
+            InlineKeyboardButton(get_message("delete_with_icon", context, update), callback_data=f"delete_{project_id}"),
+            InlineKeyboardButton(f"⏰ {get_message('extend_project', context, update)}", callback_data=f"extend_{project_id}")
         ]
     ]
     
     if has_files:
         keyboard.append([
-            InlineKeyboardButton(f"📸 {get_message('view_photos', lang=lang)}", callback_data=f"view_photos_{project_id}")
+            InlineKeyboardButton(f"📸 {get_message('view_photos', context, update)}", callback_data=f"view_photos_{project_id}")
         ])
     
     keyboard.append([
-        InlineKeyboardButton(f"💡 {get_message('view_offers', lang=lang)}", callback_data=f"offers_{project_id}")
+        InlineKeyboardButton(f"💡 {get_message('view_offers', context, update)}", callback_data=f"offers_{project_id}")
     ])
     
     return keyboard
