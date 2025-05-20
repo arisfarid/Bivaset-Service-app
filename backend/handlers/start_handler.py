@@ -6,6 +6,7 @@ from handlers.phone_handler import check_phone
 from helpers.menu_manager import MenuManager
 from handlers.states import START, REGISTER, ROLE, EMPLOYER_MENU, CATEGORY, SUBCATEGORY, DESCRIPTION, LOCATION_TYPE, LOCATION_INPUT, DETAILS, DETAILS_FILES, DETAILS_DATE, DETAILS_DEADLINE, DETAILS_BUDGET, DETAILS_QUANTITY, SUBMIT, VIEW_PROJECTS, PROJECT_ACTIONS, CHANGE_PHONE, VERIFY_CODE, CONTRACTOR_MENU
 import logging
+from localization import get_message
 
 logger = logging.getLogger(__name__)
 
@@ -30,7 +31,6 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
         await MenuManager.disable_previous_menus(update, context)
         
         # ارسال پیام هشدار با لوکالایزیشن
-        from localization import get_message
         lang = context.user_data.get('lang', 'fa')
         text = get_message("process_active_prompt", lang=lang)
         keyboard = InlineKeyboardMarkup([
@@ -71,7 +71,6 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     if (has_phone):
         # اگر شماره داشت، نمایش منوی اصلی
         context.user_data['state'] = ROLE
-        from localization import get_message
         lang = context.user_data.get('lang', 'fa')
         welcome_message = get_message("welcome", lang=lang, name=update.effective_user.first_name)
         # حذف کیبورد تایپ قبل از نمایش منو
@@ -90,7 +89,6 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
         return ROLE
     else:
         # اگر شماره نداشت، درخواست ثبت شماره
-        from localization import get_message
         lang = context.user_data.get('lang', 'fa')
         sent = await message.reply_text(
             get_message("share_phone_prompt", lang=lang),
@@ -119,7 +117,6 @@ async def handle_confirm_restart(update: Update, context: ContextTypes.DEFAULT_T
             await MenuManager.clear_menus(update, context)
         
         # نمایش منوی اصلی
-        from localization import get_message
         lang = context.user_data.get('lang', 'fa')
         welcome_message = get_message("welcome", lang=lang, name=update.effective_user.first_name)
         
@@ -148,7 +145,6 @@ async def handle_role(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int
     logger.info(f"Current state: {context.user_data.get('state')}")
     text = update.message.text if update.message else None
     
-    from localization import get_message
     lang = context.user_data.get('lang', 'fa')
     if text == get_message("role_employer", lang=lang):
         context.user_data['state'] = EMPLOYER_MENU
@@ -220,5 +216,6 @@ async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
         await MenuManager.clear_menus(update, context)
     
     context.user_data.clear()
-    await update.message.reply_text("عملیات لغو شد. دوباره شروع کن!")
+    lang = context.user_data.get('lang', 'fa')
+    await update.message.reply_text(get_message("operation_cancelled", lang=lang))
     return ConversationHandler.END

@@ -92,7 +92,7 @@ async def handle_navigation_callback(update: Update, context: ContextTypes.DEFAU
                     await MenuManager.show_menu(
                         update,
                         context,
-                        get_message("employer_menu_prompt", lang="fa"),
+                        get_message("employer_menu_prompt", lang="fa", name=update.effective_user.full_name),
                         get_employer_menu_keyboard()
                     )
                     await query.answer()
@@ -110,7 +110,7 @@ async def handle_navigation_callback(update: Update, context: ContextTypes.DEFAU
                         await MenuManager.show_menu(
                             update,
                             context,
-                            get_message("employer_menu_prompt", lang="fa"),
+                            get_message("employer_menu_prompt", lang="fa", name=update.effective_user.full_name),
                             get_employer_menu_keyboard()
                         )
                     elif previous_state == DETAILS:
@@ -128,7 +128,7 @@ async def handle_navigation_callback(update: Update, context: ContextTypes.DEFAU
                     await MenuManager.show_menu(
                         update,
                         context,
-                        get_message("employer_menu_prompt", lang="fa"),
+                        get_message("employer_menu_prompt", lang="fa", name=update.effective_user.full_name),
                         get_employer_menu_keyboard()
                     )
                     await query.answer()
@@ -237,7 +237,7 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     await MenuManager.show_menu(
                         update,
                         context,
-                        get_message("employer_menu_prompt", lang="fa"),
+                        get_message("employer_menu_prompt", lang="fa", name=update.effective_user.full_name),
                         get_employer_menu_keyboard()
                     )
                     await query.answer()
@@ -247,7 +247,7 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     await MenuManager.show_menu(
                         update,
                         context,
-                        get_message("welcome", lang="fa"),
+                        get_message("welcome", lang='fa', name=update.effective_user.first_name),
                         get_main_menu_keyboard()
                     )
                     await query.answer()
@@ -276,7 +276,7 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     await MenuManager.show_menu(
                         update,
                         context,
-                        get_message("employer_menu_prompt", lang="fa"),
+                        get_message("employer_menu_prompt", lang='fa', name=update.effective_user.full_name),
                         get_employer_menu_keyboard()
                     )
                     await query.answer()
@@ -316,7 +316,7 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 await MenuManager.show_menu(
                     update,
                     context,
-                    get_message("employer_menu_prompt", lang="fa"),
+                    get_message("employer_menu_prompt", lang="fa", name=update.effective_user.full_name),
                     get_employer_menu_keyboard()
                 )
                 await query.answer()
@@ -398,7 +398,7 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 await MenuManager.show_menu(
                     update,
                     context,
-                    get_message("employer_menu_prompt", lang="fa"),
+                    get_message("employer_menu_prompt", lang="fa", name=update.effective_user.full_name),
                     get_employer_menu_keyboard()
                 )
                 await query.answer()
@@ -410,7 +410,7 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 await MenuManager.show_menu(
                     update,
                     context,
-                    get_message("welcome", lang="fa"),
+                    get_message("welcome", lang='fa', name=update.effective_user.first_name),
                     get_main_menu_keyboard()
                 )
                 await query.answer()
@@ -424,7 +424,7 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await MenuManager.show_menu(
                 update,
                 context,
-                get_message("welcome", lang="fa"),
+                get_message("welcome", lang='fa', name=update.effective_user.first_name),
                 get_main_menu_keyboard()
             )
             await query.answer()
@@ -440,7 +440,7 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await MenuManager.show_menu(
                 update,
                 context,
-                get_message("employer_menu_prompt", lang="fa"),
+                get_message("employer_menu_prompt", lang="fa", name=update.effective_user.full_name),
                 get_employer_menu_keyboard()
             )
             await query.answer()
@@ -487,7 +487,7 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 await MenuManager.show_menu(
                     update,
                     context,
-                    get_message("employer_menu_prompt", lang="fa"),
+                    get_message("employer_menu_prompt", lang="fa", name=update.effective_user.full_name),
                     get_employer_menu_keyboard()
                 )
                 await query.answer()
@@ -576,7 +576,7 @@ async def handle_main_menu(update: Update, context: ContextTypes.DEFAULT_TYPE) -
     query = update.callback_query
     # بازگشت به منوی اصلی
     await query.message.reply_text(
-        get_message("welcome", lang="fa"), 
+        get_message("welcome", lang='fa', name=update.effective_user.first_name), 
         reply_markup=get_main_menu_keyboard()
     )
     return ROLE

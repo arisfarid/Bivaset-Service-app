@@ -53,7 +53,7 @@ async def handle_category_selection(update: Update, context: ContextTypes.DEFAUL
             context.user_data['state'] = EMPLOYER_MENU
             # نمایش مجدد منوی کارفرما
             sent = await query.message.reply_text(
-                get_message("employer_menu_prompt", lang=lang),
+                get_message("employer_menu_prompt", lang=lang, name=update.effective_user.full_name),
                 reply_markup=get_employer_menu_keyboard(lang)
             )
             await delete_previous_messages(sent, context, n=3)

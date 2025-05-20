@@ -3,6 +3,7 @@ from telegram.ext import ContextTypes
 from typing import Dict, List, Any, Optional, Tuple
 from handlers.states import START, REGISTER, ROLE, EMPLOYER_MENU, CATEGORY, SUBCATEGORY, DESCRIPTION, LOCATION_TYPE, LOCATION_INPUT, DETAILS, DETAILS_FILES, DETAILS_DATE, DETAILS_DEADLINE, DETAILS_BUDGET, DETAILS_QUANTITY, SUBMIT, VIEW_PROJECTS, PROJECT_ACTIONS, CHANGE_PHONE, VERIFY_CODE
 import logging
+from localization import get_message
 
 logger = logging.getLogger(__name__)
 
@@ -65,15 +66,15 @@ def get_navigation_keyboard(current_state: int, user_data: Dict[str, Any]) -> Op
         # Back button (if not first state)
         if current_index > 0:
             prev_state = SERVICE_REQUEST_FLOW[current_index - 1]
-            row.append(InlineKeyboardButton("« قبلی", callback_data=f"nav_to_{prev_state}"))
+            row.append(InlineKeyboardButton(get_message("back", lang="fa"), callback_data=f"nav_to_{prev_state}"))
         
         # Add cancel button in the middle
-        row.append(InlineKeyboardButton("❌ لغو", callback_data="cancel"))
+        row.append(InlineKeyboardButton(get_message("cancel", lang="fa"), callback_data="cancel"))
         
         # Skip button (if form data already present for this state)
         if has_data_for_state(current_state, user_data) and current_index < len(SERVICE_REQUEST_FLOW) - 1:
             next_state = SERVICE_REQUEST_FLOW[current_index + 1]
-            row.append(InlineKeyboardButton("رد کردن »", callback_data=f"nav_to_{next_state}"))
+            row.append(InlineKeyboardButton(get_message("skip", lang="fa"), callback_data=f"nav_to_{next_state}"))
         
         keyboard.append(row)
         return InlineKeyboardMarkup(keyboard)
@@ -119,10 +120,10 @@ def add_navigation_to_message(text: str, current_state: int, user_data: Dict[str
         if current_state in SERVICE_REQUEST_FLOW:
             current_index = SERVICE_REQUEST_FLOW.index(current_state)
             total_steps = len(SERVICE_REQUEST_FLOW)
-            progress = f"\n\n📊 مرحله {current_index + 1} از {total_steps}"
+            progress = f"\n\n{get_message('progress_indicator', lang='fa', current_step=current_index + 1, total_steps=total_steps)}"
             # Add ability to go back info if applicable
             if current_index > 0:
-                progress += " | می‌توانید از دکمه «قبلی» برای بازگشت استفاده کنید"
+                progress += f" | {get_message('back_instruction', lang='fa')}"
             text += progress
 
     return text, keyboard

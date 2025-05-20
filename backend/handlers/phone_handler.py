@@ -40,10 +40,7 @@ async def send_verification_code(phone: str, code: str) -> bool:
 
 async def change_phone(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """شروع فرآیند تغییر شماره تلفن"""
-    await update.message.reply_text(
-        "📱 لطفاً شماره تلفن جدید خود را وارد کنید:\n"
-        "مثال: 09123456789"
-    )
+    await update.message.reply_text(get_message("enter_new_phone_prompt", lang="fa"))
     context.user_data['verify_attempts'] = 0  # ریست تعداد تلاش‌ها
     return CHANGE_PHONE
 
@@ -52,12 +49,12 @@ async def handle_new_phone(update: Update, context: ContextTypes.DEFAULT_TYPE) -
     logger.info(f"[handle_new_phone] user_id={update.effective_user.id} | context.user_data={context.user_data}")
     new_phone = update.message.text.strip()
     if not new_phone.startswith('09') or not new_phone.isdigit() or len(new_phone) != 11:
-        await update.message.reply_text("❌ فرمت شماره نامعتبر است.\nلطفاً شماره را به فرمت 09123456789 وارد کنید.")
+        await update.message.reply_text(get_message("invalid_phone", lang="fa"))
         return CHANGE_PHONE
 
     response = requests.get(f"{BASE_URL}users/?phone={new_phone}")
     if response.status_code == 200 and response.json():
-        await update.message.reply_text("❌ این شماره قبلاً توسط کاربر دیگری ثبت شده است.")
+        await update.message.reply_text(get_message("phone_already_registered", lang="fa"))
         return CHANGE_PHONE
 
     verification_code = ''.join([str(random.randint(0, 9)) for _ in range(4)])
@@ -71,14 +68,11 @@ async def handle_new_phone(update: Update, context: ContextTypes.DEFAULT_TYPE) -
 
     if await send_verification_code(new_phone, verification_code):
         await update.message.reply_text(
-            "📤 کد تأیید 4 رقمی به شماره شما ارسال شد.\n"
-            "⏰ مهلت وارد کردن کد: 2 دقیقه\n"
-            f"📱 شماره: {new_phone}\n\n"
-            f"برای تست: کد = {verification_code}"  # حذف در نسخه نهایی
+            get_message("verification_code_sent", lang="fa", phone=new_phone)
         )
         return VERIFY_CODE
     else:
-        await update.message.reply_text("❌ خطا در ارسال کد تأیید.\nلطفاً دوباره تلاش کنید.")
+        await update.message.reply_text(get_message("error_sending_verification_code", lang="fa"))
         return CHANGE_PHONE
 
 async def verify_new_phone(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
@@ -91,22 +85,22 @@ async def verify_new_phone(update: Update, context: ContextTypes.DEFAULT_TYPE) -
     attempts = context.user_data.get('verify_attempts', 0)
 
     if not all([stored_code, expires_at, new_phone]):
-        await update.message.reply_text("❌ اطلاعات تأیید نامعتبر است.")
+        await update.message.reply_text(get_message("invalid_verification_info", lang="fa"))
         return CHANGE_PHONE
 
     if attempts >= MAX_ATTEMPTS:
-        await update.message.reply_text("❌ تعداد تلاش‌های مجاز به پایان رسید.\nلطفاً دوباره درخواست کد کنید.")
+        await update.message.reply_text(get_message("max_attempts_reached", lang="fa"))
         return CHANGE_PHONE
 
     if datetime.now() > expires_at:
-        await update.message.reply_text("⏰ کد تأیید منقضی شده است.\nلطفاً دوباره درخواست کد کنید.")
+        await update.message.reply_text(get_message("verification_code_expired", lang="fa"))
         return CHANGE_PHONE
 
     context.user_data['verify_attempts'] += 1
     logger.info(f"[verify_new_phone] verify_attempts increased: {context.user_data['verify_attempts']}")
     if code != stored_code:
         remaining = MAX_ATTEMPTS - context.user_data['verify_attempts']
-        await update.message.reply_text(f"❌ کد وارد شده اشتباه است.\nتعداد تلاش‌های باقیمانده: {remaining}")
+        await update.message.reply_text(get_message("incorrect_verification_code", lang="fa", remaining=remaining))
         return VERIFY_CODE if remaining > 0 else CHANGE_PHONE
 
     try:
@@ -119,7 +113,7 @@ async def verify_new_phone(update: Update, context: ContextTypes.DEFAULT_TYPE) -
             if update_response.status_code == 200:
                 lang = context.user_data.get('lang', 'fa')
                 await update.message.reply_text(
-                    get_message("phone_verified_success", lang=lang),
+                    get_message("phone_registered", lang=lang),
                     reply_markup=get_main_menu_keyboard(lang)
                 )
             else:
@@ -129,7 +123,7 @@ async def verify_new_phone(update: Update, context: ContextTypes.DEFAULT_TYPE) -
         logger.info(f"[verify_new_phone] cleaned up context.user_data={context.user_data}")
     except Exception as e:
         logger.error(f"Error updating phone: {e}")
-        await update.message.reply_text("❌ خطا در ثبت شماره تلفن.\nلطفاً دوباره تلاش کنید.")
+        await update.message.reply_text(get_message("error_registering_phone", lang="fa"))
     return CHANGE_PHONE
 
 async def check_phone(update: Update, context: ContextTypes.DEFAULT_TYPE) -> bool:
@@ -159,17 +153,16 @@ def require_phone(func):
                 if update.callback_query:
                     # استفاده از InlineKeyboardMarkup برای callback_query
                     message = update.callback_query.message
-                    await update.callback_query.answer("برای ادامه نیاز به ثبت شماره تلفن است")
+                    await update.callback_query.answer(get_message("phone_required", lang="fa"))
                     # جداگانه ارسال کیبورد ReplyKeyboardMarkup برای دریافت شماره تلفن
                     await message.reply_text(
-                        "از دکمه زیر برای به اشتراک‌گذاری مستقیم شماره استفاده کنید:",
+                        get_message("share_phone_instruction", lang="fa"),
                         reply_markup=REGISTER_MENU_KEYBOARD
                     )
                 else:
                     # استفاده مستقیم از ReplyKeyboardMarkup برای پیام‌های معمولی
                     await update.message.reply_text(
-                        "⚠️ برای استفاده از ربات، باید شماره تلفن خود را به اشتراک بگذارید.\n"
-                        "لطفاً از دکمه زیر استفاده کنید:",
+                        get_message("share_phone_prompt", lang="fa"),
                         reply_markup=REGISTER_MENU_KEYBOARD
                     )
                 context.user_data['state'] = REGISTER
@@ -179,7 +172,7 @@ def require_phone(func):
             logger.error(f"Error in phone requirement decorator: {e}")
             if update.callback_query:
                 try:
-                    await update.callback_query.answer("خطایی رخ داد. لطفاً دوباره تلاش کنید.")
+                    await update.callback_query.answer(get_message("general_error", lang="fa"))
                 except Exception:
                     pass
             return REGISTER
@@ -192,7 +185,7 @@ async def handle_contact(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     
     if not contact.phone_number:
         await update.message.reply_text(
-            "❌ شماره تلفن دریافت نشد. لطفاً دوباره تلاش کنید.",
+            get_message("invalid_phone", lang="fa"),
             reply_markup=REGISTER_MENU_KEYBOARD
         )
         return REGISTER
@@ -212,13 +205,13 @@ async def handle_contact(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
                 if response.status in [200, 201]:
                     lang = context.user_data.get('lang', 'fa')
                     await update.message.reply_text(
-                        get_message("welcome", lang=lang, name=update.effective_user.first_name),
+                        get_message("phone_registered", lang=lang),
                         reply_markup=get_main_menu_keyboard(lang)
                     )
                     return ROLE
                 else:
                     await update.message.reply_text(
-                        "❌ خطا در ثبت شماره تلفن. لطفاً دوباره تلاش کنید.",
+                        get_message("error_registering_phone", lang="fa"),
                         reply_markup=REGISTER_MENU_KEYBOARD
                     )
                     return REGISTER
@@ -226,7 +219,7 @@ async def handle_contact(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     except Exception as e:
         logger.error(f"Error registering phone: {e}")
         await update.message.reply_text(
-            "❌ خطا در ثبت شماره تلفن. لطفاً دوباره تلاش کنید.",
+            get_message("error_registering_phone", lang="fa"),
             reply_markup=REGISTER_MENU_KEYBOARD
         )
         return REGISTER

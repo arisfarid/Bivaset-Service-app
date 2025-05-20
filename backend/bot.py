@@ -15,6 +15,7 @@ from handlers.state_handler import get_conversation_handler, handle_error
 from handlers.callback_handler import handle_callback
 from keyboards import get_main_menu_keyboard, RESTART_INLINE_MENU_KEYBOARD
 from utils import restart_chat
+from localization import get_message
 
 # تنظیمات لاگ
 logging.basicConfig(
@@ -53,21 +54,12 @@ async def post_init(application: Application):
         # ریست کردن لیست پیام‌های آپدیت
         bot_data['update_messages'] = {}
         
-        update_message = (
-            "🔄 *ربات بی‌واسط به‌روزرسانی شد!*\n\n"
-            "✨ امکانات جدید اضافه شده\n"
-            "🛠 بهبود عملکرد و رفع باگ‌ها\n\n"
-            "برای استفاده از نسخه جدید، لطفاً روی دکمه زیر کلیک کنید. "
-            "این دکمه شما را به صفحه اصلی ربات منتقل می‌کند و "
-            "می‌توانید از ابتدا استفاده از ربات را شروع کنید:"
-        )
-
         for chat_id in active_chats[:]:
             try:
                 # ارسال پیام آپدیت بی‌صدا
                 sent_message = await application.bot.send_message(
                     chat_id=chat_id,
-                    text=update_message,
+                    text=get_message("bot_updated", lang='fa'),
                     parse_mode='Markdown',
                     disable_notification=True,
                     reply_markup=RESTART_INLINE_MENU_KEYBOARD
@@ -134,6 +126,7 @@ def build_application():
 async def reset_conversation(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Reset conversation state and start over"""
     chat_id = update.effective_chat.id
+    lang = context.user_data.get('lang', 'fa')
     
     # اضافه کردن به لیست چت‌های فعال
     bot_data = context.bot_data
@@ -150,8 +143,7 @@ async def reset_conversation(update: Update, context: ContextTypes.DEFAULT_TYPE)
     
     # ارسال پیام خوش‌آمدگویی و منوی اصلی
     await update.message.reply_text(
-        f"👋 سلام {update.effective_user.first_name}! به ربات خدمات بی‌واسط خوش آمدید.\n"
-        "لطفاً یکی از گزینه‌ها را انتخاب کنید:",
+        get_message("welcome", lang=lang, name=update.effective_user.first_name),
         reply_markup=get_main_menu_keyboard(lang)
     )
     return 2  # ROLE

@@ -9,6 +9,8 @@ from khayyam import JalaliDatetime
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 from telegram import Update
 from telegram.ext import ContextTypes
+from localization import get_message
+from keyboards import get_main_menu_keyboard
 
 logger = logging.getLogger(__name__)
 
@@ -193,6 +195,13 @@ async def log_chat(update: Update, context: ContextTypes.DEFAULT_TYPE):
     elif update.callback_query:
         logger.info(f"Callback from user {update.effective_user.id}: {update.callback_query.data}")
 
+def format_price(number):
+    """تبدیل اعداد مبلغ به فرمت هزارگان با کاما"""
+    try:
+        return "{:,}".format(int(number))
+    except (ValueError, TypeError):
+        return number
+
 async def ensure_active_chat(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """اطمینان از افزودن چت به لیست چت‌های فعال"""
     chat_id = update.effective_chat.id
@@ -203,13 +212,6 @@ async def ensure_active_chat(update: Update, context: ContextTypes.DEFAULT_TYPE)
         logger.info(f"Added {chat_id} to active chats")
     return True
 
-def format_price(number):
-    """تبدیل اعداد مبلغ به فرمت هزارگان با کاما"""
-    try:
-        return "{:,}".format(int(number))
-    except (ValueError, TypeError):
-        return number
-
 async def restart_chat(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """راه‌اندازی مجدد گفتگو با کاربر"""
     try:
@@ -218,13 +220,10 @@ async def restart_chat(update: Update, context: ContextTypes.DEFAULT_TYPE):
         context.user_data['state'] = 2  # ROLE
         
         # ارسال پیام خوش‌آمدگویی و منوی اصلی
+        lang = context.user_data.get('lang', 'fa')
         await update.message.reply_text(
-            f"👋 سلام {update.effective_user.first_name}! به ربات خدمات بی‌واسط خوش آمدید.\n"
-            "لطفاً یکی از گزینه‌ها را انتخاب کنید:",
-            reply_markup=InlineKeyboardMarkup([
-                [InlineKeyboardButton("درخواست خدمات | کارفرما 👔", callback_data="employer")],
-                [InlineKeyboardButton("پیشنهاد قیمت | مجری 🦺", callback_data="contractor")],
-            ])
+            get_message("welcome", lang=lang, name=update.effective_user.first_name),
+            reply_markup=get_main_menu_keyboard(lang=lang)
         )
         logger.info(f"Chat restarted for user {update.effective_user.id}")
         return True

@@ -14,11 +14,14 @@ from handlers.attachment_handler import handle_attachment, handle_photos_command
 from handlers.project_details_handler import handle_project_details
 from handlers.view_handler import handle_view_projects
 from handlers.callback_handler import handle_callback
-from keyboards import REGISTER_MENU_KEYBOARD
+from keyboards import REGISTER_MENU_KEYBOARD, create_navigation_keyboard
 from handlers.states import START, REGISTER, ROLE, EMPLOYER_MENU, CATEGORY, SUBCATEGORY, DESCRIPTION, LOCATION_TYPE, LOCATION_INPUT, DETAILS, DETAILS_FILES, DETAILS_DATE, DETAILS_DEADLINE, DETAILS_BUDGET, DETAILS_QUANTITY, SUBMIT, VIEW_PROJECTS, PROJECT_ACTIONS, CHANGE_PHONE, VERIFY_CODE
 from handlers.navigation_utils import add_navigation_to_message, SERVICE_REQUEST_FLOW, STATE_NAMES
 from handlers.submission_handler import submit_project
 from handlers.phone_handler import change_phone, handle_new_phone, verify_new_phone
+from localization import get_message
+from helpers.menu_manager import MenuManager
+from keyboards import create_dynamic_keyboard
 
 logger = logging.getLogger(__name__)
 
@@ -31,6 +34,8 @@ async def handle_navigation_callback(update: Update, context: ContextTypes.DEFAU
     logger.info(f"[handle_navigation_callback] user_id={update.effective_user.id} | state={context.user_data.get('state')} | context.user_data={context.user_data}")
     
     callback_data = query.data
+    lang = context.user_data.get('lang', 'fa')
+    
     if callback_data.startswith("nav_to_"):
         try:
             next_state = int(callback_data.split("_")[-1])
@@ -66,12 +71,10 @@ async def handle_navigation_callback(update: Update, context: ContextTypes.DEFAU
                 return await request_location_input(update, context)
                 
             elif next_state == DETAILS:
-                from helpers.menu_manager import MenuManager
-                from keyboards import create_dynamic_keyboard
                 await MenuManager.show_menu(
                     update,
                     context,
-                    "📋 جزئیات درخواست:\nاگه بخوای می‌تونی برای راهنمایی بهتر مجری‌ها این اطلاعات رو هم وارد کنی:",
+                    get_message("project_details", lang=lang),
                     create_dynamic_keyboard(context)
                 )
                 return DETAILS
@@ -81,42 +84,38 @@ async def handle_navigation_callback(update: Update, context: ContextTypes.DEFAU
                 return await show_file_upload(update, context)
                 
             elif next_state == DETAILS_DATE:
-                from helpers.menu_manager import MenuManager
                 await MenuManager.show_menu(
                     update,
                     context,
-                    "📅 تاریخ نیاز خود را به صورت 'ماه/روز' وارد کنید (مثال: 05/15):",
-                    InlineKeyboardMarkup([[InlineKeyboardButton("⬅️ بازگشت", callback_data="back_to_details")]])
+                    get_message("select_need_date_short_prompt", lang=lang),
+                    create_navigation_keyboard("back_to_details")
                 )
                 return DETAILS_DATE
                 
             elif next_state == DETAILS_DEADLINE:
-                from helpers.menu_manager import MenuManager
                 await MenuManager.show_menu(
                     update,
                     context,
-                    "⏳ مهلت انجام خدمات را به صورت 'ماه/روز' وارد کنید (مثال: 06/20):",
-                    InlineKeyboardMarkup([[InlineKeyboardButton("⬅️ بازگشت", callback_data="back_to_details")]])
+                    get_message("select_deadline_short_prompt", lang=lang),
+                    create_navigation_keyboard("back_to_details")
                 )
                 return DETAILS_DEADLINE
                 
             elif next_state == DETAILS_BUDGET:
-                from helpers.menu_manager import MenuManager
                 await MenuManager.show_menu(
                     update,
                     context,
-                    "💰 بودجه مورد نظر خود را به تومان وارد کنید (فقط عدد):",
-                    InlineKeyboardMarkup([[InlineKeyboardButton("⬅️ بازگشت", callback_data="back_to_details")]])
+                    get_message("enter_custom_budget_prompt", lang=lang),
+                    create_navigation_keyboard("back_to_details")
                 )
                 return DETAILS_BUDGET
                 
             elif next_state == DETAILS_QUANTITY:
-                from helpers.menu_manager import MenuManager
                 await MenuManager.show_menu(
                     update,
                     context,
-                    "📏 مقدار و واحد مورد نظر را وارد کنید (مثال: 5 متر، 2 عدد):",
-                    InlineKeyboardMarkup([[InlineKeyboardButton("⬅️ بازگشت", callback_data="back_to_details")]])
+                    get_message("enter_custom_quantity_prompt", lang=lang),
+                    create_navigation_keyboard("back_to_details")
                 )
                 return DETAILS_QUANTITY
                 
@@ -151,9 +150,9 @@ async def handle_non_contact(update: Update, context: ContextTypes.DEFAULT_TYPE)
         return REGISTER
         
     logger.info(f"User {update.effective_user.id} sent non-contact message in REGISTER state")
+    lang = context.user_data.get('lang', 'fa')
     await message.reply_text(
-        "⚠️ برای استفاده از ربات، باید شماره تلفن خود را به اشتراک بگذارید.\n"
-        "لطفاً از دکمه زیر استفاده کنید:",
+        get_message("share_phone_prompt", lang=lang),
         reply_markup=REGISTER_MENU_KEYBOARD
     )
     context.user_data['state'] = REGISTER
@@ -248,7 +247,6 @@ def get_conversation_handler() -> ConversationHandler:
                 cancel_callback_handler,
                 CallbackQueryHandler(handle_attachment)
             ],
-            # اضافه کردن هندلرهای مربوط به جزئیات درخواست
             DETAILS_DATE: [
                 MessageHandler(filters.TEXT & ~filters.COMMAND, handle_project_details),
                 restart_handler,
@@ -338,8 +336,9 @@ async def handle_error(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
                 )
         
         if update and update.effective_message:
+            lang = context.user_data.get('lang', 'fa')
             await update.effective_message.reply_text(
-                "❌ خطایی رخ داد. لطفاً دوباره شروع کنید با /start"
+                get_message("error_restart_prompt", lang=lang)
             )
             
     except Exception as e:

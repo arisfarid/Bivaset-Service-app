@@ -14,6 +14,7 @@ logger = logging.getLogger(__name__)
 
 # ایجاد قفل سراسری
 message_lock = Lock()
+
 @require_phone
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     logger.info(f"=== Entering handle_message - User: {update.effective_user.id} ===")
@@ -65,7 +66,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         categories = await get_categories()
         
         if not categories:
-            await update.message.reply_text("❌ خطا در دریافت دسته‌بندی‌ها")
+            await update.message.reply_text(get_message("error_fetching_categories", lang=lang))
             return EMPLOYER_MENU
             
         context.user_data['categories'] = categories
@@ -82,5 +83,6 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
 
 async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     context.user_data.clear()
-    await update.message.reply_text("عملیات لغو شد. دوباره شروع کن!")
+    lang = context.user_data.get('lang', 'fa')
+    await update.message.reply_text(get_message("operation_cancelled", lang=lang))
     return ConversationHandler.END
