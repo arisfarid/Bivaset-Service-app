@@ -57,11 +57,6 @@ def get_location_input_keyboard(context: ContextTypes.DEFAULT_TYPE, update: Upda
 # کیبورد حذف (برای برداشتن کیبوردهای معمولی)
 REMOVE_KEYBOARD = ReplyKeyboardRemove()
 
-# کیبورد بازگشت به منوی انتخاب محل
-BACK_TO_LOCATION_KEYBOARD = InlineKeyboardMarkup([
-    [InlineKeyboardButton(get_message("back", lang="fa"), callback_data="back_to_location_type")]
-])
-
 # تابع ایجاد کیبورد بازگشت به توضیحات با قابلیت لوکالایزیشن
 def get_back_to_description_keyboard(context: ContextTypes.DEFAULT_TYPE, update: Update = None) -> InlineKeyboardMarkup:
     """ایجاد کیبورد بازگشت به توضیحات با قابلیت لوکالایزیشن"""
