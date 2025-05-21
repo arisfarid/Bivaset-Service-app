@@ -56,10 +56,18 @@ async def post_init(application: Application):
         
         for chat_id in active_chats[:]:
             try:
-                # ارسال پیام آپدیت بی‌صدا
+                # Ensure context.user_data has the necessary fields for localization
+                if not hasattr(application, 'user_data'):
+                    application.user_data = {}
+
+                # Set default values for user_data if not already present
+                application.user_data.setdefault('lang', 'fa')
+                application.user_data.setdefault('name', 'کاربر')
+
+                # Pass the updated context to get_message
                 sent_message = await application.bot.send_message(
                     chat_id=chat_id,
-                    text=get_message("bot_updated", context=application, update=None),
+                    text=get_message("bot_updated", context=application),
                     parse_mode='Markdown',
                     disable_notification=True,
                     reply_markup=RESTART_INLINE_MENU_KEYBOARD
