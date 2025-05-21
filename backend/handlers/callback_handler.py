@@ -7,7 +7,7 @@ from handlers.edit_handler import handle_edit_callback
 from handlers.view_handler import handle_view_callback
 from handlers.attachment_handler import show_photo_management, handle_photos_command
 from utils import log_chat, get_categories, ensure_active_chat, restart_chat
-from keyboards import create_category_keyboard, get_custom_input_keyboard, create_photo_management_keyboard, get_employer_menu_keyboard, FILE_MANAGEMENT_MENU_KEYBOARD, RESTART_INLINE_MENU_KEYBOARD, BACK_INLINE_MENU_KEYBOARD, get_main_menu_keyboard, create_dynamic_keyboard, create_service_flow_navigation_keyboard
+from keyboards import create_category_keyboard, get_custom_input_keyboard, create_photo_management_keyboard, get_employer_menu_keyboard, get_file_management_menu_keyboard, get_restart_inline_menu_keyboard, BACK_INLINE_MENU_KEYBOARD, get_main_menu_keyboard, create_dynamic_keyboard, create_service_flow_navigation_keyboard
 from helpers.menu_manager import MenuManager
 import asyncio  # برای استفاده از sleep
 from asyncio import Lock
@@ -372,7 +372,7 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 update,
                 context,
                 get_message("photos_command", context, update),
-                FILE_MANAGEMENT_MENU_KEYBOARD
+                get_file_management_menu_keyboard(context, update)
             )
             await query.answer()
             return DETAILS_FILES
@@ -467,10 +467,10 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if data == "register_phone":
             logger.info("User clicked register_phone button")
             await query.answer(get_message("share_phone_prompt", context, update))
-            from keyboards import REGISTER_MENU_KEYBOARD
+            from keyboards import get_register_menu_keyboard
             await query.message.reply_text(
                 get_message("share_phone_prompt", context, update),
-                reply_markup=REGISTER_MENU_KEYBOARD
+                reply_markup=get_register_menu_keyboard(context, update)
             )
             context.user_data['state'] = REGISTER
             return REGISTER

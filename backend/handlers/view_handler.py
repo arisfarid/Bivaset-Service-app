@@ -3,7 +3,7 @@ from telegram.ext import ContextTypes, ConversationHandler
 import requests
 import logging
 from utils import BASE_URL, log_chat
-from keyboards import VIEW_PROJECTS_MENU_KEYBOARD
+from keyboards import get_view_projects_menu_keyboard
 from handlers.phone_handler import require_phone
 from handlers.states import START, REGISTER, ROLE, EMPLOYER_MENU, CATEGORY, SUBCATEGORY, DESCRIPTION, LOCATION_TYPE, LOCATION_INPUT, DETAILS, DETAILS_FILES, DETAILS_DATE, DETAILS_DEADLINE, DETAILS_BUDGET, DETAILS_QUANTITY, SUBMIT, VIEW_PROJECTS, PROJECT_ACTIONS, CHANGE_PHONE, VERIFY_CODE
 from localization import get_message
@@ -22,7 +22,7 @@ async def handle_view_projects(update: Update, context: ContextTypes.DEFAULT_TYP
                 await update.message.reply_text(get_message("no_projects_registered", context, update))
                 await update.message.reply_text(
                     get_message("continue_or_return", context, update),
-                    reply_markup=VIEW_PROJECTS_MENU_KEYBOARD
+                    reply_markup=get_view_projects_menu_keyboard(context, update)
                 )
                 return VIEW_PROJECTS
             message = get_message("view_projects_prompt", context, update)
@@ -33,7 +33,7 @@ async def handle_view_projects(update: Update, context: ContextTypes.DEFAULT_TYP
             await update.message.reply_text(message, reply_markup=InlineKeyboardMarkup(inline_keyboard))
             await update.message.reply_text(
                 get_message("continue_or_return", context, update),
-                reply_markup=VIEW_PROJECTS_MENU_KEYBOARD
+                reply_markup=get_view_projects_menu_keyboard(context, update)
             )
         else:
             context.user_data['status_code'] = response.status_code

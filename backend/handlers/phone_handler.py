@@ -10,7 +10,7 @@ import aiohttp
 from utils import BASE_URL, save_user_phone, log_chat
 from handlers.states import START, REGISTER, ROLE, EMPLOYER_MENU, CATEGORY, SUBCATEGORY, DESCRIPTION, LOCATION_TYPE, LOCATION_INPUT, DETAILS, DETAILS_FILES, DETAILS_DATE, DETAILS_DEADLINE, DETAILS_BUDGET, DETAILS_QUANTITY, SUBMIT, VIEW_PROJECTS, PROJECT_ACTIONS, CHANGE_PHONE, VERIFY_CODE
 from localization import get_message
-from keyboards import get_main_menu_keyboard, REGISTER_MENU_KEYBOARD, REGISTER_INLINE_KEYBOARD
+from keyboards import get_main_menu_keyboard, get_register_menu_keyboard, get_register_inline_keyboard
 
 logger = logging.getLogger(__name__)
 
@@ -156,13 +156,13 @@ def require_phone(func):
                     # جداگانه ارسال کیبورد ReplyKeyboardMarkup برای دریافت شماره تلفن
                     await message.reply_text(
                         get_message("share_phone_instruction", context, update),
-                        reply_markup=REGISTER_MENU_KEYBOARD
+                        reply_markup=get_register_menu_keyboard(context, update)
                     )
                 else:
                     # استفاده مستقیم از ReplyKeyboardMarkup برای پیام‌های معمولی
                     await update.message.reply_text(
                         get_message("share_phone_prompt", context, update),
-                        reply_markup=REGISTER_MENU_KEYBOARD
+                        reply_markup=get_register_menu_keyboard(context, update)
                     )
                 context.user_data['state'] = REGISTER
                 return REGISTER
@@ -185,7 +185,7 @@ async def handle_contact(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     if not contact.phone_number:
         await update.message.reply_text(
             get_message("invalid_phone", context, update),
-            reply_markup=REGISTER_MENU_KEYBOARD
+            reply_markup=get_register_menu_keyboard(context, update)
         )
         return REGISTER
 
@@ -210,13 +210,13 @@ async def handle_contact(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
                 else:
                     await update.message.reply_text(
                         get_message("error_registering_phone", context, update),
-                        reply_markup=REGISTER_MENU_KEYBOARD
+                        reply_markup=get_register_menu_keyboard(context, update)
                     )
                     return REGISTER
     except Exception as e:
         logger.error(f"Error registering phone: {e}")
         await update.message.reply_text(
             get_message("error_registering_phone", context, update),
-            reply_markup=REGISTER_MENU_KEYBOARD
+            reply_markup=get_register_menu_keyboard(context, update)
         )
         return REGISTER

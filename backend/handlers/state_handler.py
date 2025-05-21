@@ -14,7 +14,7 @@ from handlers.attachment_handler import handle_attachment, handle_photos_command
 from handlers.project_details_handler import handle_project_details
 from handlers.view_handler import handle_view_projects
 from handlers.callback_handler import handle_callback
-from keyboards import REGISTER_MENU_KEYBOARD, create_navigation_keyboard
+from keyboards import get_register_menu_keyboard, create_navigation_keyboard
 from handlers.states import START, REGISTER, ROLE, EMPLOYER_MENU, CATEGORY, SUBCATEGORY, DESCRIPTION, LOCATION_TYPE, LOCATION_INPUT, DETAILS, DETAILS_FILES, DETAILS_DATE, DETAILS_DEADLINE, DETAILS_BUDGET, DETAILS_QUANTITY, SUBMIT, VIEW_PROJECTS, PROJECT_ACTIONS, CHANGE_PHONE, VERIFY_CODE
 from handlers.navigation_utils import add_navigation_to_message, SERVICE_REQUEST_FLOW, STATE_NAMES
 from handlers.submission_handler import submit_project
@@ -151,7 +151,7 @@ async def handle_non_contact(update: Update, context: ContextTypes.DEFAULT_TYPE)
     logger.info(f"User {update.effective_user.id} sent non-contact message in REGISTER state")
     await message.reply_text(
         get_message("share_phone_prompt", context, update),
-        reply_markup=REGISTER_MENU_KEYBOARD
+        reply_markup=get_register_menu_keyboard(context, update)
     )
     context.user_data['state'] = REGISTER
     return REGISTER

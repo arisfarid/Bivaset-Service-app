@@ -1,7 +1,7 @@
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardRemove
 from telegram.ext import ContextTypes, ConversationHandler
 from utils import BASE_URL, log_chat, ensure_active_chat, delete_previous_messages
-from keyboards import get_main_menu_keyboard, REGISTER_MENU_KEYBOARD, get_employer_menu_keyboard, get_contractor_menu_keyboard
+from keyboards import get_main_menu_keyboard, get_register_menu_keyboard, get_employer_menu_keyboard, get_contractor_menu_keyboard
 from handlers.phone_handler import check_phone
 from helpers.menu_manager import MenuManager
 from handlers.states import START, REGISTER, ROLE, EMPLOYER_MENU, CATEGORY, SUBCATEGORY, DESCRIPTION, LOCATION_TYPE, LOCATION_INPUT, DETAILS, DETAILS_FILES, DETAILS_DATE, DETAILS_DEADLINE, DETAILS_BUDGET, DETAILS_QUANTITY, SUBMIT, VIEW_PROJECTS, PROJECT_ACTIONS, CHANGE_PHONE, VERIFY_CODE, CONTRACTOR_MENU
@@ -89,7 +89,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
         # اگر شماره نداشت، درخواست ثبت شماره
         sent = await message.reply_text(
             get_message("share_phone_prompt", context, update),
-            reply_markup=REGISTER_MENU_KEYBOARD
+            reply_markup=get_register_menu_keyboard(context, update)
         )
         await delete_previous_messages(sent, context, n=3)
         return REGISTER
