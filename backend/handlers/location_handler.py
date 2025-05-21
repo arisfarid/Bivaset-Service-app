@@ -6,7 +6,7 @@ from keyboards import (
     get_location_input_keyboard,
     get_location_type_keyboard,
     get_back_to_description_keyboard,
-    get_remove_keyboard,
+    REMOVE_KEYBOARD,
     get_employer_menu_keyboard,
     create_category_keyboard
 )
@@ -128,7 +128,7 @@ async def handle_location(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         # نمایش پیام موفقیت و هدایت به مرحله توضیحات
         sent = await update.message.reply_text(
             get_message("location_success", context, update),
-            reply_markup=get_remove_keyboard(context, update)
+            reply_markup=REMOVE_KEYBOARD
         )
         await delete_previous_messages(sent, context, n=3)
         return DESCRIPTION
@@ -157,7 +157,7 @@ async def handle_location(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
             context.user_data['state'] = LOCATION_TYPE
             sent = await update.message.reply_text(
                 get_message("back_to_previous", context, update),
-                reply_markup=get_remove_keyboard(context, update)
+                reply_markup=REMOVE_KEYBOARD
             )
             await delete_previous_messages(sent, context, n=3)
             sent2 = await update.message.reply_text(
