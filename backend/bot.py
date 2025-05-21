@@ -13,7 +13,7 @@ from telegram.ext import Application, CommandHandler, CallbackQueryHandler, Cont
 from telegram import Update
 from handlers.state_handler import get_conversation_handler, handle_error
 from handlers.callback_handler import handle_callback
-from keyboards import get_main_menu_keyboard, RESTART_INLINE_MENU_KEYBOARD
+from keyboards import get_main_menu_keyboard, get_restart_inline_menu_keyboard
 from utils import restart_chat
 from localization import get_message
 
@@ -70,7 +70,7 @@ async def post_init(application: Application):
                     text=get_message("bot_updated", context=application),
                     parse_mode='Markdown',
                     disable_notification=True,
-                    reply_markup=RESTART_INLINE_MENU_KEYBOARD
+                    reply_markup=get_restart_inline_menu_keyboard(application)
                 )
                 
                 # ذخیره message_id برای پاک کردن بعدی
