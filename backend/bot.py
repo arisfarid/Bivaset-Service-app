@@ -58,14 +58,13 @@ async def post_init(application: Application):
             try:
                 # Add debug log
                 logger.info(f"Attempting to send update message to chat {chat_id}")
-                
-                # Create a simple dict with user_data for get_message function
-                user_data = {'lang': 'fa', 'name': 'کاربر'}
+                  # Create mock context for get_message function
+                mock_context = type('obj', (object,), {'user_data': {'lang': 'fa', 'name': 'کاربر'}})
                 
                 # ارسال پیام آپدیت
                 sent_message = await application.bot.send_message(
                     chat_id=chat_id,
-                    text=get_message("bot_updated", {'user_data': user_data}),
+                    text=get_message("bot_updated", mock_context),
                     parse_mode='Markdown',
                     disable_notification=True,
                     reply_markup=RESTART_INLINE_MENU_KEYBOARD
