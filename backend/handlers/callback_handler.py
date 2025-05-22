@@ -410,9 +410,7 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     get_main_menu_keyboard()
                 )
                 await query.answer()
-                return ROLE
-
-        # بازگشت به منوی اصلی (از منوی کارفرما به انتخاب نقش)
+                return ROLE        # بازگشت به منوی اصلی (از منوی کارفرما به انتخاب نقش)
         if data == "main_menu":
             logger.info("Processing main_menu callback - returning to role selection")
             context.user_data['state'] = ROLE
@@ -421,7 +419,7 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 update,
                 context,
                 get_message("welcome", context, update),
-                get_main_menu_keyboard()
+                get_main_menu_keyboard(context, update)
             )
             await query.answer()
             return ROLE
@@ -492,7 +490,6 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 logger.error(f"Error editing message for employer menu: {e}")
                 await query.answer(get_message("step_error", context, update))
                 return context.user_data.get('state')
-            
         elif data == "new_request":
             logger.info("Processing new request")
             # Clear user data to ensure no previous data persists
@@ -501,7 +498,7 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             context.user_data['state'] = CATEGORY
             
             categories = await get_categories()
-            keyboard = create_category_keyboard(categories)
+            keyboard = create_category_keyboard(categories, context, update)
             
             # استفاده از MenuManager
             await MenuManager.show_menu(
@@ -543,9 +540,8 @@ async def handle_new_request(update: Update, context: ContextTypes.DEFAULT_TYPE)
             return EMPLOYER_MENU
             
         context.user_data['categories'] = categories
-        
         # نمایش منوی دسته‌بندی‌ها
-        keyboard = create_category_keyboard(categories)
+        keyboard = create_category_keyboard(categories, context, update)
         
         # حذف پیام‌های قبلی
         await query.message.delete()
@@ -558,12 +554,11 @@ async def handle_new_request(update: Update, context: ContextTypes.DEFAULT_TYPE)
         
         await query.answer()
         return CATEGORY
-        
     except Exception as e:
         logger.error(f"Error in new_request handler: {e}")
         await query.message.reply_text(
             get_message("step_error", context, update),
-            reply_markup=get_employer_menu_keyboard()
+            reply_markup=get_employer_menu_keyboard(context, update)
         )
         return EMPLOYER_MENU
 
@@ -573,7 +568,7 @@ async def handle_main_menu(update: Update, context: ContextTypes.DEFAULT_TYPE) -
     # بازگشت به منوی اصلی
     await query.message.reply_text(
         get_message("welcome", context, update), 
-        reply_markup=get_main_menu_keyboard()
+        reply_markup=get_main_menu_keyboard(context, update)
     )
     return ROLE
 

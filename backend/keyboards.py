@@ -9,8 +9,8 @@ from handlers.navigation_utils import SERVICE_REQUEST_FLOW
 from handlers.states import DESCRIPTION
 
 # تابع ایجاد منوی اصلی با قابلیت لوکالایزیشن
-def get_main_menu_keyboard(context: ContextTypes.DEFAULT_TYPE, update: Update = None) -> InlineKeyboardMarkup:
-    lang = context.user_data.get('lang', 'fa')
+def get_main_menu_keyboard(context: ContextTypes.DEFAULT_TYPE = None, update: Update = None) -> InlineKeyboardMarkup:
+    lang = context.user_data.get('lang', 'fa') if context else 'fa'
     return InlineKeyboardMarkup([
         [InlineKeyboardButton(get_message("role_employer", context, update), callback_data="employer")],
         [InlineKeyboardButton(get_message("role_contractor", context, update), callback_data="contractor")]
