@@ -10,10 +10,10 @@ os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'app.settings')
 django.setup()
 
 from telegram.ext import Application, CommandHandler, CallbackQueryHandler, ContextTypes, PicklePersistence, PersistenceInput, ConversationHandler
-from telegram import Update
+from telegram import Update, InlineKeyboardMarkup, InlineKeyboardButton
 from handlers.state_handler import get_conversation_handler, handle_error
 from handlers.callback_handler import handle_callback
-from keyboards import get_main_menu_keyboard, get_restart_inline_menu_keyboard
+from keyboards import get_main_menu_keyboard, get_restart_inline_menu_keyboard, RESTART_INLINE_MENU_KEYBOARD
 from utils import restart_chat
 from localization import get_message
 
@@ -59,20 +59,16 @@ async def post_init(application: Application):
                 # Add debug log
                 logger.info(f"Attempting to send update message to chat {chat_id}")
                 
-                # Initialize proper context for localization
-                mock_context = ContextTypes.DEFAULT_TYPE.context_types["user_data"]({
-                    'lang': 'fa',
-                    'name': 'کاربر'
-                })
-                mock_context.application = application
+                # Create a simple dict with user_data for get_message function
+                user_data = {'lang': 'fa', 'name': 'کاربر'}
                 
                 # ارسال پیام آپدیت
                 sent_message = await application.bot.send_message(
                     chat_id=chat_id,
-                    text=get_message("bot_updated", context=mock_context),
+                    text=get_message("bot_updated", {'user_data': user_data}),
                     parse_mode='Markdown',
                     disable_notification=True,
-                    reply_markup=get_restart_inline_menu_keyboard(mock_context)
+                    reply_markup=RESTART_INLINE_MENU_KEYBOARD
                 )
                 
                 # ذخیره message_id برای پاک کردن بعدی
