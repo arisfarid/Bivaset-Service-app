@@ -13,7 +13,7 @@ from telegram.ext import Application, CommandHandler, CallbackQueryHandler, Cont
 from telegram import Update
 from handlers.state_handler import get_conversation_handler, handle_error
 from handlers.callback_handler import handle_callback
-from keyboards import get_main_menu_keyboard, get_restart_inline_menu_keyboard, RESTART_INLINE_MENU_KEYBOARD
+from keyboards import get_main_menu_keyboard, get_restart_inline_menu_keyboard
 from utils import restart_chat
 from localization import get_message
 
@@ -55,17 +55,24 @@ async def post_init(application: Application):
         bot_data['update_messages'] = {}
         
         for chat_id in active_chats[:]:
-            try:                # Get default language for notifications
-                # We don't have a context object here, so we'll create a mock context
-                mock_context = ContextTypes.DEFAULT_TYPE()
-                mock_context.user_data = {'lang': 'fa', 'name': 'کاربر'}
-                  # ارسال پیام آپدیت
+            try:
+                # Add debug log
+                logger.info(f"Attempting to send update message to chat {chat_id}")
+                
+                # Initialize proper context for localization
+                mock_context = ContextTypes.DEFAULT_TYPE.context_types["user_data"]({
+                    'lang': 'fa',
+                    'name': 'کاربر'
+                })
+                mock_context.application = application
+                
+                # ارسال پیام آپدیت
                 sent_message = await application.bot.send_message(
                     chat_id=chat_id,
                     text=get_message("bot_updated", context=mock_context),
                     parse_mode='Markdown',
                     disable_notification=True,
-                    reply_markup=RESTART_INLINE_MENU_KEYBOARD
+                    reply_markup=get_restart_inline_menu_keyboard(mock_context)
                 )
                 
                 # ذخیره message_id برای پاک کردن بعدی
@@ -87,7 +94,7 @@ async def post_init(application: Application):
         logger.info("Updated persistence data")
         
     except Exception as e:
-        logger.error(f"Error in post_init: {e}")
+        logger.error(f"Error in post_init: {e}", exc_info=True)
 
 async def shutdown(application: Application):
     logger.info("Shutting down application...")
