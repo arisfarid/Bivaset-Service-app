@@ -13,7 +13,7 @@ from telegram.ext import Application, CommandHandler, CallbackQueryHandler, Cont
 from telegram import Update
 from handlers.state_handler import get_conversation_handler, handle_error
 from handlers.callback_handler import handle_callback
-from keyboards import get_main_menu_keyboard, get_restart_inline_menu_keyboard
+from keyboards import get_main_menu_keyboard, RESTART_INLINE_MENU_KEYBOARD
 from utils import restart_chat
 from localization import get_message
 
@@ -56,21 +56,15 @@ async def post_init(application: Application):
         
         for chat_id in active_chats[:]:
             try:
-                # Ensure context.user_data has the necessary fields for localization
-                if not hasattr(application, 'user_data'):
-                    application.user_data = {}
-
-                # Set default values for user_data if not already present
-                application.user_data.setdefault('lang', 'fa')
-                application.user_data.setdefault('name', 'کاربر')
-
-                # Pass the updated context to get_message
+                # Get default language for notifications
+                # We don't have a context object here, so we'll use a default language
+                lang = 'fa'  # Default to Persian
                 sent_message = await application.bot.send_message(
                     chat_id=chat_id,
-                    text=get_message("bot_updated", context=application),
+                    text=get_message("bot_updated", lang=lang),
                     parse_mode='Markdown',
                     disable_notification=True,
-                    reply_markup=get_restart_inline_menu_keyboard(application)
+                    reply_markup=RESTART_INLINE_MENU_KEYBOARD
                 )
                 
                 # ذخیره message_id برای پاک کردن بعدی

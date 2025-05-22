@@ -140,6 +140,10 @@ def get_back_inline_menu_keyboard(context: ContextTypes.DEFAULT_TYPE, update: Up
         [InlineKeyboardButton(get_message("back", context, update), callback_data="back_to_upload")]
     ])
 
+RESTART_INLINE_MENU_KEYBOARD = InlineKeyboardMarkup([
+    [InlineKeyboardButton("🔄 شروع مجدد", url="https://t.me/BivasetBot?start=restart")]
+])
+
 # منوی راه‌اندازی مجدد - تغییر به URL دستور برای فراخوانی مستقیم /start
 def get_restart_inline_menu_keyboard(context: ContextTypes.DEFAULT_TYPE, update: Update = None) -> InlineKeyboardMarkup:
     lang = context.user_data.get('lang', 'fa')
