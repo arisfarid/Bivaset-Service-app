@@ -57,11 +57,13 @@ async def post_init(application: Application):
         for chat_id in active_chats[:]:
             try:
                 # Get default language for notifications
-                # We don't have a context object here, so we'll use a default language
-                lang = 'fa'  # Default to Persian
+                # We don't have a context object here, so we'll create a mock context
+                mock_context = ContextTypes.DEFAULT_TYPE()
+                mock_context.user_data = {'lang': 'fa', 'name': 'کاربر'}
+                
                 sent_message = await application.bot.send_message(
                     chat_id=chat_id,
-                    text=get_message("bot_updated", lang=lang),
+                    text=get_message("bot_updated", context=mock_context),
                     parse_mode='Markdown',
                     disable_notification=True,
                     reply_markup=RESTART_INLINE_MENU_KEYBOARD
