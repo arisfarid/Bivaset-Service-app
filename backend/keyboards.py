@@ -17,8 +17,8 @@ def get_main_menu_keyboard(context: ContextTypes.DEFAULT_TYPE, update: Update = 
     ])
 
 # تابع ایجاد منوی کارفرما با قابلیت لوکالایزیشن
-def get_employer_menu_keyboard(context: ContextTypes.DEFAULT_TYPE, update: Update = None) -> InlineKeyboardMarkup:
-    lang = context.user_data.get('lang', 'fa')
+def get_employer_menu_keyboard(context: ContextTypes.DEFAULT_TYPE = None, update: Update = None) -> InlineKeyboardMarkup:
+    lang = context.user_data.get('lang', 'fa') if context else 'fa'
     return InlineKeyboardMarkup([
         [InlineKeyboardButton(get_message("employer_new_request", context, update), callback_data="new_request")],
         [InlineKeyboardButton(get_message("employer_view_projects", context, update), callback_data="view_projects")],

@@ -3,7 +3,7 @@ from typing import Optional
 from telegram import Update
 from telegram.ext import ContextTypes
 
-def get_message(key: str, context: ContextTypes.DEFAULT_TYPE, update: Update = None) -> str:
+def get_message(key: str, context: ContextTypes.DEFAULT_TYPE = None, update: Update = None, **kwargs) -> str:
     """
     دریافت پیام با توجه به کلید و استخراج خودکار زبان و متغیرهای پارامتریک از context
     """
@@ -419,10 +419,10 @@ def get_message(key: str, context: ContextTypes.DEFAULT_TYPE, update: Update = N
             "error_restart_prompt": "❌ An error occurred. Please start again with /start"
         }
     }
-
+    
     try:
         # استخراج زبان از context
-        lang = context.user_data.get('lang', 'fa')
+        lang = context.user_data.get('lang', 'fa') if context else 'fa'
         
         # دریافت پیام از دیکشنری پیام‌ها
         message = messages.get(lang, messages["fa"]).get(key, "پیام یافت نشد!")
@@ -432,97 +432,98 @@ def get_message(key: str, context: ContextTypes.DEFAULT_TYPE, update: Update = N
             return message
             
         # استخراج متغیرهای پارامتریک از context
-        kwargs = {}
+        params = dict(kwargs)  # Start with provided keyword arguments
         
+        # Skip context-related extraction if context is None
+        if context is None:
+            return message.format(**params)
+            
         # نام کاربر
         if '{name}' in message and update:
-            kwargs['name'] = update.effective_user.first_name or ''
-            
+            params['name'] = update.effective_user.first_name or ''            
         # نام دسته‌بندی
         if '{category_name}' in message:
             category_id = context.user_data.get('category_id')
             categories = context.user_data.get('categories', {})
-            kwargs['category_name'] = categories.get(category_id, {}).get('name', '') if category_id else ''
+            params['category_name'] = categories.get(category_id, {}).get('name', '') if category_id else ''
             
         # توضیحات قبلی
         if '{last_description}' in message:
-            kwargs['last_description'] = context.user_data.get('description', '')
+            params['last_description'] = context.user_data.get('description', '')
             
         # نام محل خدمات
         if '{service_location_name}' in message:
-            kwargs['service_location_name'] = context.user_data.get('service_location', '')
+            params['service_location_name'] = context.user_data.get('service_location', '')
             
         # نشانگر پیشرفت
         if '{current_step}' in message or '{total_steps}' in message:
-            kwargs['current_step'] = context.user_data.get('current_step', '')
-            kwargs['total_steps'] = context.user_data.get('total_steps', '')
-            
+            params['current_step'] = context.user_data.get('current_step', '')
+            params['total_steps'] = context.user_data.get('total_steps', '')            
         # مختصات موقعیت
         if '{latitude}' in message or '{longitude}' in message:
             location = context.user_data.get('location', {})
-            kwargs['latitude'] = str(location.get('latitude', '')) if location else ''
-            kwargs['longitude'] = str(location.get('longitude', '')) if location else ''
+            params['latitude'] = str(location.get('latitude', '')) if location else ''
+            params['longitude'] = str(location.get('longitude', '')) if location else ''
             
         # تاریخ‌ها
         if '{date_str}' in message:
-            kwargs['date_str'] = context.user_data.get('need_date', '')
+            params['date_str'] = context.user_data.get('need_date', '')
         if '{today}' in message:
-            kwargs['today'] = context.user_data.get('today', '')
+            params['today'] = context.user_data.get('today', '')
         if '{tomorrow}' in message:
-            kwargs['tomorrow'] = context.user_data.get('tomorrow', '')
+            params['tomorrow'] = context.user_data.get('tomorrow', '')
         if '{day_after}' in message:
-            kwargs['day_after'] = context.user_data.get('day_after', '')
+            params['day_after'] = context.user_data.get('day_after', '')
             
         # مهلت انجام
         if '{deadline}' in message:
-            kwargs['deadline'] = context.user_data.get('deadline', '')
+            params['deadline'] = context.user_data.get('deadline', '')
             
         # بودجه
         if '{formatted_budget}' in message:
-            kwargs['formatted_budget'] = context.user_data.get('budget', '')
+            params['formatted_budget'] = context.user_data.get('budget', '')
             
         # مقدار و واحد
         if '{quantity}' in message:
-            kwargs['quantity'] = context.user_data.get('quantity', '')
-            
+            params['quantity'] = context.user_data.get('quantity', '')            
         # تعداد (مثلاً تعداد عکس‌ها)
         if '{count}' in message:
-            kwargs['count'] = str(len(context.user_data.get('files', [])))
+            params['count'] = str(len(context.user_data.get('files', [])))
             
         # شماره تلفن
         if '{phone}' in message:
-            kwargs['phone'] = context.user_data.get('phone', '')
+            params['phone'] = context.user_data.get('phone', '')
             
         # تعداد تلاش‌های باقی‌مانده
         if '{remaining}' in message:
-            kwargs['remaining'] = context.user_data.get('remaining_attempts', '')
+            params['remaining'] = context.user_data.get('remaining_attempts', '')
             
         # شناسه درخواست
         if '{project_id}' in message:
-            kwargs['project_id'] = context.user_data.get('project_id', '')
+            params['project_id'] = context.user_data.get('project_id', '')
             
         # توضیحات درخواست
         if '{description}' in message:
-            kwargs['description'] = context.user_data.get('description', '')
+            params['description'] = context.user_data.get('description', '')
             
         # متن موقعیت
         if '{location_text}' in message:
-            kwargs['location_text'] = context.user_data.get('location_text', '')
+            params['location_text'] = context.user_data.get('location_text', '')
             
         # موقعیت
         if '{location}' in message:
-            kwargs['location'] = context.user_data.get('location', '')
+            params['location'] = context.user_data.get('location', '')
             
         # تصاویر
         if '{images}' in message:
-            kwargs['images'] = context.user_data.get('images', '')
+            params['images'] = context.user_data.get('images', '')
             
         # کد وضعیت خطا
         if '{status_code}' in message:
-            kwargs['status_code'] = context.user_data.get('status_code', '')
+            params['status_code'] = context.user_data.get('status_code', '')
         
         # قالب‌بندی پیام با متغیرهای استخراج‌شده
-        return message.format(**kwargs)
+        return message.format(**params)
         
     except KeyError:
         # در صورت نبود کلید، پیام پیش‌فرض
