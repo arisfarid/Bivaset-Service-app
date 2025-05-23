@@ -443,9 +443,20 @@ def get_message(key: str, context: ContextTypes.DEFAULT_TYPE = None, update: Upd
             params['name'] = update.effective_user.first_name or ''            
         # نام دسته‌بندی
         if '{category_name}' in message:
-            category_id = context.user_data.get('category_id')
-            categories = context.user_data.get('categories', {})
-            params['category_name'] = categories.get(category_id, {}).get('name', '') if category_id else ''
+            # Use the category_name from kwargs if provided, otherwise look it up
+            if 'category_name' in params:
+                # Already passed directly as a parameter, don't override
+                pass
+            else:
+                # Try to get from category_id or category_group
+                category_id = context.user_data.get('category_id')
+                category_group = context.user_data.get('category_group')
+                categories = context.user_data.get('categories', {})
+                
+                if category_id and category_id in categories:
+                    params['category_name'] = categories.get(category_id, {}).get('name', '')
+                elif category_group and category_group in categories:
+                    params['category_name'] = categories.get(category_group, {}).get('name', '')
             
         # توضیحات قبلی
         if '{last_description}' in message:
