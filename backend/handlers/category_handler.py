@@ -89,12 +89,12 @@ async def handle_category_selection(update: Update, context: ContextTypes.DEFAUL
             if not selected_category:
                 await query.answer(get_message("category_error", context, update))
                 return CATEGORY
-
+                
             children = selected_category.get('children', [])
             if children:
                 context.user_data['category_group'] = category_id
                 sent = await query.message.edit_text(
-                    get_message("select_subcategory", context, update),
+                    get_message("select_subcategory", context, update, category_name=selected_category['name']),
                     reply_markup=create_subcategory_keyboard(categories, category_id, context, update)
                 )
                 return SUBCATEGORY
@@ -122,12 +122,12 @@ async def handle_category_selection(update: Update, context: ContextTypes.DEFAUL
             if not selected_subcategory:
                 await query.answer(get_message("invalid_subcategory", context, update))
                 return SUBCATEGORY
-
+                
             children = selected_subcategory.get('children', [])
             if children:
                 context.user_data['category_group'] = subcategory_id
                 sent = await query.message.edit_text(
-                    get_message("select_subcategory", context, update),
+                    get_message("select_subcategory", context, update, category_name=selected_subcategory['name']),
                     reply_markup=create_subcategory_keyboard(categories, subcategory_id, context, update)
                 )
                 return SUBCATEGORY
@@ -151,12 +151,11 @@ async def handle_category_selection(update: Update, context: ContextTypes.DEFAUL
                 parent = categories[category_group]
                 parent_id = parent.get('parent')
                 
-                if parent_id is not None:
-                    # تعیین grandparent برای نمایش نام دسته بالادستی
+                if parent_id is not None:                    # تعیین grandparent برای نمایش نام دسته بالادستی
                     grandparent = categories.get(parent_id)
                     # نمایش کیبورد زیردسته‌های والد از طریق تابع متمرکز
                     sent = await query.message.edit_text(
-                        get_message("select_subcategory", context, update),
+                        get_message("select_subcategory", context, update, category_name=grandparent['name']),
                         reply_markup=create_subcategory_keyboard(categories, parent_id, context, update)
                     )
                     context.user_data['category_group'] = parent_id
