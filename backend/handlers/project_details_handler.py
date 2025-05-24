@@ -97,7 +97,7 @@ async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_T
                 dynamic_keyboard = create_dynamic_keyboard(context, update)
                 # ادغام دکمه‌های ناوبری با کیبورد اصلی
                 keyboard_rows = dynamic_keyboard.inline_keyboard
-                keyboard_rows.extend(navigation_keyboard.inline_keyboard)
+                keyboard_rows += navigation_keyboard.inline_keyboard
                 await query.message.edit_text(message_text, reply_markup=InlineKeyboardMarkup(keyboard_rows))
             else:
                 await query.message.edit_text(message_text, reply_markup=create_dynamic_keyboard(context, update))
@@ -127,7 +127,7 @@ async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_T
             
             keyboard = get_date_selection_keyboard(context, update).inline_keyboard
             if navigation_keyboard:
-                keyboard.extend(navigation_keyboard.inline_keyboard)
+                keyboard += navigation_keyboard.inline_keyboard
                 
             await query.message.edit_text(
                 message_text,
@@ -148,7 +148,7 @@ async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_T
                     
                     keyboard = get_custom_input_keyboard(context, update).inline_keyboard
                     if navigation_keyboard:
-                        keyboard.extend(navigation_keyboard.inline_keyboard)
+                        keyboard += navigation_keyboard.inline_keyboard
                         
                     await query.message.edit_text(
                         message_text,
@@ -167,7 +167,7 @@ async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_T
                 
                 keyboard = create_dynamic_keyboard(context, update).inline_keyboard
                 if navigation_keyboard:
-                    keyboard.extend(navigation_keyboard.inline_keyboard)
+                    keyboard += navigation_keyboard.inline_keyboard
                     
                 await query.message.edit_text(
                     message_text,
@@ -184,7 +184,7 @@ async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_T
             
             keyboard = get_deadline_selection_keyboard(context, update).inline_keyboard
             if navigation_keyboard:
-                keyboard.extend(navigation_keyboard.inline_keyboard)
+                keyboard += navigation_keyboard.inline_keyboard
                 
             await query.message.edit_text(
                 message_text,
@@ -203,7 +203,7 @@ async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_T
                     
                     keyboard = get_custom_input_keyboard(context, update).inline_keyboard
                     if navigation_keyboard:
-                        keyboard.extend(navigation_keyboard.inline_keyboard)
+                        keyboard += navigation_keyboard.inline_keyboard
                         
                     await query.message.edit_text(
                         message_text,
@@ -223,7 +223,7 @@ async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_T
                     
                     keyboard = create_dynamic_keyboard(context, update).inline_keyboard
                     if navigation_keyboard:
-                        keyboard.extend(navigation_keyboard.inline_keyboard)
+                        keyboard += navigation_keyboard.inline_keyboard
                         
                     await query.message.edit_text(
                         message_text,
@@ -240,7 +240,7 @@ async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_T
             
             keyboard = get_budget_selection_keyboard(context, update).inline_keyboard
             if navigation_keyboard:
-                keyboard.extend(navigation_keyboard.inline_keyboard)
+                keyboard += navigation_keyboard.inline_keyboard
                 
             await query.message.edit_text(
                 message_text,
@@ -259,7 +259,7 @@ async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_T
                     
                     keyboard = get_custom_input_keyboard(context, update).inline_keyboard
                     if navigation_keyboard:
-                        keyboard.extend(navigation_keyboard.inline_keyboard)
+                        keyboard += navigation_keyboard.inline_keyboard
                         
                     await query.message.edit_text(
                         message_text,
@@ -280,7 +280,7 @@ async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_T
                     
                     keyboard = create_dynamic_keyboard(context, update).inline_keyboard
                     if navigation_keyboard:
-                        keyboard.extend(navigation_keyboard.inline_keyboard)
+                        keyboard += navigation_keyboard.inline_keyboard
                         
                     await query.message.edit_text(
                         message_text,
@@ -297,7 +297,7 @@ async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_T
             
             keyboard = get_quantity_selection_keyboard(context, update).inline_keyboard
             if navigation_keyboard:
-                keyboard.extend(navigation_keyboard.inline_keyboard)
+                keyboard += navigation_keyboard.inline_keyboard
                 
             await query.message.edit_text(
                 message_text,
@@ -316,7 +316,7 @@ async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_T
                     
                     keyboard = get_custom_input_keyboard(context, update).inline_keyboard
                     if navigation_keyboard:
-                        keyboard.extend(navigation_keyboard.inline_keyboard)
+                        keyboard += navigation_keyboard.inline_keyboard
                         
                     await query.message.edit_text(
                         message_text,
@@ -335,7 +335,7 @@ async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_T
                 
                 keyboard = create_dynamic_keyboard(context, update).inline_keyboard
                 if navigation_keyboard:
-                    keyboard.extend(navigation_keyboard.inline_keyboard)
+                    keyboard += navigation_keyboard.inline_keyboard
                     
                 await query.message.edit_text(
                     message_text,
@@ -424,14 +424,14 @@ async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_T
                     # ادغام کیبوردها
                     keyboard_rows = create_dynamic_keyboard(context, update).inline_keyboard
                     # اضافه کردن دکمه‌های ادامه
-                    keyboard_rows.extend(continue_keyboard)
+                    keyboard_rows += continue_keyboard
                     # اضافه کردن دکمه‌های ناوبری
-                    keyboard_rows.extend(navigation_keyboard.inline_keyboard)
+                    keyboard_rows += navigation_keyboard.inline_keyboard
                     await message.reply_text(message_text, reply_markup=InlineKeyboardMarkup(keyboard_rows))
                 else:
                     # ادغام دکمه‌های ادامه با کیبورد اصلی
                     keyboard_rows = create_dynamic_keyboard(context, update).inline_keyboard
-                    keyboard_rows.extend(continue_keyboard)
+                    keyboard_rows += continue_keyboard
                     await message.reply_text(message_text, reply_markup=InlineKeyboardMarkup(keyboard_rows))
                 
                 return DETAILS
@@ -455,7 +455,7 @@ async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_T
                 
                 keyboard = get_date_selection_keyboard(context, update).inline_keyboard
                 if navigation_keyboard:
-                    keyboard.extend(navigation_keyboard.inline_keyboard)
+                    keyboard += navigation_keyboard.inline_keyboard
                 
                 await message.reply_text(
                     message_text,
@@ -470,7 +470,7 @@ async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_T
                 
                 keyboard = get_deadline_selection_keyboard(context, update).inline_keyboard
                 if navigation_keyboard:
-                    keyboard.extend(navigation_keyboard.inline_keyboard)
+                    keyboard += navigation_keyboard.inline_keyboard
                 
                 await message.reply_text(
                     message_text,
@@ -485,7 +485,7 @@ async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_T
                 
                 keyboard = get_budget_selection_keyboard(context, update).inline_keyboard
                 if navigation_keyboard:
-                    keyboard.extend(navigation_keyboard.inline_keyboard)
+                    keyboard += navigation_keyboard.inline_keyboard
                 
                 await message.reply_text(
                     message_text,
@@ -500,7 +500,7 @@ async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_T
                 
                 keyboard = get_quantity_selection_keyboard(context, update).inline_keyboard
                 if navigation_keyboard:
-                    keyboard.extend(navigation_keyboard.inline_keyboard)
+                    keyboard += navigation_keyboard.inline_keyboard
                 
                 await message.reply_text(
                     message_text,
@@ -519,7 +519,7 @@ async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_T
                 
                 keyboard = create_dynamic_keyboard(context, update).inline_keyboard
                 if navigation_keyboard:
-                    keyboard.extend(navigation_keyboard.inline_keyboard)
+                    keyboard += navigation_keyboard.inline_keyboard
                     
                 await message.reply_text(
                     message_text,
@@ -536,7 +536,7 @@ async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_T
                     
                     keyboard = get_custom_input_keyboard(context, update).inline_keyboard
                     if navigation_keyboard:
-                        keyboard.extend(navigation_keyboard.inline_keyboard)
+                        keyboard += navigation_keyboard.inline_keyboard
                         
                     await message.reply_text(
                         message_text,
@@ -551,7 +551,7 @@ async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_T
                     
                     keyboard = create_dynamic_keyboard(context, update).inline_keyboard
                     if navigation_keyboard:
-                        keyboard.extend(navigation_keyboard.inline_keyboard)
+                        keyboard += navigation_keyboard.inline_keyboard
                         
                     await message.reply_text(
                         message_text,
@@ -564,7 +564,7 @@ async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_T
                 
                 keyboard = get_custom_input_keyboard(context, update).inline_keyboard
                 if navigation_keyboard:
-                    keyboard.extend(navigation_keyboard.inline_keyboard)
+                    keyboard += navigation_keyboard.inline_keyboard
                     
                 await message.reply_text(
                     message_text,
@@ -580,7 +580,7 @@ async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_T
                 
                 keyboard = create_dynamic_keyboard(context, update).inline_keyboard
                 if navigation_keyboard:
-                    keyboard.extend(navigation_keyboard.inline_keyboard)
+                    keyboard += navigation_keyboard.inline_keyboard
                     
                 await message.reply_text(
                     message_text,
@@ -599,7 +599,7 @@ async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_T
                 
                 keyboard = create_dynamic_keyboard(context, update).inline_keyboard
                 if navigation_keyboard:
-                    keyboard.extend(navigation_keyboard.inline_keyboard)
+                    keyboard += navigation_keyboard.inline_keyboard
                     
                 await message.reply_text(
                     message_text,
@@ -612,7 +612,7 @@ async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_T
                 
                 keyboard = get_custom_input_keyboard(context, update).inline_keyboard
                 if navigation_keyboard:
-                    keyboard.extend(navigation_keyboard.inline_keyboard)
+                    keyboard += navigation_keyboard.inline_keyboard
                     
                 await message.reply_text(
                     message_text,
@@ -628,7 +628,7 @@ async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_T
                 
                 keyboard = create_dynamic_keyboard(context, update).inline_keyboard
                 if navigation_keyboard:
-                    keyboard.extend(navigation_keyboard.inline_keyboard)
+                    keyboard += navigation_keyboard.inline_keyboard
                     
                 await message.reply_text(
                     message_text,
@@ -648,7 +648,7 @@ async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_T
                 
                 keyboard = create_dynamic_keyboard(context, update).inline_keyboard
                 if navigation_keyboard:
-                    keyboard.extend(navigation_keyboard.inline_keyboard)
+                    keyboard += navigation_keyboard.inline_keyboard
                     
                 await message.reply_text(
                     message_text,
@@ -661,7 +661,7 @@ async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_T
                 
                 keyboard = get_custom_input_keyboard(context, update).inline_keyboard
                 if navigation_keyboard:
-                    keyboard.extend(navigation_keyboard.inline_keyboard)
+                    keyboard += navigation_keyboard.inline_keyboard
                     
                 await message.reply_text(
                     message_text,
@@ -677,7 +677,7 @@ async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_T
                 
                 keyboard = create_dynamic_keyboard(context, update).inline_keyboard
                 if navigation_keyboard:
-                    keyboard.extend(navigation_keyboard.inline_keyboard)
+                    keyboard += navigation_keyboard.inline_keyboard
                     
                 await message.reply_text(
                     message_text,
@@ -694,7 +694,7 @@ async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_T
             
             keyboard = create_dynamic_keyboard(context, update).inline_keyboard
             if navigation_keyboard:
-                keyboard.extend(navigation_keyboard.inline_keyboard)
+                keyboard += navigation_keyboard.inline_keyboard
                 
             await message.reply_text(
                 message_text,
