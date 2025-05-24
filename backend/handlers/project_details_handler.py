@@ -374,11 +374,16 @@ async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_T
                     reply_markup=ForceReply(selective=True)
                 )
                 return DESCRIPTION
-                
-            # پردازش پیام متنی
+                  # پردازش پیام متنی
+            logger.info(f"=== DESCRIPTION PROCESSING START ===")
+            logger.info(f"User ID: {update.effective_user.id}")
+            logger.info(f"Current state: {current_state}")
             logger.info(f"Project details text: {text}")
+            logger.info(f"Text length: {len(text)}")
+            logger.info(f"User data before processing: {context.user_data}")
 
             if text == get_message("back", context, update):
+                logger.info("User clicked back button - returning to LOCATION_TYPE")
                 # برگشت به انتخاب نوع لوکیشن
                 context.user_data['state'] = LOCATION_TYPE
                 await message.reply_text(
@@ -386,10 +391,13 @@ async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_T
                     reply_markup=get_location_type_keyboard(context, update),
                     parse_mode="Markdown"
                 )
+                logger.info("Successfully returned to LOCATION_TYPE state")
                 return LOCATION_TYPE
             else:
+                logger.info("Processing description text - checking length")
                 # بررسی کیفیت توضیحات (اختیاری: پیشنهاد بهبود برای توضیحات کوتاه)
                 if len(text) < 20:  # اگر توضیحات خیلی کوتاه است
+                    logger.info(f"Description too short ({len(text)} chars) - showing improvement suggestion")
                     await message.reply_text(
                         get_message("description_too_short", context, update),
                         reply_markup=InlineKeyboardMarkup([
@@ -399,34 +407,98 @@ async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_T
                     )
                     # ذخیره توضیحات موقت برای استفاده بعدی
                     context.user_data['temp_description'] = text
+                    logger.info(f"Saved temp description: {text}")
+                    logger.info("Staying in DESCRIPTION state for revision")
                     return DESCRIPTION
                 
+                logger.info("Description length acceptable - proceeding to DETAILS state")
                 # ذخیره توضیحات و رفتن به جزئیات
                 context.user_data['description'] = text
+                logger.info(f"Saved description: {text}")
+                
+                logger.info("=== STATE TRANSITION: DESCRIPTION → DETAILS ===")
                 context.user_data['state'] = DETAILS
+                logger.info(f"State changed to DETAILS")
                 
                 # با استفاده از navigation utility
+                logger.info("Getting project details message")
                 message_text = get_message("project_details", context, update)
-                message_text, navigation_keyboard = add_navigation_to_message(message_text, DETAILS, context.user_data, context, update)
+                logger.info(f"Base message text: {message_text}")
                 
+                logger.info("Adding navigation to message")
+                try:
+                    message_text, navigation_keyboard = add_navigation_to_message(message_text, DETAILS, context.user_data, context, update)
+                    logger.info(f"Navigation added successfully")
+                    logger.info(f"Final message text: {message_text}")
+                    logger.info(f"Navigation keyboard: {navigation_keyboard}")
+                except Exception as nav_error:
+                    logger.error(f"Error adding navigation: {nav_error}")
+                    logger.error(f"Navigation error details: {type(nav_error).__name__}: {str(nav_error)}")
+                    navigation_keyboard = None                
                 # دکمه‌های مخصوص ادامه فرآیند
+                logger.info("Creating continue keyboard")
                 continue_keyboard = [
                     [InlineKeyboardButton(get_message("continue_to_next_step", context, update), callback_data="continue_to_submit")]
                 ]
+                logger.info(f"Continue keyboard created: {continue_keyboard}")
                 
-                if navigation_keyboard:
-                    # ادغام کیبوردها
-                    keyboard_rows = create_dynamic_keyboard(context, update).inline_keyboard                    # اضافه کردن دکمه‌های ادامه
-                    keyboard_rows += continue_keyboard
-                    # اضافه کردن دکمه‌های ناوبری
-                    keyboard_rows += list(navigation_keyboard.inline_keyboard)
-                    await message.reply_text(message_text, reply_markup=InlineKeyboardMarkup(keyboard_rows))
-                else:
-                    # ادغام دکمه‌های ادامه با کیبورد اصلی
-                    keyboard_rows = create_dynamic_keyboard(context, update).inline_keyboard
-                    keyboard_rows += continue_keyboard
-                    await message.reply_text(message_text, reply_markup=InlineKeyboardMarkup(keyboard_rows))
+                logger.info("=== KEYBOARD CREATION AND CONCATENATION ===")
+                try:
+                    logger.info("Creating dynamic keyboard")
+                    dynamic_keyboard = create_dynamic_keyboard(context, update)
+                    logger.info(f"Dynamic keyboard type: {type(dynamic_keyboard)}")
+                    logger.info(f"Dynamic keyboard: {dynamic_keyboard}")
+                    logger.info(f"Dynamic keyboard inline_keyboard type: {type(dynamic_keyboard.inline_keyboard)}")
+                    logger.info(f"Dynamic keyboard inline_keyboard: {dynamic_keyboard.inline_keyboard}")
+                    
+                    if navigation_keyboard:
+                        logger.info("Navigation keyboard exists - merging keyboards")
+                        logger.info(f"Navigation keyboard type: {type(navigation_keyboard)}")
+                        logger.info(f"Navigation keyboard inline_keyboard type: {type(navigation_keyboard.inline_keyboard)}")
+                        
+                        # ادغام کیبوردها با تبدیل صحیح tuple به list
+                        logger.info("Converting dynamic keyboard to list")
+                        keyboard_rows = list(dynamic_keyboard.inline_keyboard)
+                        logger.info(f"Keyboard rows after conversion: {type(keyboard_rows)} - {keyboard_rows}")
+                        
+                        logger.info("Adding continue keyboard")
+                        keyboard_rows.extend(continue_keyboard)
+                        logger.info(f"Keyboard rows after adding continue: {keyboard_rows}")
+                        
+                        logger.info("Adding navigation keyboard")
+                        logger.info(f"About to add navigation keyboard of type: {type(navigation_keyboard.inline_keyboard)}")
+                        keyboard_rows.extend(list(navigation_keyboard.inline_keyboard))
+                        logger.info(f"Final keyboard rows: {keyboard_rows}")
+                        
+                        logger.info("Sending message with merged keyboard")
+                        await message.reply_text(message_text, reply_markup=InlineKeyboardMarkup(keyboard_rows))
+                        logger.info("Message sent successfully with navigation keyboard")
+                    else:
+                        logger.info("No navigation keyboard - using simple merge")
+                        # ادغام دکمه‌های ادامه با کیبورد اصلی
+                        keyboard_rows = list(dynamic_keyboard.inline_keyboard)
+                        keyboard_rows.extend(continue_keyboard)
+                        logger.info(f"Simple keyboard rows: {keyboard_rows}")
+                        
+                        await message.reply_text(message_text, reply_markup=InlineKeyboardMarkup(keyboard_rows))
+                        logger.info("Message sent successfully with simple keyboard")
+                        
+                except Exception as keyboard_error:
+                    logger.error(f"=== KEYBOARD ERROR ===")
+                    logger.error(f"Keyboard creation error: {keyboard_error}")
+                    logger.error(f"Error type: {type(keyboard_error).__name__}")
+                    logger.error(f"Error details: {str(keyboard_error)}")
+                    import traceback
+                    logger.error(f"Traceback: {traceback.format_exc()}")
+                    
+                    # Fallback to basic keyboard
+                    logger.info("Using fallback keyboard")
+                    basic_keyboard = [[InlineKeyboardButton(get_message("continue_to_next_step", context, update), callback_data="continue_to_submit")]]
+                    await message.reply_text(message_text, reply_markup=InlineKeyboardMarkup(basic_keyboard))
                 
+                logger.info("=== DESCRIPTION PROCESSING COMPLETE ===")
+                logger.info(f"Final user data: {context.user_data}")
+                logger.info("Returning DETAILS state")
                 return DETAILS
 
         elif current_state == DETAILS:
