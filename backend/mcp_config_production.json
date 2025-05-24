@@ -1,0 +1,19 @@
+{
+  "database": {
+    "host": "localhost",
+    "port": 5432,
+    "database": "bivaset_db",
+    "user": "bivaset_user",
+    "password": "your_password_here"
+  },
+  "server": {
+    "name": "bivaset-database-server",
+    "version": "1.0.0",
+    "host": "0.0.0.0",
+    "port": 8000
+  },
+  "logging": {
+    "level": "INFO",
+    "file": "/home/ubuntu/logs/mcp_server.log"
+  }
+}
