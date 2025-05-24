@@ -117,20 +117,22 @@ async def handle_location(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         elif data == "skip_location":
             context.user_data['state'] = DESCRIPTION
             await delete_previous_messages(sent, context, n=3)
-            return DESCRIPTION
-
-    # اگر کاربر موقعیت مکانی خود را ارسال کند
+            return DESCRIPTION    # اگر کاربر موقعیت مکانی خود را ارسال کند
     if update.message and update.message.location:
         location = update.message.location
         context.user_data['location'] = {'longitude': location.longitude, 'latitude': location.latitude}
         logger.info(f"Received location: {context.user_data['location']}")
         context.user_data['state'] = DESCRIPTION
-        # نمایش پیام موفقیت و هدایت به مرحله توضیحات
+        # نمایش پیام موفقیت
         sent = await update.message.reply_text(
             get_message("location_success", context, update),
             reply_markup=REMOVE_KEYBOARD
         )
         await delete_previous_messages(sent, context, n=3)
+        
+        # Import and call description_handler to show the description input interface
+        from handlers.project_details_handler import description_handler
+        await description_handler(sent, context, update)
         return DESCRIPTION
 
     # اگر پیام متنی یا غیرمتنی دریافت شد (در مرحله LOCATION_INPUT)
