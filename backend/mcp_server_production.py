@@ -632,11 +632,10 @@ class StandaloneBivasetMCPServer:
             logger.info("✅ Database connection successful")
         except Exception as e:
             logger.error(f"❌ Database connection failed: {e}")
-            return
-          # اجرای سرور با stdio (compatible with mcp 0.9.1)
-        from mcp import stdio
+            return        # اجرای سرور با stdio (compatible with mcp 0.9.1)
+        from mcp import stdio_server
         logger.info("🌟 MCP Server is running and ready for connections...")
-        async with stdio() as (read_stream, write_stream):
+        async with stdio_server() as (read_stream, write_stream):
             await self.server.run(
                 read_stream, write_stream, self.server.create_initialization_options()
             )
