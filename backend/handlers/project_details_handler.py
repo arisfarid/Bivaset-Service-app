@@ -118,14 +118,12 @@ async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_T
         # پردازش انتخاب مدیریت عکس‌ها
         elif data == "photo_management" or data == get_message("images_button", context, update) or data == "manage_photos":
             return await init_photo_management(update, context)
-        
-        # پردازش ورود تاریخ نیاز
+          # پردازش ورود تاریخ نیاز
         elif data == "need_date" or data == get_message("need_date_button", context, update):
             context.user_data['state'] = DETAILS_DATE
             message_text = get_message("select_need_date_prompt", context, update)
             message_text, navigation_keyboard = add_navigation_to_message(message_text, DETAILS_DATE, context.user_data, context, update)
-            
-            keyboard = get_date_selection_keyboard(context, update).inline_keyboard
+            keyboard = list(get_date_selection_keyboard(context, update).inline_keyboard)
             if navigation_keyboard:
                 keyboard += navigation_keyboard.inline_keyboard
                 
@@ -141,12 +139,10 @@ async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_T
             if len(parts) >= 3:
                 date_type = parts[1]
                 
-                if date_type == "custom":
-                    # نمایش پیام برای ورود تاریخ دستی
+                if date_type == "custom":                    # نمایش پیام برای ورود تاریخ دستی
                     message_text = get_message("enter_custom_date_prompt", context, update)
                     message_text, navigation_keyboard = add_navigation_to_message(message_text, DETAILS_DATE, context.user_data, context, update)
-                    
-                    keyboard = get_custom_input_keyboard(context, update).inline_keyboard
+                    keyboard = list(get_custom_input_keyboard(context, update).inline_keyboard)
                     if navigation_keyboard:
                         keyboard += navigation_keyboard.inline_keyboard
                         
