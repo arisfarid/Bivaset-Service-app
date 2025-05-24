@@ -166,7 +166,8 @@ def require_phone(func):
                     )
                 context.user_data['state'] = REGISTER
                 return REGISTER
-            return await func(update, context, *args, **kwargs)
+            # درست کردن فراخوانی تابع - حذف *args, **kwargs اضافی
+            return await func(update, context)
         except Exception as e:
             logger.error(f"Error in phone requirement decorator: {e}")
             if update.callback_query:
