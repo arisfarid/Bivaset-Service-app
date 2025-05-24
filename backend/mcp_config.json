@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "bivaset-database": {
+      "command": "python",
+      "args": ["mcp_server.py"],
+      "cwd": "c:\\Users\\arisf\\OneDrive\\Companies\\Bivaset\\App\\Bivaset-Service-app\\backend",
+      "env": {
+        "DJANGO_SETTINGS_MODULE": "app.settings",
+        "PYTHONPATH": "c:\\Users\\arisf\\OneDrive\\Companies\\Bivaset\\App\\Bivaset-Service-app\\backend"
+      }
+    }
+  }
+}
