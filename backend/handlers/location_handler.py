@@ -129,10 +129,13 @@ async def handle_location(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
             reply_markup=REMOVE_KEYBOARD
         )
         await delete_previous_messages(sent, context, n=3)
-        
-        # Import and call description_handler to show the description input interface
-        from handlers.project_details_handler import description_handler
-        await description_handler(sent, context, update)
+          # بجای فراخوانی description_handler، مستقیماً پیام مرحله توضیحات را نمایش می‌دهیم
+        description_sent = await update.message.reply_text(
+            get_message("description_guidance", context, update),
+            reply_markup=get_back_to_description_keyboard(context, update),
+            parse_mode="Markdown"
+        )
+        await delete_previous_messages(description_sent, context, n=3)
         return DESCRIPTION
 
     # اگر پیام متنی یا غیرمتنی دریافت شد (در مرحله LOCATION_INPUT)
