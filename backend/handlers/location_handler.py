@@ -111,13 +111,13 @@ async def handle_location(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
                 parse_mode="Markdown"
             )
             await delete_previous_messages(sent, context, n=3)
-            return LOCATION_TYPE
-
-        # رد کردن ارسال لوکیشن و رفتن به مرحله توضیحات
+            return LOCATION_TYPE        # رد کردن ارسال لوکیشن و رفتن به مرحله توضیحات
         elif data == "skip_location":
             context.user_data['state'] = DESCRIPTION
-            await delete_previous_messages(sent, context, n=3)
-            return DESCRIPTION    # اگر کاربر موقعیت مکانی خود را ارسال کند
+            await delete_previous_messages(query.message, context, n=3)
+            return DESCRIPTION
+
+    # اگر کاربر موقعیت مکانی خود را ارسال کند
     if update.message and update.message.location:
         location = update.message.location
         context.user_data['location'] = {'longitude': location.longitude, 'latitude': location.latitude}
