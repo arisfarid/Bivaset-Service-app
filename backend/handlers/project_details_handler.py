@@ -44,10 +44,9 @@ async def description_handler(message, context: ContextTypes.DEFAULT_TYPE, updat
         keyboard = [
             [InlineKeyboardButton(get_message("back", context, update), callback_data="back_to_location_type")]
         ]
-    
-    # اگر navigation keyboard داریم، آن را ادغام می‌کنیم
+      # اگر navigation keyboard داریم، آن را ادغام می‌کنیم
     if navigation_keyboard:
-        keyboard.extend(navigation_keyboard.inline_keyboard)
+        keyboard += navigation_keyboard.inline_keyboard
     
     await message.edit_text(
         guidance_text,
