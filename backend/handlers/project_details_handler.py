@@ -121,7 +121,7 @@ async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_T
             context.user_data['state'] = DETAILS_DATE
             message_text = get_message("select_need_date_prompt", context, update)
             message_text, navigation_keyboard = add_navigation_to_message(message_text, DETAILS_DATE, context.user_data, context, update)
-            keyboard = list(list(get_date_selection_keyboard(context, update).inline_keyboard))
+            keyboard = list(get_date_selection_keyboard(context, update).inline_keyboard)
             if navigation_keyboard:
                 keyboard += list(navigation_keyboard.inline_keyboard)
                 
@@ -141,7 +141,7 @@ async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_T
                     # نمایش پیام برای ورود تاریخ دستی
                     message_text = get_message("enter_custom_date_prompt", context, update)
                     message_text, navigation_keyboard = add_navigation_to_message(message_text, DETAILS_DATE, context.user_data, context, update)
-                    keyboard = list(list(get_custom_input_keyboard(context, update).inline_keyboard))
+                    keyboard = list(get_custom_input_keyboard(context, update).inline_keyboard)
                     if navigation_keyboard:
                         keyboard += list(navigation_keyboard.inline_keyboard)
                         
@@ -159,7 +159,7 @@ async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_T
                 message_text = get_message("need_date_saved", context, update)
                 message_text, navigation_keyboard = add_navigation_to_message(message_text, DETAILS, context.user_data, context, update)
                 
-                keyboard = list(list(create_dynamic_keyboard(context, update).inline_keyboard))
+                keyboard = list(create_dynamic_keyboard(context, update).inline_keyboard)
                 if navigation_keyboard:
                     keyboard += list(navigation_keyboard.inline_keyboard)
                     
@@ -176,7 +176,7 @@ async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_T
             message_text = get_message("select_deadline_prompt", context, update)
             message_text, navigation_keyboard = add_navigation_to_message(message_text, DETAILS_DEADLINE, context.user_data, context, update)
             
-            keyboard = list(list(get_deadline_selection_keyboard(context, update).inline_keyboard))
+            keyboard = list(get_deadline_selection_keyboard(context, update).inline_keyboard)
             if navigation_keyboard:
                 keyboard += list(navigation_keyboard.inline_keyboard)
                 
@@ -195,7 +195,7 @@ async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_T
                     message_text = get_message("enter_custom_deadline_prompt", context, update)
                     message_text, navigation_keyboard = add_navigation_to_message(message_text, DETAILS_DEADLINE, context.user_data, context, update)
                     
-                    keyboard = list(list(get_custom_input_keyboard(context, update).inline_keyboard))
+                    keyboard = list(get_custom_input_keyboard(context, update).inline_keyboard)
                     if navigation_keyboard:
                         keyboard += list(navigation_keyboard.inline_keyboard)
                         
@@ -215,7 +215,7 @@ async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_T
                     message_text = get_message("deadline_saved", context, update)
                     message_text, navigation_keyboard = add_navigation_to_message(message_text, DETAILS, context.user_data, context, update)
                     
-                    keyboard = list(list(create_dynamic_keyboard(context, update).inline_keyboard))
+                    keyboard = list(create_dynamic_keyboard(context, update).inline_keyboard)
                     if navigation_keyboard:
                         keyboard += list(navigation_keyboard.inline_keyboard)
                         
@@ -232,7 +232,7 @@ async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_T
             message_text = get_message("select_budget_prompt", context, update)
             message_text, navigation_keyboard = add_navigation_to_message(message_text, DETAILS_BUDGET, context.user_data, context, update)
             
-            keyboard = list(list(get_budget_selection_keyboard(context, update).inline_keyboard))
+            keyboard = list(get_budget_selection_keyboard(context, update).inline_keyboard)
             if navigation_keyboard:
                 keyboard += list(navigation_keyboard.inline_keyboard)
                 
@@ -251,7 +251,7 @@ async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_T
                     message_text = get_message("enter_custom_budget_prompt", context, update)
                     message_text, navigation_keyboard = add_navigation_to_message(message_text, DETAILS_BUDGET, context.user_data, context, update)
                     
-                    keyboard = list(list(get_custom_input_keyboard(context, update).inline_keyboard))
+                    keyboard = list(get_custom_input_keyboard(context, update).inline_keyboard)
                     if navigation_keyboard:
                         keyboard += list(navigation_keyboard.inline_keyboard)
                         
@@ -272,7 +272,7 @@ async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_T
                     message_text = get_message("budget_saved", context, update)
                     message_text, navigation_keyboard = add_navigation_to_message(message_text, DETAILS, context.user_data, context, update)
                     
-                    keyboard = list(list(create_dynamic_keyboard(context, update).inline_keyboard))
+                    keyboard = list(create_dynamic_keyboard(context, update).inline_keyboard)
                     if navigation_keyboard:
                         keyboard += list(navigation_keyboard.inline_keyboard)
                         
@@ -289,7 +289,7 @@ async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_T
             message_text = get_message("select_quantity_prompt", context, update)
             message_text, navigation_keyboard = add_navigation_to_message(message_text, DETAILS_QUANTITY, context.user_data, context, update)
             
-            keyboard = list(list(get_quantity_selection_keyboard(context, update).inline_keyboard))
+            keyboard = list(get_quantity_selection_keyboard(context, update).inline_keyboard)
             if navigation_keyboard:
                 keyboard += list(navigation_keyboard.inline_keyboard)
                 
@@ -308,7 +308,7 @@ async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_T
                     message_text = get_message("enter_custom_quantity_prompt", context, update)
                     message_text, navigation_keyboard = add_navigation_to_message(message_text, DETAILS_QUANTITY, context.user_data, context, update)
                     
-                    keyboard = list(list(get_custom_input_keyboard(context, update).inline_keyboard))
+                    keyboard = list(get_custom_input_keyboard(context, update).inline_keyboard)
                     if navigation_keyboard:
                         keyboard += list(navigation_keyboard.inline_keyboard)
                         
@@ -327,7 +327,7 @@ async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_T
                 message_text = get_message("quantity_saved", context, update)
                 message_text, navigation_keyboard = add_navigation_to_message(message_text, DETAILS, context.user_data, context, update)
                 
-                keyboard = list(list(create_dynamic_keyboard(context, update).inline_keyboard))
+                keyboard = list(create_dynamic_keyboard(context, update).inline_keyboard)
                 if navigation_keyboard:
                     keyboard += list(navigation_keyboard.inline_keyboard)
                     
@@ -446,7 +446,7 @@ async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_T
                 message_text = get_message("select_need_date_prompt", context, update)
                 message_text, navigation_keyboard = add_navigation_to_message(message_text, DETAILS_DATE, context.user_data, context, update)
                 
-                keyboard = list(list(get_date_selection_keyboard(context, update).inline_keyboard))
+                keyboard = list(get_date_selection_keyboard(context, update).inline_keyboard)
                 if navigation_keyboard:
                     keyboard += list(navigation_keyboard.inline_keyboard)
                 
@@ -461,7 +461,7 @@ async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_T
                 message_text = get_message("select_deadline_prompt", context, update)
                 message_text, navigation_keyboard = add_navigation_to_message(message_text, DETAILS_DEADLINE, context.user_data, context, update)
                 
-                keyboard = list(list(get_deadline_selection_keyboard(context, update).inline_keyboard))
+                keyboard = list(get_deadline_selection_keyboard(context, update).inline_keyboard)
                 if navigation_keyboard:
                     keyboard += list(navigation_keyboard.inline_keyboard)
                 
@@ -476,7 +476,7 @@ async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_T
                 message_text = get_message("select_budget_prompt", context, update)
                 message_text, navigation_keyboard = add_navigation_to_message(message_text, DETAILS_BUDGET, context.user_data, context, update)
                 
-                keyboard = list(list(get_budget_selection_keyboard(context, update).inline_keyboard))
+                keyboard = list(get_budget_selection_keyboard(context, update).inline_keyboard)
                 if navigation_keyboard:
                     keyboard += list(navigation_keyboard.inline_keyboard)
                 
@@ -491,7 +491,7 @@ async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_T
                 message_text = get_message("select_quantity_prompt", context, update)
                 message_text, navigation_keyboard = add_navigation_to_message(message_text, DETAILS_QUANTITY, context.user_data, context, update)
                 
-                keyboard = list(list(get_quantity_selection_keyboard(context, update).inline_keyboard))
+                keyboard = list(get_quantity_selection_keyboard(context, update).inline_keyboard)
                 if navigation_keyboard:
                     keyboard += list(navigation_keyboard.inline_keyboard)
                 
@@ -510,7 +510,7 @@ async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_T
                 message_text = get_message("project_details", context, update)
                 message_text, navigation_keyboard = add_navigation_to_message(message_text, DETAILS, context.user_data, context, update)
                 
-                keyboard = list(list(create_dynamic_keyboard(context, update).inline_keyboard))
+                keyboard = list(create_dynamic_keyboard(context, update).inline_keyboard)
                 if navigation_keyboard:
                     keyboard += list(navigation_keyboard.inline_keyboard)
                     
@@ -527,7 +527,7 @@ async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_T
                     message_text = get_message("date_must_be_future", context, update)
                     message_text, navigation_keyboard = add_navigation_to_message(message_text, DETAILS_DATE, context.user_data, context, update)
                     
-                    keyboard = list(list(get_custom_input_keyboard(context, update).inline_keyboard))
+                    keyboard = list(get_custom_input_keyboard(context, update).inline_keyboard)
                     if navigation_keyboard:
                         keyboard += list(navigation_keyboard.inline_keyboard)
                         
@@ -542,7 +542,7 @@ async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_T
                     message_text = get_message("need_date_saved", context, update)
                     message_text, navigation_keyboard = add_navigation_to_message(message_text, DETAILS, context.user_data, context, update)
                     
-                    keyboard = list(list(create_dynamic_keyboard(context, update).inline_keyboard))
+                    keyboard = list(create_dynamic_keyboard(context, update).inline_keyboard)
                     if navigation_keyboard:
                         keyboard += list(navigation_keyboard.inline_keyboard)
                         
@@ -555,7 +555,7 @@ async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_T
                 message_text = get_message("invalid_date_format", context, update)
                 message_text, navigation_keyboard = add_navigation_to_message(message_text, DETAILS_DATE, context.user_data, context, update)
                 
-                keyboard = list(list(get_custom_input_keyboard(context, update).inline_keyboard))
+                keyboard = list(get_custom_input_keyboard(context, update).inline_keyboard)
                 if navigation_keyboard:
                     keyboard += list(navigation_keyboard.inline_keyboard)
                     
@@ -571,7 +571,7 @@ async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_T
                 message_text = get_message("project_details", context, update)
                 message_text, navigation_keyboard = add_navigation_to_message(message_text, DETAILS, context.user_data, context, update)
                 
-                keyboard = list(list(create_dynamic_keyboard(context, update).inline_keyboard))
+                keyboard = list(create_dynamic_keyboard(context, update).inline_keyboard)
                 if navigation_keyboard:
                     keyboard += list(navigation_keyboard.inline_keyboard)
                     
@@ -590,7 +590,7 @@ async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_T
                 message_text = get_message("deadline_saved", context, update)
                 message_text, navigation_keyboard = add_navigation_to_message(message_text, DETAILS, context.user_data, context, update)
                 
-                keyboard = list(list(create_dynamic_keyboard(context, update).inline_keyboard))
+                keyboard = list(create_dynamic_keyboard(context, update).inline_keyboard)
                 if navigation_keyboard:
                     keyboard += list(navigation_keyboard.inline_keyboard)
                     
@@ -603,7 +603,7 @@ async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_T
                 message_text = get_message("invalid_deadline", context, update)
                 message_text, navigation_keyboard = add_navigation_to_message(message_text, DETAILS_DEADLINE, context.user_data, context, update)
                 
-                keyboard = list(list(get_custom_input_keyboard(context, update).inline_keyboard))
+                keyboard = list(get_custom_input_keyboard(context, update).inline_keyboard)
                 if navigation_keyboard:
                     keyboard += list(navigation_keyboard.inline_keyboard)
                     
@@ -619,7 +619,7 @@ async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_T
                 message_text = get_message("project_details", context, update)
                 message_text, navigation_keyboard = add_navigation_to_message(message_text, DETAILS, context.user_data, context, update)
                 
-                keyboard = list(list(create_dynamic_keyboard(context, update).inline_keyboard))
+                keyboard = list(create_dynamic_keyboard(context, update).inline_keyboard)
                 if navigation_keyboard:
                     keyboard += list(navigation_keyboard.inline_keyboard)
                     
@@ -639,7 +639,7 @@ async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_T
                 message_text = get_message("budget_saved", context, update)
                 message_text, navigation_keyboard = add_navigation_to_message(message_text, DETAILS, context.user_data, context, update)
                 
-                keyboard = list(list(create_dynamic_keyboard(context, update).inline_keyboard))
+                keyboard = list(create_dynamic_keyboard(context, update).inline_keyboard)
                 if navigation_keyboard:
                     keyboard += list(navigation_keyboard.inline_keyboard)
                     
@@ -652,7 +652,7 @@ async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_T
                 message_text = get_message("invalid_budget", context, update)
                 message_text, navigation_keyboard = add_navigation_to_message(message_text, DETAILS_BUDGET, context.user_data, context, update)
                 
-                keyboard = list(list(get_custom_input_keyboard(context, update).inline_keyboard))
+                keyboard = list(get_custom_input_keyboard(context, update).inline_keyboard)
                 if navigation_keyboard:
                     keyboard += list(navigation_keyboard.inline_keyboard)
                     
@@ -668,7 +668,7 @@ async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_T
                 message_text = get_message("project_details", context, update)
                 message_text, navigation_keyboard = add_navigation_to_message(message_text, DETAILS, context.user_data, context, update)
                 
-                keyboard = list(list(create_dynamic_keyboard(context, update).inline_keyboard))
+                keyboard = list(create_dynamic_keyboard(context, update).inline_keyboard)
                 if navigation_keyboard:
                     keyboard += list(navigation_keyboard.inline_keyboard)
                     
@@ -685,7 +685,7 @@ async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_T
             message_text = get_message("quantity_saved", context, update)
             message_text, navigation_keyboard = add_navigation_to_message(message_text, DETAILS, context.user_data, context, update)
             
-            keyboard = list(list(create_dynamic_keyboard(context, update).inline_keyboard))
+            keyboard = list(create_dynamic_keyboard(context, update).inline_keyboard)
             if navigation_keyboard:
                 keyboard += list(navigation_keyboard.inline_keyboard)
                 
