@@ -11,6 +11,6 @@ aiohttp==3.9.3
 whitenoise==6.9.0
 
 # MCP Server dependencies
-mcp==1.0.0
+mcp==0.9.1
 pydantic>=2.8.0
 typing-extensions>=4.8.0
