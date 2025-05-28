@@ -11,6 +11,7 @@ from handlers.attachment_handler import handle_photo_navigation, init_photo_mana
 from handlers.states import START, REGISTER, ROLE, EMPLOYER_MENU, CATEGORY, SUBCATEGORY, DESCRIPTION, LOCATION_TYPE, LOCATION_INPUT, DETAILS, DETAILS_FILES, DETAILS_DATE, DETAILS_DEADLINE, DETAILS_BUDGET, DETAILS_QUANTITY, SUBMIT, VIEW_PROJECTS, PROJECT_ACTIONS, CHANGE_PHONE, VERIFY_CODE
 from localization import get_message
 from handlers.navigation_utils import add_navigation_to_message, SERVICE_REQUEST_FLOW
+from helpers.menu_manager import MenuManager
 from functools import wraps
 import json
 import os
@@ -471,7 +472,8 @@ async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_T
                         logger.info(f"Final keyboard rows: {keyboard_rows}")
                         
                         logger.info("Sending message with merged keyboard")
-                        await message.reply_text(message_text, reply_markup=InlineKeyboardMarkup(keyboard_rows))
+                        # استفاده از MenuManager برای ویرایش پیام قبلی به جای ایجاد پیام جدید
+                        await MenuManager.show_menu(update, context, message_text, InlineKeyboardMarkup(keyboard_rows), clear_previous=True)
                         logger.info("Message sent successfully with navigation keyboard")
                     else:
                         logger.info("No navigation keyboard - using simple merge")
@@ -480,7 +482,8 @@ async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_T
                         keyboard_rows.extend(continue_keyboard)
                         logger.info(f"Simple keyboard rows: {keyboard_rows}")
                         
-                        await message.reply_text(message_text, reply_markup=InlineKeyboardMarkup(keyboard_rows))
+                        # استفاده از MenuManager برای ویرایش پیام قبلی به جای ایجاد پیام جدید
+                        await MenuManager.show_menu(update, context, message_text, InlineKeyboardMarkup(keyboard_rows), clear_previous=True)
                         logger.info("Message sent successfully with simple keyboard")
                         
                 except Exception as keyboard_error:
@@ -490,11 +493,11 @@ async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_T
                     logger.error(f"Error details: {str(keyboard_error)}")
                     import traceback
                     logger.error(f"Traceback: {traceback.format_exc()}")
-                    
-                    # Fallback to basic keyboard
+                      # Fallback to basic keyboard
                     logger.info("Using fallback keyboard")
                     basic_keyboard = [[InlineKeyboardButton(get_message("continue_to_next_step", context, update), callback_data="continue_to_submit")]]
-                    await message.reply_text(message_text, reply_markup=InlineKeyboardMarkup(basic_keyboard))
+                    # استفاده از MenuManager برای ویرایش پیام قبلی به جای ایجاد پیام جدید
+                    await MenuManager.show_menu(update, context, message_text, InlineKeyboardMarkup(basic_keyboard), clear_previous=True)
                 
                 logger.info("=== DESCRIPTION PROCESSING COMPLETE ===")
                 logger.info(f"Final user data: {context.user_data}")
