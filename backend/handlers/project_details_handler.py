@@ -22,8 +22,14 @@ async def description_handler(message, context: ContextTypes.DEFAULT_TYPE, updat
     """
     ارسال پیام راهنمای کامل برای مرحله وارد کردن توضیحات
     """
+    logger.info(f"🏁 description_handler called")
+    logger.info(f"📊 Current user_data: {context.user_data}")
+    logger.info(f"🔢 Current menu_id: {context.user_data.get('current_menu_id', 'NOT_SET')}")
+    logger.info(f"📜 Menu history: {context.user_data.get('menu_history', [])}")
+    
     # دریافت توضیحات قبلی اگر موجود باشد
     last_description = context.user_data.get('description', context.user_data.get('temp_description', ''))
+    logger.info(f"💭 Last description found: {'Yes' if last_description else 'No'}")
     
     # اگر توضیحات قبلی موجود باشد، آن را نمایش می‌دهیم
     guidance_text = get_message("description_guidance", context, update)
@@ -401,24 +407,30 @@ async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_T
                 logger.info("Successfully returned to LOCATION_TYPE state")
                 return LOCATION_TYPE
             else:
-                logger.info("Processing description text - checking length")                # بررسی کیفیت توضیحات (اختیاری: پیشنهاد بهبود برای توضیحات کوتاه)
+                logger.info("Processing description text - checking length")
+                
+                # بررسی کیفیت توضیحات (اختیاری: پیشنهاد بهبود برای توضیحات کوتاه)
                 if len(text) < 20:  # اگر توضیحات خیلی کوتاه است
-                    logger.info(f"Description too short ({len(text)} chars) - showing improvement suggestion")
+                    logger.info(f"🚨 Description too short ({len(text)} chars) - showing improvement suggestion")
+                    logger.info(f"📊 Current user_data before short description handling: {context.user_data}")
+                    logger.info(f"🔢 Current menu_id in user_data: {context.user_data.get('current_menu_id', 'NOT_FOUND')}")
+                    logger.info(f"📜 Menu history in user_data: {context.user_data.get('menu_history', 'NOT_FOUND')}")
                     
                     # حذف فقط پیام توضیحات کاربر
                     try:
                         await context.bot.delete_message(chat_id=update.effective_chat.id, message_id=message.message_id)
-                        logger.info(f"Deleted user short description message {message.message_id}")
+                        logger.info(f"✅ Successfully deleted user short description message {message.message_id}")
                         
                         # کمی صبر کنیم تا حذف تکمیل شود
                         import asyncio
                         await asyncio.sleep(0.1)
                     except Exception as delete_error:
-                        logger.warning(f"Could not delete user short description message: {delete_error}")
+                        logger.error(f"❌ Could not delete user short description message: {delete_error}")
                     
                     # تلاش برای edit کردن منوی قبلی
                     edit_successful = False
                     if 'current_menu_id' in context.user_data:
+                        logger.info(f"🔄 Attempting to edit previous menu message {context.user_data['current_menu_id']}")
                         try:
                             await context.bot.edit_message_text(
                                 chat_id=update.effective_chat.id,
@@ -429,29 +441,44 @@ async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_T
                                     [InlineKeyboardButton(get_message("revise_description", context, update), callback_data="back_to_description")]
                                 ])
                             )
-                            logger.info(f"Successfully edited previous menu message {context.user_data['current_menu_id']} with short description warning")
+                            logger.info(f"✅ Successfully edited previous menu message {context.user_data['current_menu_id']} with short description warning")
                             edit_successful = True
                         except Exception as edit_error:
-                            logger.warning(f"Could not edit previous menu: {edit_error}")
-                      # اگر edit نشد، از MenuManager استفاده کن
+                            logger.error(f"❌ Could not edit previous menu {context.user_data['current_menu_id']}: {edit_error}")
+                            logger.error(f"🔍 Edit error type: {type(edit_error).__name__}")
+                    else:
+                        logger.warning(f"⚠️ No current_menu_id found in user_data for editing")
+                    
+                    # اگر edit نشد، از MenuManager استفاده کن
                     if not edit_successful:
-                        logger.info("Edit failed, using MenuManager to show short description warning")
+                        logger.info("🔧 Edit failed, using MenuManager to show short description warning")
+                        logger.info(f"📊 MenuManager state before call - menu_history: {context.user_data.get('menu_history', [])}")
                         
                         # استفاده از MenuManager برای مدیریت صحیح منوها
-                        await MenuManager.show_menu(
-                            update, context,
-                            get_message("description_too_short", context, update),
-                            InlineKeyboardMarkup([
-                                [InlineKeyboardButton(get_message("continue_to_next_step", context, update), callback_data="continue_to_details")],
-                                [InlineKeyboardButton(get_message("revise_description", context, update), callback_data="back_to_description")]
-                            ]),
-                            clear_previous=True
-                        )
-                        logger.info("Used MenuManager for short description warning")
-                      # ذخیره توضیحات موقت برای استفاده بعدی
+                        try:
+                            new_menu_id = await MenuManager.show_menu(
+                                update, context,
+                                get_message("description_too_short", context, update),
+                                InlineKeyboardMarkup([
+                                    [InlineKeyboardButton(get_message("continue_to_next_step", context, update), callback_data="continue_to_details")],
+                                    [InlineKeyboardButton(get_message("revise_description", context, update), callback_data="back_to_description")]
+                                ]),
+                                clear_previous=True
+                            )
+                            logger.info(f"✅ MenuManager returned new menu ID: {new_menu_id}")
+                            logger.info(f"📊 MenuManager state after call - menu_history: {context.user_data.get('menu_history', [])}")
+                            logger.info(f"🔢 MenuManager state after call - current_menu_id: {context.user_data.get('current_menu_id', 'NOT_SET')}")
+                        except Exception as menumanager_error:
+                            logger.error(f"❌ MenuManager failed: {menumanager_error}")
+                            logger.error(f"🔍 MenuManager error type: {type(menumanager_error).__name__}")
+                            import traceback
+                            logger.error(f"📋 MenuManager traceback: {traceback.format_exc()}")
+                    
+                    # ذخیره توضیحات موقت برای استفاده بعدی
                     context.user_data['temp_description'] = text
-                    logger.info(f"Saved temp description: {text}")
-                    logger.info("Staying in DESCRIPTION state for revision")
+                    logger.info(f"💾 Saved temp description: {text}")
+                    logger.info(f"📍 Staying in DESCRIPTION state for revision")
+                    logger.info(f"📊 Final user_data after short description handling: {context.user_data}")
                     return DESCRIPTION
                 
                 logger.info("Description length acceptable - proceeding to DETAILS state")

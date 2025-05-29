@@ -16,50 +16,73 @@ class MenuManager:
         """
         query = update.callback_query
         chat_id = update.effective_chat.id
+        
+        logger.info(f"🎯 MenuManager.show_menu called")
+        logger.info(f"📊 Parameters: clear_previous={clear_previous}")
+        logger.info(f"🔍 Query exists: {query is not None}")
+        logger.info(f"📜 Current menu_history: {context.user_data.get('menu_history', [])}")
+        logger.info(f"🔢 Current menu_id: {context.user_data.get('current_menu_id', 'NOT_SET')}")
 
         # ابتدا سعی کن منوی موجود را edit کن
         if query:
+            logger.info(f"🔄 Attempting to edit existing menu via callback query")
             try:
                 message = await query.message.edit_text(text, reply_markup=keyboard, parse_mode='Markdown')
                 menu_id = message.message_id
-                logger.info(f"Edited existing menu message to ID {menu_id}")
+                logger.info(f"✅ Successfully edited existing menu message to ID {menu_id}")
                 
                 # ذخیره تاریخچه منوها
                 if 'menu_history' not in context.user_data:
                     context.user_data['menu_history'] = []
                 if menu_id not in context.user_data['menu_history']:
                     context.user_data['menu_history'].append(menu_id)
+                    logger.info(f"📝 Added menu ID {menu_id} to history")
                 context.user_data['current_menu_id'] = menu_id
+                logger.info(f"🎯 Set current_menu_id to {menu_id}")
+                logger.info(f"📊 Final menu_history after edit: {context.user_data['menu_history']}")
                 return menu_id
                 
             except Exception as e:
-                logger.warning(f"Could not edit menu: {e}")
+                logger.error(f"❌ Could not edit menu via query: {e}")
+                logger.error(f"🔍 Edit error type: {type(e).__name__}")
                 # اگر edit نشد، ادامه به سناریوی ارسال پیام جدید
 
         # اگر clear_previous درخواست شده، پیام‌های قبلی را حذف کن
         if clear_previous and 'menu_history' in context.user_data:
+            logger.info(f"🗑️ Clearing previous menus: {context.user_data['menu_history'][-5:]}")
             for msg_id in context.user_data['menu_history'][-5:]:
                 try:
                     await context.bot.delete_message(chat_id=chat_id, message_id=msg_id)
-                    logger.info(f"Deleted previous menu message {msg_id}")
+                    logger.info(f"✅ Deleted previous menu message {msg_id}")
                 except (BadRequest, TelegramError) as e:
-                    logger.warning(f"Could not delete menu message {msg_id}: {e}")
+                    logger.warning(f"⚠️ Could not delete menu message {msg_id}: {e}")
             # پاک کردن تاریخچه بعد از حذف
             context.user_data['menu_history'] = []
+            logger.info(f"🧹 Cleared menu_history")
 
         # ارسال پیام جدید
-        message = await context.bot.send_message(chat_id=chat_id, text=text, reply_markup=keyboard, parse_mode='Markdown')
-        menu_id = message.message_id
-        logger.info(f"Sent new menu message with ID {menu_id}")
+        logger.info(f"📤 Sending new menu message")
+        try:
+            message = await context.bot.send_message(chat_id=chat_id, text=text, reply_markup=keyboard, parse_mode='Markdown')
+            menu_id = message.message_id
+            logger.info(f"✅ Sent new menu message with ID {menu_id}")
 
-        # ذخیره تاریخچه منوها
-        if 'menu_history' not in context.user_data:
-            context.user_data['menu_history'] = []
-        context.user_data['menu_history'].append(menu_id)
-        context.user_data['current_menu_id'] = menu_id
-        if len(context.user_data['menu_history']) > 10:
-            context.user_data['menu_history'] = context.user_data['menu_history'][-10:]
-        return menu_id
+            # ذخیره تاریخچه منوها
+            if 'menu_history' not in context.user_data:
+                context.user_data['menu_history'] = []
+            context.user_data['menu_history'].append(menu_id)
+            context.user_data['current_menu_id'] = menu_id
+            if len(context.user_data['menu_history']) > 10:
+                context.user_data['menu_history'] = context.user_data['menu_history'][-10:]
+            
+            logger.info(f"📝 Added new menu ID {menu_id} to history")
+            logger.info(f"🎯 Set current_menu_id to {menu_id}")
+            logger.info(f"📊 Final menu_history: {context.user_data['menu_history']}")
+            return menu_id
+        except Exception as send_error:
+            logger.error(f"❌ Failed to send new menu message: {send_error}")
+            logger.error(f"🔍 Send error type: {type(send_error).__name__}")
+            raise
     
     @staticmethod
     async def clear_menus(update: Update, context: ContextTypes.DEFAULT_TYPE, keep_current=False) -> None:
