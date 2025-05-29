@@ -53,17 +53,29 @@ async def description_handler(message, context: ContextTypes.DEFAULT_TYPE, updat
         ]    # اگر navigation keyboard داریم، آن را ادغام می‌کنیم
     if navigation_keyboard:
         keyboard += list(navigation_keyboard.inline_keyboard)
-    
-    await message.edit_text(
+    edited_message = await message.edit_text(
         guidance_text,
         reply_markup=InlineKeyboardMarkup(keyboard)
     )
     
     # ذخیره ID پیام منو برای استفاده در edit های بعدی
+    menu_id = edited_message.message_id if edited_message else message.message_id
+    logger.info(f"🎯 description_handler menu ID: {menu_id}")
+    
     if 'menu_history' not in context.user_data:
         context.user_data['menu_history'] = []
-    context.user_data['menu_history'].append(message.message_id)
-    context.user_data['current_menu_id'] = message.message_id
+    
+    # اطمینان از اینکه ID جدید در تاریخچه نباشد
+    if menu_id not in context.user_data['menu_history']:
+        context.user_data['menu_history'].append(menu_id)
+        logger.info(f"📝 Added menu ID {menu_id} to history")
+    
+    # به‌روزرسانی current_menu_id
+    context.user_data['current_menu_id'] = menu_id
+    logger.info(f"🔄 Updated current_menu_id to {menu_id}")
+    logger.info(f"📊 Final user_data state: {context.user_data}")
+    logger.info(f"📜 Final menu_history: {context.user_data['menu_history']}")
+    logger.info(f"🏁 description_handler completed")
 
 @require_phone
 async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
