@@ -67,10 +67,25 @@ async def handle_location(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
             )
             return CATEGORY
 
-        # بازگشت به مرحله توضیحات
-        if data == "back_to_description":
+        # بازگشت به مرحله توضیحات        if data == "back_to_description":
             logger.info("Returning to description step")
             context.user_data['state'] = DESCRIPTION
+            
+            # نمایش پیام راهنمای توضیحات
+            edited_message = await query.message.edit_text(
+                get_message("description_guidance", context, update),
+                reply_markup=get_back_to_description_keyboard(context, update),
+                parse_mode="Markdown"
+            )
+            
+            # به‌روزرسانی current_menu_id برای description
+            context.user_data['current_menu_id'] = edited_message.message_id
+            if 'menu_history' not in context.user_data:
+                context.user_data['menu_history'] = []
+            if edited_message.message_id not in context.user_data['menu_history']:
+                context.user_data['menu_history'].append(edited_message.message_id)
+            logger.info(f"🔄 Updated current_menu_id to {edited_message.message_id} for back_to_description")
+            
             return DESCRIPTION
 
         # پردازش انتخاب نوع لوکیشن (حضوری یا غیرحضوری)
@@ -80,16 +95,17 @@ async def handle_location(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
                 'client': 'client_site',
                 'contractor': 'contractor_site',
                 'remote': 'remote'
-            }[location_type]
-
-            # اگر کاربر غیرحضوری را انتخاب کند، مستقیماً به مرحله توضیحات هدایت شود
+            }[location_type]            # اگر کاربر غیرحضوری را انتخاب کند، مستقیماً به مرحله توضیحات هدایت شود
             if location_type == 'remote':
                 context.user_data['state'] = DESCRIPTION
-                await query.message.edit_text(
+                edited_message = await query.message.edit_text(
                     get_message("remote_service_selected", context, update) + "\n\n" + 
                     get_message("description_guidance", context, update),
                     reply_markup=get_back_to_description_keyboard(context, update)
                 )
+                # به‌روزرسانی current_menu_id برای description
+                context.user_data['current_menu_id'] = edited_message.message_id
+                logger.info(f"🔄 Updated current_menu_id to {edited_message.message_id} for remote service description")
                 return DESCRIPTION
             else:
                 # اگر کاربر خدمات حضوری را انتخاب کند، درخواست ارسال لوکیشن می‌شود
@@ -115,6 +131,21 @@ async def handle_location(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         elif data == "skip_location":
             context.user_data['state'] = DESCRIPTION
             await delete_previous_messages(query.message, context, n=3)
+            
+            # نمایش پیام راهنمای توضیحات
+            description_sent = await query.message.reply_text(
+                get_message("description_guidance", context, update),
+                reply_markup=get_back_to_description_keyboard(context, update),
+                parse_mode="Markdown"
+            )
+            
+            # به‌روزرسانی current_menu_id برای description
+            context.user_data['current_menu_id'] = description_sent.message_id
+            if 'menu_history' not in context.user_data:
+                context.user_data['menu_history'] = []
+            context.user_data['menu_history'].append(description_sent.message_id)
+            logger.info(f"🔄 Updated current_menu_id to {description_sent.message_id} for skip location description")
+            
             return DESCRIPTION
 
     # اگر کاربر موقعیت مکانی خود را ارسال کند
@@ -128,14 +159,21 @@ async def handle_location(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
             get_message("location_success", context, update),
             reply_markup=REMOVE_KEYBOARD
         )
-        await delete_previous_messages(sent, context, n=3)
-          # بجای فراخوانی description_handler، مستقیماً پیام مرحله توضیحات را نمایش می‌دهیم
+        await delete_previous_messages(sent, context, n=3)        # بجای فراخوانی description_handler، مستقیماً پیام مرحله توضیحات را نمایش می‌دهیم
         description_sent = await update.message.reply_text(
             get_message("description_guidance", context, update),
             reply_markup=get_back_to_description_keyboard(context, update),
             parse_mode="Markdown"
         )
         await delete_previous_messages(description_sent, context, n=3)
+        
+        # به‌روزرسانی current_menu_id برای description
+        context.user_data['current_menu_id'] = description_sent.message_id
+        if 'menu_history' not in context.user_data:
+            context.user_data['menu_history'] = []
+        context.user_data['menu_history'].append(description_sent.message_id)
+        logger.info(f"Updated current_menu_id to {description_sent.message_id} for description")
+        
         return DESCRIPTION
 
     # اگر پیام متنی یا غیرمتنی دریافت شد (در مرحله LOCATION_INPUT)

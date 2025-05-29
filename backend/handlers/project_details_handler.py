@@ -446,12 +446,12 @@ async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_T
                         [InlineKeyboardButton(get_message("continue_to_next_step", context, update), callback_data="continue_to_details")],
                         [InlineKeyboardButton(get_message("revise_description", context, update), callback_data="back_to_description")]
                     ])
-                    
-                    # بررسی اینکه آیا همین پیام قبلاً نمایش داده شده یا نه
+                      # بررسی اینکه آیا همین پیام قبلاً نمایش داده شده یا نه
                     last_menu_message = context.user_data.get('last_menu_message', '')
                     if last_menu_message == short_description_message:
                         logger.info(f"📋 Same warning message was already shown - no need to edit")
-                        edit_successful = True  # محتوا یکسان است، edit لازم نیست                    elif 'current_menu_id' in context.user_data:
+                        edit_successful = True  # محتوا یکسان است، edit لازم نیست
+                    elif 'current_menu_id' in context.user_data:
                         logger.info(f"🔄 Attempting to edit previous menu message {context.user_data['current_menu_id']}")
                         
                         try:
