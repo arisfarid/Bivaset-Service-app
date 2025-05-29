@@ -433,32 +433,22 @@ async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_T
                             edit_successful = True
                         except Exception as edit_error:
                             logger.warning(f"Could not edit previous menu: {edit_error}")
-                    
-                    # اگر edit نشد، پیام جدید ارسال کن و منوهای قبلی را حذف کن
+                      # اگر edit نشد، از MenuManager استفاده کن
                     if not edit_successful:
-                        logger.info("Edit failed, clearing previous menus and sending new message")
+                        logger.info("Edit failed, using MenuManager to show short description warning")
                         
-                        # حذف منوهای قبلی
-                        await MenuManager.clear_menus(update, context, keep_current=False)
-                        
-                        # ارسال پیام جدید
-                        new_message = await context.bot.send_message(
-                            chat_id=update.effective_chat.id,
-                            text=get_message("description_too_short", context, update),
-                            reply_markup=InlineKeyboardMarkup([
+                        # استفاده از MenuManager برای مدیریت صحیح منوها
+                        await MenuManager.show_menu(
+                            update, context,
+                            get_message("description_too_short", context, update),
+                            InlineKeyboardMarkup([
                                 [InlineKeyboardButton(get_message("continue_to_next_step", context, update), callback_data="continue_to_details")],
                                 [InlineKeyboardButton(get_message("revise_description", context, update), callback_data="back_to_description")]
-                            ])
+                            ]),
+                            clear_previous=True
                         )
-                        
-                        # آپدیت کردن تاریخچه منوها
-                        if 'menu_history' not in context.user_data:
-                            context.user_data['menu_history'] = []
-                        context.user_data['menu_history'].append(new_message.message_id)
-                        context.user_data['current_menu_id'] = new_message.message_id
-                        logger.info(f"Sent new short description warning message {new_message.message_id}")
-                    
-                    # ذخیره توضیحات موقت برای استفاده بعدی
+                        logger.info("Used MenuManager for short description warning")
+                      # ذخیره توضیحات موقت برای استفاده بعدی
                     context.user_data['temp_description'] = text
                     logger.info(f"Saved temp description: {text}")
                     logger.info("Staying in DESCRIPTION state for revision")
@@ -467,18 +457,16 @@ async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_T
                 logger.info("Description length acceptable - proceeding to DETAILS state")
                 # ذخیره توضیحات و رفتن به جزئیات
                 context.user_data['description'] = text
-                logger.info(f"Saved description: {text}")                # حذف پیام توضیحات کاربر و منوهای قبلی برای تمیز ماندن چت
+                logger.info(f"Saved description: {text}")
+                
+                # حذف پیام توضیحات کاربر
                 try:
                     await context.bot.delete_message(chat_id=update.effective_chat.id, message_id=message.message_id)
                     logger.info(f"Deleted user description message {message.message_id}")
                     
-                    # حذف منوهای قبلی و پیام‌های اضافی
-                    await MenuManager.clear_menus(update, context, keep_current=False)
-                    logger.info("Cleared previous menus")
-                    
                     # کمی صبر کنیم تا حذف تکمیل شود
                     import asyncio
-                    await asyncio.sleep(0.2)
+                    await asyncio.sleep(0.1)
                 except Exception as delete_error:
                     logger.warning(f"Could not delete user description message: {delete_error}")
                 
@@ -486,7 +474,7 @@ async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_T
                 context.user_data['state'] = DETAILS
                 logger.info(f"State changed to DETAILS")
                 
-                # با استفاده از navigation utility
+                # آماده‌سازی پیام و کیبورد
                 logger.info("Getting project details message")
                 message_text = get_message("project_details", context, update)
                 logger.info(f"Base message text: {message_text}")
@@ -500,7 +488,8 @@ async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_T
                 except Exception as nav_error:
                     logger.error(f"Error adding navigation: {nav_error}")
                     logger.error(f"Navigation error details: {type(nav_error).__name__}: {str(nav_error)}")
-                    navigation_keyboard = None                
+                    navigation_keyboard = None
+                
                 # دکمه‌های مخصوص ادامه فرآیند
                 logger.info("Creating continue keyboard")
                 continue_keyboard = [
@@ -508,59 +497,59 @@ async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_T
                 ]
                 logger.info(f"Continue keyboard created: {continue_keyboard}")
                 
+                # ساخت کیبورد نهایی
                 logger.info("=== KEYBOARD CREATION AND CONCATENATION ===")
                 try:
                     logger.info("Creating dynamic keyboard")
                     dynamic_keyboard = create_dynamic_keyboard(context, update)
-                    logger.info(f"Dynamic keyboard type: {type(dynamic_keyboard)}")
                     logger.info(f"Dynamic keyboard: {dynamic_keyboard}")
-                    logger.info(f"Dynamic keyboard inline_keyboard type: {type(dynamic_keyboard.inline_keyboard)}")
-                    logger.info(f"Dynamic keyboard inline_keyboard: {dynamic_keyboard.inline_keyboard}")
                     
                     if navigation_keyboard:
                         logger.info("Navigation keyboard exists - merging keyboards")
-                        logger.info(f"Navigation keyboard type: {type(navigation_keyboard)}")
-                        logger.info(f"Navigation keyboard inline_keyboard type: {type(navigation_keyboard.inline_keyboard)}")
-                        
-                        # ادغام کیبوردها با تبدیل صحیح tuple به list
-                        logger.info("Converting dynamic keyboard to list")
+                        # ادغام کیبوردها
                         keyboard_rows = list(dynamic_keyboard.inline_keyboard)
-                        logger.info(f"Keyboard rows after conversion: {type(keyboard_rows)} - {keyboard_rows}")
-                        
-                        logger.info("Adding continue keyboard")
                         keyboard_rows.extend(continue_keyboard)
-                        logger.info(f"Keyboard rows after adding continue: {keyboard_rows}")
-                        
-                        logger.info("Adding navigation keyboard")
-                        logger.info(f"About to add navigation keyboard of type: {type(navigation_keyboard.inline_keyboard)}")
                         keyboard_rows.extend(list(navigation_keyboard.inline_keyboard))
-                        logger.info(f"Final keyboard rows: {keyboard_rows}")
-                        
-                        logger.info("Sending message with merged keyboard")
-                        # استفاده از MenuManager برای ارسال پیام جدید (منوهای قبلی قبلاً پاک شده‌اند)
-                        await MenuManager.show_menu(update, context, message_text, InlineKeyboardMarkup(keyboard_rows), clear_previous=False)
-                        logger.info("Message sent successfully with navigation keyboard")
+                        final_keyboard = InlineKeyboardMarkup(keyboard_rows)
+                        logger.info(f"Final merged keyboard created")
                     else:
                         logger.info("No navigation keyboard - using simple merge")
                         # ادغام دکمه‌های ادامه با کیبورد اصلی
                         keyboard_rows = list(dynamic_keyboard.inline_keyboard)
                         keyboard_rows.extend(continue_keyboard)
-                        logger.info(f"Simple keyboard rows: {keyboard_rows}")
-                          # استفاده از MenuManager برای ارسال پیام جدید (منوهای قبلی قبلاً پاک شده‌اند)
-                        await MenuManager.show_menu(update, context, message_text, InlineKeyboardMarkup(keyboard_rows), clear_previous=False)
-                        logger.info("Message sent successfully with simple keyboard")
-                        
+                        final_keyboard = InlineKeyboardMarkup(keyboard_rows)
+                        logger.info(f"Simple keyboard created")
+                
                 except Exception as keyboard_error:
                     logger.error(f"=== KEYBOARD ERROR ===")
                     logger.error(f"Keyboard creation error: {keyboard_error}")
-                    logger.error(f"Error type: {type(keyboard_error).__name__}")
-                    logger.error(f"Error details: {str(keyboard_error)}")
                     import traceback
                     logger.error(f"Traceback: {traceback.format_exc()}")
-                      # Fallback to basic keyboard
+                    # Fallback to basic keyboard
                     logger.info("Using fallback keyboard")
-                    basic_keyboard = [[InlineKeyboardButton(get_message("continue_to_next_step", context, update), callback_data="continue_to_submit")]]                    # استفاده از MenuManager برای ارسال پیام جدید (منوهای قبلی قبلاً پاک شده‌اند)
-                    await MenuManager.show_menu(update, context, message_text, InlineKeyboardMarkup(basic_keyboard), clear_previous=False)
+                    final_keyboard = InlineKeyboardMarkup([[InlineKeyboardButton(get_message("continue_to_next_step", context, update), callback_data="continue_to_submit")]])
+                
+                # تلاش برای edit کردن منوی قبلی
+                edit_successful = False
+                if 'current_menu_id' in context.user_data:
+                    try:
+                        await context.bot.edit_message_text(
+                            chat_id=update.effective_chat.id,
+                            message_id=context.user_data['current_menu_id'],
+                            text=message_text,
+                            reply_markup=final_keyboard,
+                            parse_mode='Markdown'
+                        )
+                        logger.info(f"Successfully edited previous menu message {context.user_data['current_menu_id']} with DETAILS content")
+                        edit_successful = True
+                    except Exception as edit_error:
+                        logger.warning(f"Could not edit previous menu: {edit_error}")
+                
+                # اگر edit نشد، از MenuManager استفاده کن
+                if not edit_successful:
+                    logger.info("Edit failed, using MenuManager to show DETAILS")
+                    await MenuManager.show_menu(update, context, message_text, final_keyboard, clear_previous=True)
+                    logger.info("Used MenuManager for DETAILS screen")
                 
                 logger.info("=== DESCRIPTION PROCESSING COMPLETE ===")
                 logger.info(f"Final user data: {context.user_data}")
