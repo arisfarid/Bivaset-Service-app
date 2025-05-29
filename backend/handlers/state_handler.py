@@ -3,6 +3,7 @@ from telegram.ext import (
     CommandHandler, MessageHandler, CallbackQueryHandler, 
     ConversationHandler, filters, ContextTypes
 )
+from telegram import InlineKeyboardMarkup
 import logging
 from typing import Dict, List, Any, Optional, Tuple
 from handlers.start_handler import start, handle_role, cancel, handle_confirm_restart
@@ -70,11 +71,24 @@ async def handle_navigation_callback(update: Update, context: ContextTypes.DEFAU
                 return await request_location_input(update, context)
                 
             elif next_state == DETAILS:
+                message_text = get_message("project_details", context, update)
+                # افزودن اطلاعات ناوبری به پیام
+                message_text, navigation_keyboard = add_navigation_to_message(message_text, DETAILS, context.user_data, context, update)
+                
+                # ادغام کیبورد ناوبری با کیبورد اصلی
+                dynamic_keyboard = create_dynamic_keyboard(context, update)
+                if navigation_keyboard:
+                    keyboard_rows = list(dynamic_keyboard.inline_keyboard)
+                    keyboard_rows += list(navigation_keyboard.inline_keyboard)
+                    final_keyboard = InlineKeyboardMarkup(keyboard_rows)
+                else:
+                    final_keyboard = dynamic_keyboard
+                    
                 await MenuManager.show_menu(
                     update,
                     context,
-                    get_message("project_details", context, update),
-                    create_dynamic_keyboard(context, update)
+                    message_text,
+                    final_keyboard
                 )
                 return DETAILS
                 

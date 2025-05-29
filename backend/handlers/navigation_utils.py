@@ -120,7 +120,8 @@ def add_navigation_to_message(text: str, current_state: int, user_data: Dict[str
         if current_state in SERVICE_REQUEST_FLOW:
             current_index = SERVICE_REQUEST_FLOW.index(current_state)
             total_steps = len(SERVICE_REQUEST_FLOW)
-            progress = f"\n\n{get_message('progress_indicator', context, update)}"
+            # Pass the calculated step values to get_message
+            progress = f"\n\n{get_message('progress_indicator', context, update, current_step=current_index + 1, total_steps=total_steps)}"
             # Add ability to go back info if applicable
             if current_index > 0:
                 progress += f" | {get_message('back_instruction', context, update)}"
