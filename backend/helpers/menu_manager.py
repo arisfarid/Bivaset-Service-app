@@ -21,23 +21,22 @@ class MenuManager:
         logger.info(f"📊 Parameters: clear_previous={clear_previous}")
         logger.info(f"🔍 Query exists: {query is not None}")
         logger.info(f"📜 Current menu_history: {context.user_data.get('menu_history', [])}")
-        logger.info(f"🔢 Current menu_id: {context.user_data.get('current_menu_id', 'NOT_SET')}")
-
-        # ابتدا سعی کن منوی موجود را edit کن
+        logger.info(f"🔢 Current menu_id: {context.user_data.get('current_menu_id', 'NOT_SET')}")        # ابتدا سعی کن منوی موجود را edit کن
         if query:
             logger.info(f"🔄 Attempting to edit existing menu via callback query")
             try:
                 message = await query.message.edit_text(text, reply_markup=keyboard, parse_mode='Markdown')
                 menu_id = message.message_id
                 logger.info(f"✅ Successfully edited existing menu message to ID {menu_id}")
-                
-                # ذخیره تاریخچه منوها
+                  # ذخیره تاریخچه منوها
                 if 'menu_history' not in context.user_data:
                     context.user_data['menu_history'] = []
                 if menu_id not in context.user_data['menu_history']:
                     context.user_data['menu_history'].append(menu_id)
                     logger.info(f"📝 Added menu ID {menu_id} to history")
                 context.user_data['current_menu_id'] = menu_id
+                # ذخیره محتوای پیام برای مقایسه‌های بعدی
+                context.user_data['last_menu_message'] = text
                 logger.info(f"🎯 Set current_menu_id to {menu_id}")
                 logger.info(f"📊 Final menu_history after edit: {context.user_data['menu_history']}")
                 return menu_id
@@ -45,6 +44,20 @@ class MenuManager:
             except Exception as e:
                 logger.error(f"❌ Could not edit menu via query: {e}")
                 logger.error(f"🔍 Edit error type: {type(e).__name__}")
+                  # اگر خطای "Message is not modified" است، یعنی محتوا تغییری نکرده
+                if "Message is not modified" in str(e):
+                    logger.info(f"📋 Menu content is identical - no need to edit, returning current menu ID")
+                    # در این حالت، ID منوی فعلی را برگردان و تاریخچه را به‌روزرسانی کن
+                    current_menu_id = query.message.message_id
+                    if 'menu_history' not in context.user_data:
+                        context.user_data['menu_history'] = []
+                    if current_menu_id not in context.user_data['menu_history']:
+                        context.user_data['menu_history'].append(current_menu_id)
+                    context.user_data['current_menu_id'] = current_menu_id
+                    # ذخیره محتوای پیام برای مقایسه‌های بعدی
+                    context.user_data['last_menu_message'] = text
+                    return current_menu_id
+                
                 # اگر edit نشد، ادامه به سناریوی ارسال پیام جدید
 
         # اگر clear_previous درخواست شده، پیام‌های قبلی را حذف کن
@@ -65,13 +78,13 @@ class MenuManager:
         try:
             message = await context.bot.send_message(chat_id=chat_id, text=text, reply_markup=keyboard, parse_mode='Markdown')
             menu_id = message.message_id
-            logger.info(f"✅ Sent new menu message with ID {menu_id}")
-
-            # ذخیره تاریخچه منوها
+            logger.info(f"✅ Sent new menu message with ID {menu_id}")            # ذخیره تاریخچه منوها
             if 'menu_history' not in context.user_data:
                 context.user_data['menu_history'] = []
             context.user_data['menu_history'].append(menu_id)
             context.user_data['current_menu_id'] = menu_id
+            # ذخیره محتوای پیام برای مقایسه‌های بعدی
+            context.user_data['last_menu_message'] = text
             if len(context.user_data['menu_history']) > 10:
                 context.user_data['menu_history'] = context.user_data['menu_history'][-10:]
             

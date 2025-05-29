@@ -57,10 +57,12 @@ async def description_handler(message, context: ContextTypes.DEFAULT_TYPE, updat
         guidance_text,
         reply_markup=InlineKeyboardMarkup(keyboard)
     )
-    
-    # ذخیره ID پیام منو برای استفاده در edit های بعدی
+      # ذخیره ID پیام منو برای استفاده در edit های بعدی
     menu_id = edited_message.message_id if edited_message else message.message_id
     logger.info(f"🎯 description_handler menu ID: {menu_id}")
+    
+    # ذخیره محتوای پیام برای مقایسه‌های بعدی
+    context.user_data['last_menu_message'] = guidance_text
     
     if 'menu_history' not in context.user_data:
         context.user_data['menu_history'] = []
@@ -437,31 +439,47 @@ async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_T
                         import asyncio
                         await asyncio.sleep(0.1)
                     except Exception as delete_error:
-                        logger.error(f"❌ Could not delete user short description message: {delete_error}")
-                    
-                    # تلاش برای edit کردن منوی قبلی
+                        logger.error(f"❌ Could not delete user short description message: {delete_error}")                    # تلاش برای edit کردن منوی قبلی
                     edit_successful = False
-                    if 'current_menu_id' in context.user_data:
+                    short_description_message = get_message("description_too_short", context, update)
+                    short_description_keyboard = InlineKeyboardMarkup([
+                        [InlineKeyboardButton(get_message("continue_to_next_step", context, update), callback_data="continue_to_details")],
+                        [InlineKeyboardButton(get_message("revise_description", context, update), callback_data="back_to_description")]
+                    ])
+                    
+                    # بررسی اینکه آیا همین پیام قبلاً نمایش داده شده یا نه
+                    last_menu_message = context.user_data.get('last_menu_message', '')
+                    if last_menu_message == short_description_message:
+                        logger.info(f"📋 Same warning message was already shown - no need to edit")
+                        edit_successful = True  # محتوا یکسان است، edit لازم نیست
+                    elif 'current_menu_id' in context.user_data:
                         logger.info(f"🔄 Attempting to edit previous menu message {context.user_data['current_menu_id']}")
+                        
                         try:
                             await context.bot.edit_message_text(
                                 chat_id=update.effective_chat.id,
                                 message_id=context.user_data['current_menu_id'],
-                                text=get_message("description_too_short", context, update),
-                                reply_markup=InlineKeyboardMarkup([
-                                    [InlineKeyboardButton(get_message("continue_to_next_step", context, update), callback_data="continue_to_details")],
-                                    [InlineKeyboardButton(get_message("revise_description", context, update), callback_data="back_to_description")]
-                                ])
+                                text=short_description_message,
+                                reply_markup=short_description_keyboard
                             )
                             logger.info(f"✅ Successfully edited previous menu message {context.user_data['current_menu_id']} with short description warning")
                             edit_successful = True
+                            # ذخیره محتوای پیام برای مقایسه‌های بعدی
+                            context.user_data['last_menu_message'] = short_description_message
+                            
                         except Exception as edit_error:
                             logger.error(f"❌ Could not edit previous menu {context.user_data['current_menu_id']}: {edit_error}")
                             logger.error(f"🔍 Edit error type: {type(edit_error).__name__}")
+                            
+                            # اگر خطای "Message is not modified" است، یعنی محتوا تغییری نکرده
+                            if "Message is not modified" in str(edit_error):
+                                logger.info(f"📋 Menu content is identical - no need to edit, considering it successful")
+                                edit_successful = True  # محتوا یکسان است، edit لازم نیست
+                                # ذخیره محتوای پیام برای مقایسه‌های بعدی
+                                context.user_data['last_menu_message'] = short_description_message
                     else:
                         logger.warning(f"⚠️ No current_menu_id found in user_data for editing")
-                    
-                    # اگر edit نشد، از MenuManager استفاده کن
+                      # اگر edit نشد، از MenuManager استفاده کن
                     if not edit_successful:
                         logger.info("🔧 Edit failed, using MenuManager to show short description warning")
                         logger.info(f"📊 MenuManager state before call - menu_history: {context.user_data.get('menu_history', [])}")
@@ -470,11 +488,8 @@ async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_T
                         try:
                             new_menu_id = await MenuManager.show_menu(
                                 update, context,
-                                get_message("description_too_short", context, update),
-                                InlineKeyboardMarkup([
-                                    [InlineKeyboardButton(get_message("continue_to_next_step", context, update), callback_data="continue_to_details")],
-                                    [InlineKeyboardButton(get_message("revise_description", context, update), callback_data="back_to_description")]
-                                ]),
+                                short_description_message,
+                                short_description_keyboard,
                                 clear_previous=True
                             )
                             logger.info(f"✅ MenuManager returned new menu ID: {new_menu_id}")
@@ -485,6 +500,8 @@ async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_T
                             logger.error(f"🔍 MenuManager error type: {type(menumanager_error).__name__}")
                             import traceback
                             logger.error(f"📋 MenuManager traceback: {traceback.format_exc()}")
+                    else:
+                        logger.info("✅ Menu edit successful or content identical - no need for MenuManager")
                     
                     # ذخیره توضیحات موقت برای استفاده بعدی
                     context.user_data['temp_description'] = text
@@ -567,8 +584,7 @@ async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_T
                     # Fallback to basic keyboard
                     logger.info("Using fallback keyboard")
                     final_keyboard = InlineKeyboardMarkup([[InlineKeyboardButton(get_message("continue_to_next_step", context, update), callback_data="continue_to_submit")]])
-                
-                # تلاش برای edit کردن منوی قبلی
+                  # تلاش برای edit کردن منوی قبلی
                 edit_successful = False
                 if 'current_menu_id' in context.user_data:
                     try:
@@ -581,14 +597,22 @@ async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_T
                         )
                         logger.info(f"Successfully edited previous menu message {context.user_data['current_menu_id']} with DETAILS content")
                         edit_successful = True
+                        # ذخیره محتوای پیام برای مقایسه‌های بعدی
+                        context.user_data['last_menu_message'] = message_text
                     except Exception as edit_error:
                         logger.warning(f"Could not edit previous menu: {edit_error}")
-                
-                # اگر edit نشد، از MenuManager استفاده کن
+                        # اگر خطای "Message is not modified" است، یعنی محتوا تغییری نکرده
+                        if "Message is not modified" in str(edit_error):
+                            logger.info(f"Menu content is identical - no need to edit, considering it successful")
+                            edit_successful = True
+                            context.user_data['last_menu_message'] = message_text
+                  # اگر edit نشد، از MenuManager استفاده کن
                 if not edit_successful:
                     logger.info("Edit failed, using MenuManager to show DETAILS")
                     await MenuManager.show_menu(update, context, message_text, final_keyboard, clear_previous=True)
                     logger.info("Used MenuManager for DETAILS screen")
+                else:
+                    logger.info("✅ Menu edit successful or content identical - DETAILS screen updated")
                 
                 logger.info("=== DESCRIPTION PROCESSING COMPLETE ===")
                 logger.info(f"Final user data: {context.user_data}")
