@@ -398,14 +398,36 @@ async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_T
                 logger.info("Processing description text - checking length")
                 # بررسی کیفیت توضیحات (اختیاری: پیشنهاد بهبود برای توضیحات کوتاه)
                 if len(text) < 20:  # اگر توضیحات خیلی کوتاه است
-                    logger.info(f"Description too short ({len(text)} chars) - showing improvement suggestion")
-                    await message.reply_text(
-                        get_message("description_too_short", context, update),
+                    logger.info(f"Description too short ({len(text)} chars) - showing improvement suggestion")                    # حذف پیام توضیحات کاربر و منوهای قبلی برای تمیز ماندن چت
+                    try:
+                        await context.bot.delete_message(chat_id=update.effective_chat.id, message_id=message.message_id)
+                        logger.info(f"Deleted user short description message {message.message_id}")
+                        
+                        # حذف منوهای قبلی
+                        await MenuManager.clear_menus(update, context, keep_current=False)
+                        logger.info("Cleared previous menus")
+                        
+                        # کمی صبر کنیم تا حذف تکمیل شود
+                        import asyncio
+                        await asyncio.sleep(0.2)
+                    except Exception as delete_error:
+                        logger.warning(f"Could not delete user short description message: {delete_error}")
+                    
+                    # ارسال پیام جدید به جای reply به پیام حذف شده
+                    new_message = await context.bot.send_message(
+                        chat_id=update.effective_chat.id,
+                        text=get_message("description_too_short", context, update),
                         reply_markup=InlineKeyboardMarkup([
                             [InlineKeyboardButton(get_message("continue_to_next_step", context, update), callback_data="continue_to_details")],
                             [InlineKeyboardButton(get_message("revise_description", context, update), callback_data="back_to_description")]
-                        ])
-                    )
+                        ])                    )
+                    
+                    # ذخیره منوی جدید در تاریخچه
+                    if 'menu_history' not in context.user_data:
+                        context.user_data['menu_history'] = []
+                    context.user_data['menu_history'].append(new_message.message_id)
+                    context.user_data['current_menu_id'] = new_message.message_id
+                    
                     # ذخیره توضیحات موقت برای استفاده بعدی
                     context.user_data['temp_description'] = text
                     logger.info(f"Saved temp description: {text}")
@@ -415,7 +437,20 @@ async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_T
                 logger.info("Description length acceptable - proceeding to DETAILS state")
                 # ذخیره توضیحات و رفتن به جزئیات
                 context.user_data['description'] = text
-                logger.info(f"Saved description: {text}")
+                logger.info(f"Saved description: {text}")                # حذف پیام توضیحات کاربر و منوهای قبلی برای تمیز ماندن چت
+                try:
+                    await context.bot.delete_message(chat_id=update.effective_chat.id, message_id=message.message_id)
+                    logger.info(f"Deleted user description message {message.message_id}")
+                    
+                    # حذف منوهای قبلی و پیام‌های اضافی
+                    await MenuManager.clear_menus(update, context, keep_current=False)
+                    logger.info("Cleared previous menus")
+                    
+                    # کمی صبر کنیم تا حذف تکمیل شود
+                    import asyncio
+                    await asyncio.sleep(0.2)
+                except Exception as delete_error:
+                    logger.warning(f"Could not delete user description message: {delete_error}")
                 
                 logger.info("=== STATE TRANSITION: DESCRIPTION → DETAILS ===")
                 context.user_data['state'] = DETAILS
@@ -472,8 +507,8 @@ async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_T
                         logger.info(f"Final keyboard rows: {keyboard_rows}")
                         
                         logger.info("Sending message with merged keyboard")
-                        # استفاده از MenuManager برای ویرایش پیام قبلی به جای ایجاد پیام جدید
-                        await MenuManager.show_menu(update, context, message_text, InlineKeyboardMarkup(keyboard_rows), clear_previous=True)
+                        # استفاده از MenuManager برای ارسال پیام جدید (منوهای قبلی قبلاً پاک شده‌اند)
+                        await MenuManager.show_menu(update, context, message_text, InlineKeyboardMarkup(keyboard_rows), clear_previous=False)
                         logger.info("Message sent successfully with navigation keyboard")
                     else:
                         logger.info("No navigation keyboard - using simple merge")
@@ -481,9 +516,8 @@ async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_T
                         keyboard_rows = list(dynamic_keyboard.inline_keyboard)
                         keyboard_rows.extend(continue_keyboard)
                         logger.info(f"Simple keyboard rows: {keyboard_rows}")
-                        
-                        # استفاده از MenuManager برای ویرایش پیام قبلی به جای ایجاد پیام جدید
-                        await MenuManager.show_menu(update, context, message_text, InlineKeyboardMarkup(keyboard_rows), clear_previous=True)
+                          # استفاده از MenuManager برای ارسال پیام جدید (منوهای قبلی قبلاً پاک شده‌اند)
+                        await MenuManager.show_menu(update, context, message_text, InlineKeyboardMarkup(keyboard_rows), clear_previous=False)
                         logger.info("Message sent successfully with simple keyboard")
                         
                 except Exception as keyboard_error:
@@ -495,9 +529,8 @@ async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_T
                     logger.error(f"Traceback: {traceback.format_exc()}")
                       # Fallback to basic keyboard
                     logger.info("Using fallback keyboard")
-                    basic_keyboard = [[InlineKeyboardButton(get_message("continue_to_next_step", context, update), callback_data="continue_to_submit")]]
-                    # استفاده از MenuManager برای ویرایش پیام قبلی به جای ایجاد پیام جدید
-                    await MenuManager.show_menu(update, context, message_text, InlineKeyboardMarkup(basic_keyboard), clear_previous=True)
+                    basic_keyboard = [[InlineKeyboardButton(get_message("continue_to_next_step", context, update), callback_data="continue_to_submit")]]                    # استفاده از MenuManager برای ارسال پیام جدید (منوهای قبلی قبلاً پاک شده‌اند)
+                    await MenuManager.show_menu(update, context, message_text, InlineKeyboardMarkup(basic_keyboard), clear_previous=False)
                 
                 logger.info("=== DESCRIPTION PROCESSING COMPLETE ===")
                 logger.info(f"Final user data: {context.user_data}")
