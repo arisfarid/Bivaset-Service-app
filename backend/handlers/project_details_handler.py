@@ -451,8 +451,7 @@ async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_T
                     last_menu_message = context.user_data.get('last_menu_message', '')
                     if last_menu_message == short_description_message:
                         logger.info(f"📋 Same warning message was already shown - no need to edit")
-                        edit_successful = True  # محتوا یکسان است، edit لازم نیست
-                    elif 'current_menu_id' in context.user_data:
+                        edit_successful = True  # محتوا یکسان است، edit لازم نیست                    elif 'current_menu_id' in context.user_data:
                         logger.info(f"🔄 Attempting to edit previous menu message {context.user_data['current_menu_id']}")
                         
                         try:
@@ -466,20 +465,32 @@ async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_T
                             edit_successful = True
                             # ذخیره محتوای پیام برای مقایسه‌های بعدی
                             context.user_data['last_menu_message'] = short_description_message
-                            
                         except Exception as edit_error:
                             logger.error(f"❌ Could not edit previous menu {context.user_data['current_menu_id']}: {edit_error}")
                             logger.error(f"🔍 Edit error type: {type(edit_error).__name__}")
-                            
                             # اگر خطای "Message is not modified" است، یعنی محتوا تغییری نکرده
                             if "Message is not modified" in str(edit_error):
                                 logger.info(f"📋 Menu content is identical - no need to edit, considering it successful")
                                 edit_successful = True  # محتوا یکسان است، edit لازم نیست
                                 # ذخیره محتوای پیام برای مقایسه‌های بعدی
                                 context.user_data['last_menu_message'] = short_description_message
+                            # اگر پیام حذف شده باشد، current_menu_id را پاک کن
+                            elif "Message to edit not found" in str(edit_error) or "Message to delete not found" in str(edit_error):
+                                current_menu_id = context.user_data.get('current_menu_id')
+                                logger.warning(f"🗑️ Previous menu message {current_menu_id} was already deleted - clearing current_menu_id")
+                                # پاک کردن current_menu_id نامعتبر از user_data
+                                if 'current_menu_id' in context.user_data:
+                                    del context.user_data['current_menu_id']
+                                # پاک کردن پیام حذف شده از menu_history هم
+                                if 'menu_history' in context.user_data and current_menu_id:
+                                    if current_menu_id in context.user_data['menu_history']:
+                                        context.user_data['menu_history'].remove(current_menu_id)
+                                        logger.info(f"🧹 Removed deleted message ID {current_menu_id} from menu_history")
+                                edit_successful = False  # باید MenuManager پیام جدید بسازد
                     else:
                         logger.warning(f"⚠️ No current_menu_id found in user_data for editing")
-                      # اگر edit نشد، از MenuManager استفاده کن
+                    
+                    # اگر edit نشد، از MenuManager استفاده کن
                     if not edit_successful:
                         logger.info("🔧 Edit failed, using MenuManager to show short description warning")
                         logger.info(f"📊 MenuManager state before call - menu_history: {context.user_data.get('menu_history', [])}")
