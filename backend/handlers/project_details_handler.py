@@ -52,6 +52,12 @@ async def description_handler(message, context: ContextTypes.DEFAULT_TYPE, updat
         guidance_text,
         reply_markup=InlineKeyboardMarkup(keyboard)
     )
+    
+    # ذخیره ID پیام منو برای استفاده در edit های بعدی
+    if 'menu_history' not in context.user_data:
+        context.user_data['menu_history'] = []
+    context.user_data['menu_history'].append(message.message_id)
+    context.user_data['current_menu_id'] = message.message_id
 
 @require_phone
 async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
@@ -395,10 +401,11 @@ async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_T
                 logger.info("Successfully returned to LOCATION_TYPE state")
                 return LOCATION_TYPE
             else:
-                logger.info("Processing description text - checking length")
-                # بررسی کیفیت توضیحات (اختیاری: پیشنهاد بهبود برای توضیحات کوتاه)
+                logger.info("Processing description text - checking length")                # بررسی کیفیت توضیحات (اختیاری: پیشنهاد بهبود برای توضیحات کوتاه)
                 if len(text) < 20:  # اگر توضیحات خیلی کوتاه است
-                    logger.info(f"Description too short ({len(text)} chars) - showing improvement suggestion")                    # حذف فقط پیام توضیحات کاربر، منوی قبلی را edit می‌کنیم
+                    logger.info(f"Description too short ({len(text)} chars) - showing improvement suggestion")
+                    
+                    # حذف فقط پیام توضیحات کاربر، منوی قبلی را edit می‌کنیم
                     try:
                         await context.bot.delete_message(chat_id=update.effective_chat.id, message_id=message.message_id)
                         logger.info(f"Deleted user short description message {message.message_id}")
@@ -424,37 +431,29 @@ async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_T
                             logger.info(f"Edited previous menu message {context.user_data['current_menu_id']} with short description warning")
                         except Exception as edit_error:
                             logger.warning(f"Could not edit previous menu: {edit_error}")
-                            # اگر edit نشد، پیام جدید ارسال کن
-                            new_message = await context.bot.send_message(
-                                chat_id=update.effective_chat.id,
-                                text=get_message("description_too_short", context, update),
-                                reply_markup=InlineKeyboardMarkup([
+                            # اگر edit نشد، از MenuManager استفاده کن
+                            await MenuManager.show_menu(
+                                update, context,
+                                get_message("description_too_short", context, update),
+                                InlineKeyboardMarkup([
                                     [InlineKeyboardButton(get_message("continue_to_next_step", context, update), callback_data="continue_to_details")],
                                     [InlineKeyboardButton(get_message("revise_description", context, update), callback_data="back_to_description")]
-                                ])
+                                ]),
+                                clear_previous=False
                             )
-                            # ذخیره منوی جدید در تاریخچه
-                            if 'menu_history' not in context.user_data:
-                                context.user_data['menu_history'] = []
-                            context.user_data['menu_history'].append(new_message.message_id)
-                            context.user_data['current_menu_id'] = new_message.message_id
-                            logger.info(f"Sent new message {new_message.message_id} as fallback")
+                            logger.info(f"Used MenuManager as fallback for short description warning")
                     else:
-                        logger.warning("No current_menu_id found, sending new message")
-                        # اگر منوی قبلی شناسایی نشد، پیام جدید ارسال کن
-                        new_message = await context.bot.send_message(
-                            chat_id=update.effective_chat.id,
-                            text=get_message("description_too_short", context, update),
-                            reply_markup=InlineKeyboardMarkup([
+                        logger.warning("No current_menu_id found, using MenuManager")
+                        # اگر منوی قبلی شناسایی نشد، از MenuManager استفاده کن
+                        await MenuManager.show_menu(
+                            update, context,
+                            get_message("description_too_short", context, update),
+                            InlineKeyboardMarkup([
                                 [InlineKeyboardButton(get_message("continue_to_next_step", context, update), callback_data="continue_to_details")],
                                 [InlineKeyboardButton(get_message("revise_description", context, update), callback_data="back_to_description")]
-                            ])
+                            ]),
+                            clear_previous=False
                         )
-                        # ذخیره منوی جدید در تاریخچه
-                        if 'menu_history' not in context.user_data:
-                            context.user_data['menu_history'] = []
-                        context.user_data['menu_history'].append(new_message.message_id)
-                        context.user_data['current_menu_id'] = new_message.message_id
                     
                     # ذخیره توضیحات موقت برای استفاده بعدی
                     context.user_data['temp_description'] = text
