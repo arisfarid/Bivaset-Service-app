@@ -465,11 +465,14 @@ def get_message(key: str, context: ContextTypes.DEFAULT_TYPE = None, update: Upd
         # نام محل خدمات
         if '{service_location_name}' in message:
             params['service_location_name'] = context.user_data.get('service_location', '')
-            
-        # نشانگر پیشرفت
+              # نشانگر پیشرفت
         if '{current_step}' in message or '{total_steps}' in message:
-            params['current_step'] = context.user_data.get('current_step', '')
-            params['total_steps'] = context.user_data.get('total_steps', '')            
+            # اگر current_step و total_steps از kwargs ارسال شده‌اند، از آن‌ها استفاده کن
+            # وگرنه از context.user_data بگیر
+            if 'current_step' not in params:
+                params['current_step'] = context.user_data.get('current_step', '')
+            if 'total_steps' not in params:
+                params['total_steps'] = context.user_data.get('total_steps', '')
         # مختصات موقعیت
         if '{latitude}' in message or '{longitude}' in message:
             location = context.user_data.get('location', {})
