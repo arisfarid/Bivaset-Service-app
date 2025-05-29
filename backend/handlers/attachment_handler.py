@@ -20,31 +20,65 @@ async def init_photo_management(update: Update, context: ContextTypes.DEFAULT_TY
     """Initialize photo management - centralized entry point for photo operations"""
     context.user_data['state'] = DETAILS_FILES
     files = context.user_data.get('files', [])
-    message = update.message or update.callback_query.message
     
     if files:
-        await message.reply_text(
-            get_message("photos_uploaded", context, update),
-            reply_markup=get_file_management_menu_keyboard(context, update)
-        )
+        # Edit existing menu if called from callback, otherwise send new message
+        if update.callback_query:
+            edited_message = await update.callback_query.message.edit_text(
+                get_message("photos_uploaded", context, update),
+                reply_markup=get_file_management_menu_keyboard(context, update)
+            )
+            # Update current_menu_id for the edited menu
+            context.user_data['current_menu_id'] = edited_message.message_id
+        else:
+            message = update.message or update.callback_query.message
+            sent_message = await message.reply_text(
+                get_message("photos_uploaded", context, update),
+                reply_markup=get_file_management_menu_keyboard(context, update)
+            )
+            # Update current_menu_id for the new menu
+            context.user_data['current_menu_id'] = sent_message.message_id
     else:
-        await message.reply_text(
-            get_message("photos_command", context, update),
-            reply_markup=get_file_management_menu_keyboard(context, update)
-        )
+        # Edit existing menu if called from callback, otherwise send new message
+        if update.callback_query:
+            edited_message = await update.callback_query.message.edit_text(
+                get_message("photos_command", context, update),
+                reply_markup=get_file_management_menu_keyboard(context, update)
+            )
+            # Update current_menu_id for the edited menu
+            context.user_data['current_menu_id'] = edited_message.message_id
+        else:
+            message = update.message or update.callback_query.message
+            sent_message = await message.reply_text(
+                get_message("photos_command", context, update),
+                reply_markup=get_file_management_menu_keyboard(context, update)
+            )
+            # Update current_menu_id for the new menu
+            context.user_data['current_menu_id'] = sent_message.message_id
     return DETAILS_FILES
 
 async def handle_photo_navigation(update: Update, context: ContextTypes.DEFAULT_TYPE, action: str) -> int:
     """Handle navigation actions for photo management"""
     if action in ["finish_files", "back_to_details"]:
         context.user_data['state'] = DETAILS
-        message = update.message or update.callback_query.message
-        await message.reply_text(
-            get_message("project_details", context, update),
-            reply_markup=create_dynamic_keyboard(context, update)
-        )
+        
+        # Edit existing menu if called from callback, otherwise send new message
         if update.callback_query:
+            edited_message = await update.callback_query.message.edit_text(
+                get_message("project_details", context, update),
+                reply_markup=create_dynamic_keyboard(context, update)
+            )
+            # Update current_menu_id for the edited menu
+            context.user_data['current_menu_id'] = edited_message.message_id
             await update.callback_query.answer(get_message("back_to_details", context, update))
+        else:
+            message = update.message or update.callback_query.message
+            sent_message = await message.reply_text(
+                get_message("project_details", context, update),
+                reply_markup=create_dynamic_keyboard(context, update)
+            )
+            # Update current_menu_id for the new menu
+            context.user_data['current_menu_id'] = sent_message.message_id
         return DETAILS
     elif action == "manage_photos":
         return await init_photo_management(update, context)
@@ -131,18 +165,40 @@ async def handle_attachment(update: Update, context: ContextTypes.DEFAULT_TYPE) 
 async def show_photo_management(update: Update, context: ContextTypes.DEFAULT_TYPE):
     files = context.user_data.get('files', [])
     if not files:
-        await update.message.reply_text(
-            get_message("photo_list_empty", context, update),
-            reply_markup=get_file_management_menu_keyboard(context, update)
-        )
+        # Edit existing menu if called from callback, otherwise send new message
+        if update.callback_query:
+            edited_message = await update.callback_query.message.edit_text(
+                get_message("photo_list_empty", context, update),
+                reply_markup=get_file_management_menu_keyboard(context, update)
+            )
+            # Update current_menu_id for the edited menu
+            context.user_data['current_menu_id'] = edited_message.message_id
+        else:
+            sent_message = await update.message.reply_text(
+                get_message("photo_list_empty", context, update),
+                reply_markup=get_file_management_menu_keyboard(context, update)
+            )
+            # Update current_menu_id for the new menu
+            context.user_data['current_menu_id'] = sent_message.message_id
         await log_chat(update, context)
         return
 
     keyboard_markup = create_photo_management_keyboard(files, context, update)
-    await update.message.reply_text(
-        get_message("photo_management_title", context, update),
-        reply_markup=keyboard_markup
-    )
+    # Edit existing menu if called from callback, otherwise send new message
+    if update.callback_query:
+        edited_message = await update.callback_query.message.edit_text(
+            get_message("photo_management_title", context, update),
+            reply_markup=keyboard_markup
+        )
+        # Update current_menu_id for the edited menu
+        context.user_data['current_menu_id'] = edited_message.message_id
+    else:
+        sent_message = await update.message.reply_text(
+            get_message("photo_management_title", context, update),
+            reply_markup=keyboard_markup
+        )
+        # Update current_menu_id for the new menu
+        context.user_data['current_menu_id'] = sent_message.message_id
     context.user_data['state'] = DETAILS_FILES
     await log_chat(update, context)
 
