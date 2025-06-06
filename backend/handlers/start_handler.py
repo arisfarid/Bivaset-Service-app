@@ -1,7 +1,7 @@
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardRemove
 from telegram.ext import ContextTypes, ConversationHandler
 from utils import BASE_URL, log_chat, ensure_active_chat, delete_previous_messages
-from keyboards import get_main_menu_keyboard, get_register_menu_keyboard, get_employer_menu_keyboard, get_contractor_menu_keyboard
+from keyboards import get_main_menu_keyboard, get_register_menu_keyboard, get_employer_menu_keyboard, get_contractor_menu_keyboard, create_dynamic_keyboard, create_category_keyboard
 from handlers.phone_handler import check_phone
 from helpers.menu_manager import MenuManager
 from handlers.states import START, REGISTER, ROLE, EMPLOYER_MENU, CATEGORY, SUBCATEGORY, DESCRIPTION, LOCATION_TYPE, LOCATION_INPUT, DETAILS, DETAILS_FILES, DETAILS_DATE, DETAILS_DEADLINE, DETAILS_BUDGET, DETAILS_QUANTITY, SUBMIT, VIEW_PROJECTS, PROJECT_ACTIONS, CHANGE_PHONE, VERIFY_CODE, CONTRACTOR_MENU
@@ -202,12 +202,18 @@ async def handle_role(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int
 
 async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Handle cancel with confirmation dialog"""
+    logger.info(f"=== Cancel function called ===")
+    logger.info(f"Update type: {'callback_query' if update.callback_query else 'message'}")
+    
     query = update.callback_query
     
     if query:
+        logger.info(f"Callback query data: {query.data}")
         await query.answer()
+        
         # Check if this is a cancel confirmation response
         if query.data == "cancel_confirmed":
+            logger.info("User confirmed cancellation - clearing data and ending conversation")
             # پاک کردن تاریخچه چت با استفاده از متد جدید
             try:
                 await MenuManager.clear_chat_history(update, context)
@@ -219,17 +225,59 @@ async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
             
             context.user_data.clear()
             await query.edit_message_text(get_message("operation_cancelled", context, update))
+            logger.info("Successfully cancelled and ended conversation")
             return ConversationHandler.END
         
         elif query.data == "cancel_declined":
+            logger.info("User declined cancellation - returning to current state")
             # Get current state and redirect back
             current_state = context.user_data.get('state', START)
-            await query.edit_message_text(
-                get_message("select_from_buttons", context, update)
-            )
-            return current_state
+            logger.info(f"Current state: {current_state}")
+            logger.info(f"User data: {context.user_data}")
+            
+            # بجای نمایش پیام ساده، باید کاربر را به state مناسب برگردانیم
+            if current_state == DESCRIPTION:
+                # برگرداندن کاربر به مرحله توضیحات
+                from handlers.project_details_handler import description_handler
+                await description_handler(query.message, context, update)
+                logger.info("Returned user to DESCRIPTION state")
+                return DESCRIPTION
+            elif current_state == DETAILS:
+                # برگرداندن کاربر به مرحله جزئیات
+                message_text = get_message("project_details", context, update)
+                await query.edit_message_text(
+                    message_text, 
+                    reply_markup=create_dynamic_keyboard(context, update)
+                )
+                logger.info("Returned user to DETAILS state")
+                return DETAILS
+            elif current_state == CATEGORY:
+                # برگرداندن کاربر به انتخاب دسته‌بندی
+                await query.edit_message_text(
+                    get_message("category_main_select", context, update),
+                    reply_markup=create_category_keyboard(context, update)
+                )
+                logger.info("Returned user to CATEGORY state")
+                return CATEGORY
+            elif current_state == ROLE:
+                # برگرداندن کاربر به انتخاب نقش
+                await query.edit_message_text(
+                    get_message("role_select", context, update),
+                    reply_markup=get_main_menu_keyboard(context, update)
+                )
+                logger.info("Returned user to ROLE state")
+                return ROLE
+            else:
+                # برای سایر حالات، نمایش منوی اصلی
+                await query.edit_message_text(
+                    get_message("welcome", context, update),
+                    reply_markup=get_main_menu_keyboard(context, update)
+                )
+                logger.info(f"Returned user to main menu from state: {current_state}")
+                return ROLE
         
         else:
+            logger.info("Showing cancel confirmation dialog")
             # Show cancel confirmation dialog
             keyboard = InlineKeyboardMarkup([
                 [InlineKeyboardButton(get_message("cancel_yes", context, update), callback_data="cancel_confirmed")],
@@ -240,8 +288,10 @@ async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
                 get_message("cancel_confirmation", context, update),
                 reply_markup=keyboard
             )
+            logger.info("Cancel confirmation dialog shown")
             return context.user_data.get('state', START)
     else:
+        logger.info("Text message cancel - ending conversation directly")
         # Handle text message cancel (should not happen with inline keyboard)
         context.user_data.clear()
         await update.message.reply_text(get_message("operation_cancelled", context, update))
