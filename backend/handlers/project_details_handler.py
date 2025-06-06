@@ -37,22 +37,28 @@ async def description_handler(message, context: ContextTypes.DEFAULT_TYPE, updat
         guidance_text += get_message("previous_description_with_confirm", context, update)
     else:
         guidance_text += get_message("write_description_prompt", context, update)
-    
-    # افزودن اطلاعات ناوبری به پیام
+      # افزودن اطلاعات ناوبری به پیام
     guidance_text, navigation_keyboard = add_navigation_to_message(guidance_text, DESCRIPTION, context.user_data, context, update)
+      # ایجاد کیبورد با مدیریت صحیح دکمه‌ها
+    keyboard = []
     
-    # اگر توضیحات قبلی داریم، دکمه‌های تأیید را اضافه می‌کنیم
+    # اگر توضیحات قبلی داریم، دکمه تأیید اضافه می‌کنیم
     if last_description:
-        keyboard = [
-            [InlineKeyboardButton(get_message("confirm_and_continue", context, update), callback_data="continue_to_details")],
-            [InlineKeyboardButton(get_message("back", context, update), callback_data="back_to_location_type")]
-        ]
-    else:
-        keyboard = [
-            [InlineKeyboardButton(get_message("back", context, update), callback_data="back_to_location_type")]
-        ]    # اگر navigation keyboard داریم، آن را ادغام می‌کنیم
+        keyboard.append([InlineKeyboardButton(get_message("confirm_and_continue", context, update), callback_data="continue_to_details")])
+    
+    # اگر navigation keyboard داریم، آن را اضافه می‌کنیم (بدون تکرار دکمه‌ها)
     if navigation_keyboard:
-        keyboard += list(navigation_keyboard.inline_keyboard)
+        # فقط دکمه‌های مفید navigation را اضافه کن، نه همه‌شان
+        nav_buttons = list(navigation_keyboard.inline_keyboard)
+        for row in nav_buttons:
+            # بررسی کن که دکمه‌های تکراری نباشد
+            row_texts = [btn.text for btn in row]
+            existing_texts = [btn.text for keyboard_row in keyboard for btn in keyboard_row]
+            
+            # فقط دکمه‌هایی را اضافه کن که قبلاً وجود ندارند
+            filtered_row = [btn for btn in row if btn.text not in existing_texts]
+            if filtered_row:
+                keyboard.append(filtered_row)
     edited_message = await message.edit_text(
         guidance_text,
         reply_markup=InlineKeyboardMarkup(keyboard)
@@ -442,10 +448,14 @@ async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_T
                         logger.error(f"❌ Could not delete user short description message: {delete_error}")                    # تلاش برای edit کردن منوی قبلی
                     edit_successful = False
                     short_description_message = get_message("description_too_short", context, update)
-                    short_description_keyboard = InlineKeyboardMarkup([
-                        [InlineKeyboardButton(get_message("continue_to_next_step", context, update), callback_data="continue_to_details")],
-                        [InlineKeyboardButton(get_message("revise_description", context, update), callback_data="back_to_description")]
+                    
+                    # ایجاد کیبورد بدون تکرار دکمه‌ها
+                    short_description_buttons = []
+                    short_description_buttons.append([
+                        InlineKeyboardButton(get_message("continue_to_next_step", context, update), callback_data="continue_to_details"),
+                        InlineKeyboardButton(get_message("revise_description", context, update), callback_data="back_to_description")
                     ])
+                    short_description_keyboard = InlineKeyboardMarkup(short_description_buttons)
                       # بررسی اینکه آیا همین پیام قبلاً نمایش داده شده یا نه
                     last_menu_message = context.user_data.get('last_menu_message', '')
                     if last_menu_message == short_description_message:
