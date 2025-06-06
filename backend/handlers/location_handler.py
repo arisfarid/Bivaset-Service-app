@@ -86,16 +86,18 @@ async def handle_location(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
                 context.user_data['menu_history'].append(edited_message.message_id)
             logger.info(f"🔄 Updated current_menu_id to {edited_message.message_id} for back_to_description")
             
-            return DESCRIPTION
-
-        # پردازش انتخاب نوع لوکیشن (حضوری یا غیرحضوری)
+            return DESCRIPTION        # پردازش انتخاب نوع لوکیشن (حضوری یا غیرحضوری)
         elif data.startswith("location_"):
             location_type = data.split("_")[1]
             context.user_data['service_location'] = {
                 'client': 'client_site',
                 'contractor': 'contractor_site',
                 'remote': 'remote'
-            }[location_type]            # اگر کاربر غیرحضوری را انتخاب کند، مستقیماً به مرحله توضیحات هدایت شود
+            }[location_type]
+            
+            logger.info(f"User selected location type: {location_type} -> {context.user_data['service_location']}")
+            
+            # اگر کاربر غیرحضوری را انتخاب کند، مستقیماً به مرحله توضیحات هدایت شود
             if location_type == 'remote':
                 context.user_data['state'] = DESCRIPTION
                 edited_message = await query.message.edit_text(
