@@ -16,7 +16,7 @@ from handlers.project_details_handler import handle_project_details
 from handlers.view_handler import handle_view_projects
 from handlers.callback_handler import handle_callback
 from keyboards import get_register_menu_keyboard, create_navigation_keyboard
-from handlers.states import START, REGISTER, ROLE, EMPLOYER_MENU, CATEGORY, SUBCATEGORY, DESCRIPTION, LOCATION_TYPE, LOCATION_INPUT, DETAILS, DETAILS_FILES, DETAILS_DATE, DETAILS_DEADLINE, DETAILS_BUDGET, DETAILS_QUANTITY, SUBMIT, VIEW_PROJECTS, PROJECT_ACTIONS, CHANGE_PHONE, VERIFY_CODE
+from handlers.states import START, REGISTER, ROLE, EMPLOYER_MENU, CONTRACTOR_MENU, CATEGORY, SUBCATEGORY, DESCRIPTION, LOCATION_TYPE, LOCATION_INPUT, DETAILS, DETAILS_FILES, DETAILS_DATE, DETAILS_DEADLINE, DETAILS_BUDGET, DETAILS_QUANTITY, SUBMIT, VIEW_PROJECTS, PROJECT_ACTIONS, CHANGE_PHONE, VERIFY_CODE
 from handlers.navigation_utils import add_navigation_to_message, SERVICE_REQUEST_FLOW, STATE_NAMES
 from handlers.submission_handler import submit_project
 from handlers.phone_handler import change_phone, handle_new_phone, verify_new_phone
@@ -179,13 +179,12 @@ def get_conversation_handler() -> ConversationHandler:
     
     # هندلر برای ناوبری در مراحل مختلف (قبلی/بعدی/رد کردن)
     navigation_handler = CallbackQueryHandler(handle_navigation_callback, pattern="^nav_to_[0-9]+$")
-    
-    # هندلر برای لغو گفتگو
+      # هندلر برای لغو گفتگو
     cancel_callback_handler = CallbackQueryHandler(cancel, pattern="^cancel$")
+    cancel_confirm_handler = CallbackQueryHandler(cancel, pattern="^cancel_(confirmed|declined)$")
     
     return ConversationHandler(
-        entry_points=[CommandHandler("start", start)],
-        states={
+        entry_points=[CommandHandler("start", start)],        states={
             REGISTER: [
                 MessageHandler(filters.CONTACT, handle_contact),
                 MessageHandler(~filters.CONTACT & ~filters.COMMAND, handle_non_contact),
@@ -193,6 +192,7 @@ def get_conversation_handler() -> ConversationHandler:
                 restart_handler,
                 navigation_handler,
                 cancel_callback_handler,
+                cancel_confirm_handler,
                 CallbackQueryHandler(handle_callback)
             ],
             ROLE: [
@@ -200,13 +200,22 @@ def get_conversation_handler() -> ConversationHandler:
                 restart_handler,
                 navigation_handler,
                 cancel_callback_handler,
+                cancel_confirm_handler,
                 CallbackQueryHandler(handle_callback)
-            ],
-            EMPLOYER_MENU: [
+            ],            EMPLOYER_MENU: [
                 MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message),
                 restart_handler,
                 navigation_handler,
                 cancel_callback_handler,
+                cancel_confirm_handler,
+                CallbackQueryHandler(handle_callback)
+            ],
+            CONTRACTOR_MENU: [
+                MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message),
+                restart_handler,
+                navigation_handler,
+                cancel_callback_handler,
+                cancel_confirm_handler,
                 CallbackQueryHandler(handle_callback)
             ],
             CATEGORY: [
@@ -214,13 +223,14 @@ def get_conversation_handler() -> ConversationHandler:
                 restart_handler,
                 navigation_handler,
                 cancel_callback_handler,
+                cancel_confirm_handler,
                 CallbackQueryHandler(handle_category_selection)
-            ],
-            SUBCATEGORY: [
+            ],            SUBCATEGORY: [
                 MessageHandler(filters.TEXT & ~filters.COMMAND, handle_category_selection),
                 restart_handler,
                 navigation_handler,
                 cancel_callback_handler,
+                cancel_confirm_handler,
                 CallbackQueryHandler(handle_category_selection)
             ],
             LOCATION_TYPE: [
@@ -228,6 +238,7 @@ def get_conversation_handler() -> ConversationHandler:
                 restart_handler,
                 navigation_handler,
                 cancel_callback_handler,
+                cancel_confirm_handler,
                 CallbackQueryHandler(handle_location)
             ],
             LOCATION_INPUT: [
@@ -235,6 +246,7 @@ def get_conversation_handler() -> ConversationHandler:
                 restart_handler,
                 navigation_handler,
                 cancel_callback_handler,
+                cancel_confirm_handler,
                 CallbackQueryHandler(handle_location)
             ],
             DESCRIPTION: [
@@ -242,6 +254,7 @@ def get_conversation_handler() -> ConversationHandler:
                 restart_handler,
                 navigation_handler,
                 cancel_callback_handler,
+                cancel_confirm_handler,
                 CallbackQueryHandler(handle_project_details)
             ],
             DETAILS: [
@@ -249,14 +262,15 @@ def get_conversation_handler() -> ConversationHandler:
                 restart_handler,
                 navigation_handler,
                 cancel_callback_handler,
+                cancel_confirm_handler,
                 CallbackQueryHandler(handle_project_details)
-            ],
-            DETAILS_FILES: [
+            ],            DETAILS_FILES: [
                 MessageHandler(filters.PHOTO, handle_attachment),
                 MessageHandler(filters.TEXT & ~filters.COMMAND, handle_attachment),
                 restart_handler,
                 navigation_handler,
                 cancel_callback_handler,
+                cancel_confirm_handler,
                 CallbackQueryHandler(handle_attachment)
             ],
             DETAILS_DATE: [
@@ -264,6 +278,7 @@ def get_conversation_handler() -> ConversationHandler:
                 restart_handler,
                 navigation_handler,
                 cancel_callback_handler,
+                cancel_confirm_handler,
                 CallbackQueryHandler(handle_project_details)
             ],
             DETAILS_DEADLINE: [
@@ -271,6 +286,7 @@ def get_conversation_handler() -> ConversationHandler:
                 restart_handler,
                 navigation_handler,
                 cancel_callback_handler,
+                cancel_confirm_handler,
                 CallbackQueryHandler(handle_project_details)
             ],
             DETAILS_BUDGET: [
@@ -278,6 +294,7 @@ def get_conversation_handler() -> ConversationHandler:
                 restart_handler,
                 navigation_handler,
                 cancel_callback_handler,
+                cancel_confirm_handler,
                 CallbackQueryHandler(handle_project_details)
             ],
             DETAILS_QUANTITY: [
@@ -285,6 +302,7 @@ def get_conversation_handler() -> ConversationHandler:
                 restart_handler,
                 navigation_handler,
                 cancel_callback_handler,
+                cancel_confirm_handler,
                 CallbackQueryHandler(handle_project_details)
             ],
             SUBMIT: [
@@ -292,30 +310,33 @@ def get_conversation_handler() -> ConversationHandler:
                 restart_handler,
                 navigation_handler,
                 cancel_callback_handler,
+                cancel_confirm_handler,
                 CallbackQueryHandler(submit_project)
-            ],
-            CHANGE_PHONE: [
+            ],            CHANGE_PHONE: [
                 MessageHandler(filters.TEXT & ~filters.COMMAND, handle_new_phone),
                 restart_handler,
                 navigation_handler,
-                cancel_callback_handler
+                cancel_callback_handler,
+                cancel_confirm_handler
             ],
             VERIFY_CODE: [
                 MessageHandler(filters.TEXT & ~filters.COMMAND, verify_new_phone),
                 restart_handler,
                 navigation_handler,
-                cancel_callback_handler
-            ],
-            VIEW_PROJECTS: [
+                cancel_callback_handler,
+                cancel_confirm_handler
+            ],            VIEW_PROJECTS: [
                 restart_handler,
                 navigation_handler,
                 cancel_callback_handler,
+                cancel_confirm_handler,
                 CallbackQueryHandler(handle_view_projects)
             ],
             PROJECT_ACTIONS: [
                 restart_handler,
                 navigation_handler,
                 cancel_callback_handler,
+                cancel_confirm_handler,
                 CallbackQueryHandler(handle_view_projects)
             ]
         },

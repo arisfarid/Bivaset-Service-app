@@ -201,15 +201,48 @@ async def handle_role(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int
     return ROLE
 
 async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    # پاک کردن تاریخچه چت با استفاده از متد جدید
-    try:
-        await MenuManager.clear_chat_history(update, context)
-        logger.info(f"Cleared chat history for user {update.effective_user.id} during cancel")
-    except Exception as e:
-        logger.error(f"Error cleaning chat history during cancel: {e}")
-        # در صورت خطا، از روش قبلی استفاده کنیم
-        await MenuManager.clear_menus(update, context)
+    """Handle cancel with confirmation dialog"""
+    query = update.callback_query
     
-    context.user_data.clear()
-    await update.message.reply_text(get_message("operation_cancelled", context, update))
-    return ConversationHandler.END
+    if query:
+        await query.answer()
+        # Check if this is a cancel confirmation response
+        if query.data == "cancel_confirmed":
+            # پاک کردن تاریخچه چت با استفاده از متد جدید
+            try:
+                await MenuManager.clear_chat_history(update, context)
+                logger.info(f"Cleared chat history for user {update.effective_user.id} during cancel")
+            except Exception as e:
+                logger.error(f"Error cleaning chat history during cancel: {e}")
+                # در صورت خطا، از روش قبلی استفاده کنیم
+                await MenuManager.clear_menus(update, context)
+            
+            context.user_data.clear()
+            await query.edit_message_text(get_message("operation_cancelled", context, update))
+            return ConversationHandler.END
+        
+        elif query.data == "cancel_declined":
+            # Get current state and redirect back
+            current_state = context.user_data.get('state', START)
+            await query.edit_message_text(
+                get_message("select_from_buttons", context, update)
+            )
+            return current_state
+        
+        else:
+            # Show cancel confirmation dialog
+            keyboard = InlineKeyboardMarkup([
+                [InlineKeyboardButton(get_message("cancel_yes", context, update), callback_data="cancel_confirmed")],
+                [InlineKeyboardButton(get_message("cancel_no", context, update), callback_data="cancel_declined")]
+            ])
+            
+            await query.edit_message_text(
+                get_message("cancel_confirmation", context, update),
+                reply_markup=keyboard
+            )
+            return context.user_data.get('state', START)
+    else:
+        # Handle text message cancel (should not happen with inline keyboard)
+        context.user_data.clear()
+        await update.message.reply_text(get_message("operation_cancelled", context, update))
+        return ConversationHandler.END

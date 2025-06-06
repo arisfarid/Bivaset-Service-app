@@ -45,20 +45,23 @@ async def description_handler(message, context: ContextTypes.DEFAULT_TYPE, updat
     # اگر توضیحات قبلی داریم، دکمه تأیید اضافه می‌کنیم
     if last_description:
         keyboard.append([InlineKeyboardButton(get_message("confirm_and_continue", context, update), callback_data="continue_to_details")])
-    
-    # اگر navigation keyboard داریم، آن را اضافه می‌کنیم (بدون تکرار دکمه‌ها)
+      # اگر navigation keyboard داریم، آن را اضافه می‌کنیم (بدون تکرار دکمه‌ها)
     if navigation_keyboard:
-        # فقط دکمه‌های مفید navigation را اضافه کن، نه همه‌شان
+        # دریافت متن‌های دکمه‌های موجود برای جلوگیری از تکرار
+        existing_texts = set()
+        for keyboard_row in keyboard:
+            for btn in keyboard_row:
+                existing_texts.add(btn.text)
+        
+        # اضافه کردن دکمه‌های navigation که تکراری نیستند
         nav_buttons = list(navigation_keyboard.inline_keyboard)
         for row in nav_buttons:
-            # بررسی کن که دکمه‌های تکراری نباشد
-            row_texts = [btn.text for btn in row]
-            existing_texts = [btn.text for keyboard_row in keyboard for btn in keyboard_row]
-            
-            # فقط دکمه‌هایی را اضافه کن که قبلاً وجود ندارند
             filtered_row = [btn for btn in row if btn.text not in existing_texts]
             if filtered_row:
                 keyboard.append(filtered_row)
+                # به‌روزرسانی existing_texts برای جلوگیری از تکرار در ادامه
+                for btn in filtered_row:
+                    existing_texts.add(btn.text)
     edited_message = await message.edit_text(
         guidance_text,
         reply_markup=InlineKeyboardMarkup(keyboard)

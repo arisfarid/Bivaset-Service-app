@@ -137,9 +137,13 @@ def get_message(key: str, context: ContextTypes.DEFAULT_TYPE = None, update: Upd
             "custom_amount": "✏️ مقدار دلخواه",
             "invalid_option": "❌ گزینه نامعتبر! لطفاً یکی از دکمه‌های منو را انتخاب کنید。",
             "submitting_request": "در حال ثبت درخواست شما...",
-            "submit": "✅ ثبت درخواست",
-            "operation_cancelled": "عملیات لغو شد. دوباره شروع کن!",
+            "submit": "✅ ثبت درخواست",            "operation_cancelled": "عملیات لغو شد. دوباره شروع کن!",
             "general_error": "خطایی رخ داد. لطفاً دوباره تلاش کنید.",
+            
+            # پیام‌های تایید لغو
+            "cancel_confirmation": "❌ آیا مطمئن هستید که می‌خواهید فرآیند را لغو کنید؟\n\n⚠️ تمام اطلاعات وارد شده حذف خواهد شد!",
+            "cancel_yes": "✅ بله، لغو کن",
+            "cancel_no": "❌ خیر، ادامه",
 
             # پیام‌های مدیریت فایل
             "photos_command": "📸 تصاویر را یکی‌یکی ارسال کنید (حداکثر ۵ تصویر). فقط عکس پذیرفته می‌شود!",
@@ -342,9 +346,13 @@ def get_message(key: str, context: ContextTypes.DEFAULT_TYPE = None, update: Upd
             "custom_amount": "✏️ Custom amount",
             "invalid_option": "❌ Invalid option! Please select one of the menu buttons.",
             "submitting_request": "Submitting your request...",
-            "submit": "✅ Submit request",
-            "operation_cancelled": "Operation cancelled. Start again!",
+            "submit": "✅ Submit request",            "operation_cancelled": "Operation cancelled. Start again!",
             "general_error": "An error occurred. Please try again.",
+            
+            # Cancel confirmation messages
+            "cancel_confirmation": "❌ Are you sure you want to cancel the process?\n\n⚠️ All entered information will be deleted!",
+            "cancel_yes": "✅ Yes, cancel",
+            "cancel_no": "❌ No, continue",
 
             # پیام‌های مدیریت فایل
             "photos_command": "📸 Please send photos one by one (maximum 5 photos). Only images are accepted!",
