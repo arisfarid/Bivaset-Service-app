@@ -210,10 +210,14 @@ async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     if query:
         logger.info(f"Callback query data: {query.data}")
         await query.answer()
-        
-        # Check if this is a cancel confirmation response
+          # Check if this is a cancel confirmation response
         if query.data == "cancel_confirmed":
             logger.info("User confirmed cancellation - clearing data and ending conversation")
+            
+            # Store the cancellation message before clearing context
+            cancellation_message = get_message("operation_cancelled", context, update)
+            logger.info(f"Got cancellation message: {cancellation_message}")
+            
             # پاک کردن تاریخچه چت با استفاده از متد جدید
             try:
                 await MenuManager.clear_chat_history(update, context)
@@ -221,10 +225,29 @@ async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
             except Exception as e:
                 logger.error(f"Error cleaning chat history during cancel: {e}")
                 # در صورت خطا، از روش قبلی استفاده کنیم
-                await MenuManager.clear_menus(update, context)
+                try:
+                    await MenuManager.clear_menus(update, context)
+                    logger.info("Fallback: cleared menus successfully")
+                except Exception as e2:
+                    logger.error(f"Error in fallback clear_menus: {e2}")
             
+            # Clear user data after getting the message
             context.user_data.clear()
-            await query.edit_message_text(get_message("operation_cancelled", context, update))
+            logger.info("Cleared user data")
+            
+            # Edit message with the stored cancellation message
+            try:
+                await query.edit_message_text(cancellation_message)
+                logger.info("Successfully edited message with cancellation text")
+            except Exception as e:
+                logger.error(f"Error editing message with cancellation: {e}")
+                # Fallback: try to send a new message
+                try:
+                    await query.message.reply_text(cancellation_message)
+                    logger.info("Fallback: sent new message with cancellation text")
+                except Exception as e2:
+                    logger.error(f"Error in fallback message send: {e2}")
+            
             logger.info("Successfully cancelled and ended conversation")
             return ConversationHandler.END
         
