@@ -514,8 +514,7 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             logger.info(f"Processing location type callback: {data}")
             from handlers.location_handler import handle_location
             return await handle_location(update, context)
-        
-        # Handle restart callbacks after cancellation
+          # Handle restart callbacks after cancellation
         elif data == "restart_to_main":
             logger.info("Processing restart to main menu")
             from handlers.start_handler import handle_restart_to_main
@@ -525,6 +524,13 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             logger.info("Processing restart to new request")
             from handlers.start_handler import handle_restart_to_new_request
             return await handle_restart_to_new_request(update, context)
+            
+        elif data == "perform_restart":
+            logger.info("Processing clean restart like post-update")
+            # Perform a clean restart by calling the start function with restart flag
+            context.args = ["restart"]
+            from handlers.start_handler import start
+            return await start(update, context)
             
         await query.answer()
         return context.user_data.get('state', START)

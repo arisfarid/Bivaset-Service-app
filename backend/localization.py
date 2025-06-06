@@ -137,9 +137,10 @@ def get_message(key: str, context: ContextTypes.DEFAULT_TYPE = None, update: Upd
             "custom_amount": "✏️ مقدار دلخواه",
             "invalid_option": "❌ گزینه نامعتبر! لطفاً یکی از دکمه‌های منو را انتخاب کنید。",
             "submitting_request": "در حال ثبت درخواست شما...",
-            "submit": "✅ ثبت درخواست",            "operation_cancelled": "❌ عملیات لغو شد!\n\nمی‌توانید از منوی زیر استفاده کنید:",
-            "back_to_main_menu": "🏠 بازگشت به منوی اصلی",
+            "submit": "✅ ثبت درخواست",
+            "operation_cancelled": "❌ عملیات لغو شد!\n\nمی‌توانید از منوی زیر استفاده کنید:",            "back_to_main_menu": "🏠 بازگشت به منوی اصلی",
             "start_new_request": "📋 درخواست جدید",
+            "restart_button": "🔄 راه‌اندازی مجدد",
             "general_error": "خطایی رخ داد. لطفاً دوباره تلاش کنید.",
             
             # پیام‌های تایید لغو
@@ -348,7 +349,8 @@ def get_message(key: str, context: ContextTypes.DEFAULT_TYPE = None, update: Upd
             "custom_amount": "✏️ Custom amount",
             "invalid_option": "❌ Invalid option! Please select one of the menu buttons.",
             "submitting_request": "Submitting your request...",
-            "submit": "✅ Submit request",            "operation_cancelled": "❌ Operation cancelled!\n\nYou can use the menu below:",
+            "submit": "✅ Submit request",
+            "operation_cancelled": "❌ Operation cancelled!\n\nYou can use the menu below:",
             "back_to_main_menu": "🏠 Back to main menu",
             "start_new_request": "📋 New request",
             "general_error": "An error occurred. Please try again.",

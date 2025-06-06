@@ -114,11 +114,11 @@ def build_application():
         .concurrent_updates(True)
         .build()
     )
-    
-    # تغییر ترتیب ثبت هندلرها
+      # تغییر ترتیب ثبت هندلرها
     app.add_handler(get_conversation_handler())  # اول
     logger.info("Added conversation handler")
     app.add_handler(CommandHandler("start", reset_conversation))  # دوم
+    app.add_handler(CallbackQueryHandler(handle_global_restart, pattern="^perform_restart$"))  # رستارت خارج از مکالمه
     app.add_handler(CallbackQueryHandler(handle_callback))  # سوم
     app.add_error_handler(handle_error)  # آخر
     
@@ -152,6 +152,32 @@ async def reset_conversation(update: Update, context: ContextTypes.DEFAULT_TYPE)
         reply_markup=get_main_menu_keyboard(context, update)
     )
     return 2  # ROLE
+
+async def handle_global_restart(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Handle restart button clicked outside of conversation"""
+    query = update.callback_query
+    await query.answer()
+    
+    logger.info(f"Global restart requested by user {update.effective_user.id}")
+    
+    # Clear user data completely
+    context.user_data.clear()
+    
+    # Call the start function with restart flag
+    context.args = ["restart"]
+    from handlers.start_handler import start
+    
+    # Since we're outside conversation, we need to manually handle the state
+    try:
+        await start(update, context)
+        logger.info("Successfully restarted bot outside conversation")
+    except Exception as e:
+        logger.error(f"Error in global restart: {e}")
+        # Fallback: show main menu
+        await query.edit_message_text(
+            get_message("welcome", context, update),
+            reply_markup=get_main_menu_keyboard(context, update)
+        )
 
 def main():
     if not TOKEN:
