@@ -509,6 +509,11 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             )
             await query.answer()
             return CATEGORY
+          # Handle location type callbacks
+        elif data in ["location_client", "location_contractor", "location_remote"]:
+            logger.info(f"Processing location type callback: {data}")
+            from handlers.location_handler import handle_location
+            return await handle_location(update, context)
         
         # Handle restart callbacks after cancellation
         elif data == "restart_to_main":
