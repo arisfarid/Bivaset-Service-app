@@ -32,14 +32,14 @@ async def handle_navigation_callback(update: Update, context: ContextTypes.DEFAU
     """
     query = update.callback_query
     await query.answer()
-    logger.info(f"[handle_navigation_callback] user_id={update.effective_user.id} | state={context.user_data.get('state')} | context.user_data={context.user_data}")
+    logger.debug(f"[handle_navigation_callback] user_id={update.effective_user.id} | state={context.user_data.get('state')}")
     
     callback_data = query.data
     
     if callback_data.startswith("nav_to_"):
         try:
             next_state = int(callback_data.split("_")[-1])
-            logger.info(f"[handle_navigation_callback] nav_to_{next_state} | context.user_data={context.user_data}")
+            logger.debug(f"[handle_navigation_callback] nav_to_{next_state}")
             
             # Update user state
             context.user_data['previous_state'] = context.user_data.get('state')
@@ -61,12 +61,12 @@ async def handle_navigation_callback(update: Update, context: ContextTypes.DEFAU
                 return DESCRIPTION
                 
             elif next_state == LOCATION_TYPE:
-                logger.info(f"[handle_navigation_callback] navigating to LOCATION_TYPE | context.user_data={context.user_data}")
+                logger.debug(f"[handle_navigation_callback] navigating to LOCATION_TYPE")
                 from handlers.location_handler import handle_location
                 return await handle_location(update, context)
                 
             elif next_state == LOCATION_INPUT:
-                logger.info(f"[handle_navigation_callback] navigating to LOCATION_INPUT | context.user_data={context.user_data}")
+                logger.debug(f"[handle_navigation_callback] navigating to LOCATION_INPUT")
                 from handlers.location_handler import request_location_input
                 return await request_location_input(update, context)
                 
@@ -146,13 +146,13 @@ async def handle_navigation_callback(update: Update, context: ContextTypes.DEFAU
     return context.user_data.get('state', ROLE)
 
 async def handle_non_contact(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    logger.info(f"=== Entering handle_non_contact - User: {update.effective_user.id} ===")
-    logger.info(f"Message type: {type(update.message)}")
-    logger.info(f"Message text: {update.message.text if update.message else 'None'}")
-    logger.info(f"Current state: {context.user_data.get('state')}")
-    logger.info("=== Non-contact message received in REGISTER state ===")
+    logger.debug(f"=== Entering handle_non_contact - User: {update.effective_user.id} ===")
+    logger.debug(f"Message type: {type(update.message)}")
+    logger.debug(f"Message text: {update.message.text if update.message else 'None'}")
+    logger.debug(f"Current state: {context.user_data.get('state')}")
+    logger.debug("=== Non-contact message received in REGISTER state ===")
     current_state = context.user_data.get('state')
-    logger.info(f"Current state: {current_state}")
+    logger.debug(f"Current state: {current_state}")
     
     if current_state != REGISTER:
         return current_state
@@ -162,7 +162,7 @@ async def handle_non_contact(update: Update, context: ContextTypes.DEFAULT_TYPE)
         logger.error("No message object found in update")
         return REGISTER
         
-    logger.info(f"User {update.effective_user.id} sent non-contact message in REGISTER state")
+    logger.debug(f"User {update.effective_user.id} sent non-contact message in REGISTER state")
     await message.reply_text(
         get_message("share_phone_prompt", context, update),
         reply_markup=get_register_menu_keyboard(context, update)
@@ -172,7 +172,7 @@ async def handle_non_contact(update: Update, context: ContextTypes.DEFAULT_TYPE)
 
 def get_conversation_handler() -> ConversationHandler:
     """ایجاد مدیریت کننده مکالمه با بهینه‌سازی جریان گفتگو"""
-    logger.info("=== Initializing ConversationHandler ===")
+    logger.debug("=== Initializing ConversationHandler ===")
     
     # هندلر دکمه‌های تأیید/رد شروع مجدد
     restart_handler = CallbackQueryHandler(handle_confirm_restart, pattern="^(confirm_restart|continue_current)$")
@@ -352,7 +352,7 @@ def get_conversation_handler() -> ConversationHandler:
 async def log_state(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """لاگ کردن state فعلی"""
     current_state = context.user_data.get('state', START)
-    logger.info(f"Processing message for user {update.effective_user.id}, current state: {current_state}")
+    logger.debug(f"Processing message for user {update.effective_user.id}, current state: {current_state}")
     return current_state
 
 async def handle_error(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:

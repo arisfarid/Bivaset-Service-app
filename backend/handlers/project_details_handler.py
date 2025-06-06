@@ -22,14 +22,11 @@ async def description_handler(message, context: ContextTypes.DEFAULT_TYPE, updat
     """
     ارسال پیام راهنمای کامل برای مرحله وارد کردن توضیحات
     """
-    logger.info(f"🏁 description_handler called")
-    logger.info(f"📊 Current user_data: {context.user_data}")
-    logger.info(f"🔢 Current menu_id: {context.user_data.get('current_menu_id', 'NOT_SET')}")
-    logger.info(f"📜 Menu history: {context.user_data.get('menu_history', [])}")
+    logger.debug(f"description_handler called")
     
     # دریافت توضیحات قبلی اگر موجود باشد
     last_description = context.user_data.get('description', context.user_data.get('temp_description', ''))
-    logger.info(f"💭 Last description found: {'Yes' if last_description else 'No'}")
+    logger.debug(f"Last description found: {'Yes' if last_description else 'No'}")
     
     # اگر توضیحات قبلی موجود باشد، آن را نمایش می‌دهیم
     guidance_text = get_message("description_guidance", context, update)
@@ -68,7 +65,7 @@ async def description_handler(message, context: ContextTypes.DEFAULT_TYPE, updat
     )
       # ذخیره ID پیام منو برای استفاده در edit های بعدی
     menu_id = edited_message.message_id if edited_message else message.message_id
-    logger.info(f"🎯 description_handler menu ID: {menu_id}")
+    logger.debug(f"description_handler menu ID: {menu_id}")
     
     # ذخیره محتوای پیام برای مقایسه‌های بعدی
     context.user_data['last_menu_message'] = guidance_text
@@ -79,14 +76,12 @@ async def description_handler(message, context: ContextTypes.DEFAULT_TYPE, updat
     # اطمینان از اینکه ID جدید در تاریخچه نباشد
     if menu_id not in context.user_data['menu_history']:
         context.user_data['menu_history'].append(menu_id)
-        logger.info(f"📝 Added menu ID {menu_id} to history")
+        logger.debug(f"Added menu ID {menu_id} to history")
     
     # به‌روزرسانی current_menu_id
     context.user_data['current_menu_id'] = menu_id
-    logger.info(f"🔄 Updated current_menu_id to {menu_id}")
-    logger.info(f"📊 Final user_data state: {context.user_data}")
-    logger.info(f"📜 Final menu_history: {context.user_data['menu_history']}")
-    logger.info(f"🏁 description_handler completed")
+    logger.debug(f"Updated current_menu_id to {menu_id}")
+    logger.debug(f"description_handler completed")
 
 @require_phone
 async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
@@ -95,7 +90,7 @@ async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_T
     message = update.message
     current_state = context.user_data.get('state', DESCRIPTION)
     
-    logger.info(f"Project details handler - State: {current_state}")
+    logger.debug(f"Project details handler - State: {current_state}")
 
     # پردازش callback ها
     if query:
@@ -409,17 +404,15 @@ async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_T
                     get_message("description_only_text", context, update),
                     reply_markup=ForceReply(selective=True)
                 )
-                return DESCRIPTION
-                  # پردازش پیام متنی
-            logger.info(f"=== DESCRIPTION PROCESSING START ===")
-            logger.info(f"User ID: {update.effective_user.id}")
-            logger.info(f"Current state: {current_state}")
-            logger.info(f"Project details text: {text}")
-            logger.info(f"Text length: {len(text)}")
-            logger.info(f"User data before processing: {context.user_data}")
+                return DESCRIPTION                  # پردازش پیام متنی
+            logger.debug(f"DESCRIPTION PROCESSING START")
+            logger.debug(f"User ID: {update.effective_user.id}")
+            logger.debug(f"Current state: {current_state}")
+            logger.debug(f"Text length: {len(text)}")
+            logger.debug(f"Processing user description input")
 
             if text == get_message("back", context, update):
-                logger.info("User clicked back button - returning to LOCATION_TYPE")
+                logger.debug("User clicked back button - returning to LOCATION_TYPE")
                 # برگشت به انتخاب نوع لوکیشن
                 context.user_data['state'] = LOCATION_TYPE
                 await message.reply_text(
@@ -427,28 +420,25 @@ async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_T
                     reply_markup=get_location_type_keyboard(context, update),
                     parse_mode="Markdown"
                 )
-                logger.info("Successfully returned to LOCATION_TYPE state")
+                logger.debug("Successfully returned to LOCATION_TYPE state")
                 return LOCATION_TYPE
             else:
-                logger.info("Processing description text - checking length")
+                logger.debug("Processing description text - checking length")
                 
                 # بررسی کیفیت توضیحات (اختیاری: پیشنهاد بهبود برای توضیحات کوتاه)
                 if len(text) < 20:  # اگر توضیحات خیلی کوتاه است
-                    logger.info(f"🚨 Description too short ({len(text)} chars) - showing improvement suggestion")
-                    logger.info(f"📊 Current user_data before short description handling: {context.user_data}")
-                    logger.info(f"🔢 Current menu_id in user_data: {context.user_data.get('current_menu_id', 'NOT_FOUND')}")
-                    logger.info(f"📜 Menu history in user_data: {context.user_data.get('menu_history', 'NOT_FOUND')}")
+                    logger.debug(f"Description too short ({len(text)} chars) - showing improvement suggestion")
                     
                     # حذف فقط پیام توضیحات کاربر
                     try:
                         await context.bot.delete_message(chat_id=update.effective_chat.id, message_id=message.message_id)
-                        logger.info(f"✅ Successfully deleted user short description message {message.message_id}")
+                        logger.debug(f"Successfully deleted user short description message")
                         
                         # کمی صبر کنیم تا حذف تکمیل شود
                         import asyncio
                         await asyncio.sleep(0.1)
                     except Exception as delete_error:
-                        logger.error(f"❌ Could not delete user short description message: {delete_error}")                    # تلاش برای edit کردن منوی قبلی
+                        logger.error(f"Could not delete user short description message: {delete_error}")                    # تلاش برای edit کردن منوی قبلی
                     edit_successful = False
                     short_description_message = get_message("description_too_short", context, update)
                     
@@ -463,9 +453,8 @@ async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_T
                     last_menu_message = context.user_data.get('last_menu_message', '')
                     if last_menu_message == short_description_message:
                         logger.info(f"📋 Same warning message was already shown - no need to edit")
-                        edit_successful = True  # محتوا یکسان است، edit لازم نیست
-                    elif 'current_menu_id' in context.user_data:
-                        logger.info(f"🔄 Attempting to edit previous menu message {context.user_data['current_menu_id']}")
+                        edit_successful = True  # محتوا یکسان است، edit لازم نیست                    elif 'current_menu_id' in context.user_data:
+                        logger.debug(f"Attempting to edit previous menu message {context.user_data['current_menu_id']}")
                         
                         try:
                             await context.bot.edit_message_text(
@@ -474,16 +463,15 @@ async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_T
                                 text=short_description_message,
                                 reply_markup=short_description_keyboard
                             )
-                            logger.info(f"✅ Successfully edited previous menu message {context.user_data['current_menu_id']} with short description warning")
+                            logger.debug(f"Successfully edited previous menu message with short description warning")
                             edit_successful = True
                             # ذخیره محتوای پیام برای مقایسه‌های بعدی
                             context.user_data['last_menu_message'] = short_description_message
                         except Exception as edit_error:
-                            logger.error(f"❌ Could not edit previous menu {context.user_data['current_menu_id']}: {edit_error}")
-                            logger.error(f"🔍 Edit error type: {type(edit_error).__name__}")
+                            logger.error(f"Could not edit previous menu: {edit_error}")
                             # اگر خطای "Message is not modified" است، یعنی محتوا تغییری نکرده
                             if "Message is not modified" in str(edit_error):
-                                logger.info(f"📋 Menu content is identical - no need to edit, considering it successful")
+                                logger.debug(f"Menu content is identical - no need to edit")
                                 edit_successful = True  # محتوا یکسان است، edit لازم نیست
                                 # ذخیره محتوای پیام برای مقایسه‌های بعدی
                                 context.user_data['last_menu_message'] = short_description_message
@@ -498,7 +486,7 @@ async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_T
                                 if 'menu_history' in context.user_data and current_menu_id:
                                     if current_menu_id in context.user_data['menu_history']:
                                         context.user_data['menu_history'].remove(current_menu_id)
-                                        logger.info(f"🧹 Removed deleted message ID {current_menu_id} from menu_history")
+                                        logger.debug(f"Removed deleted message ID {current_menu_id} from menu_history")
                                 edit_successful = False  # باید MenuManager پیام جدید بسازد
                     else:
                         logger.warning(f"⚠️ No current_menu_id found in user_data for editing")
@@ -506,9 +494,8 @@ async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_T
                     # اگر edit نشد، از MenuManager استفاده کن
                     if not edit_successful:
                         logger.info("🔧 Edit failed, using MenuManager to show short description warning")
-                        logger.info(f"📊 MenuManager state before call - menu_history: {context.user_data.get('menu_history', [])}")
-                        
-                        # استفاده از MenuManager برای مدیریت صحیح منوها
+                        logger.debug(f"MenuManager state before call - menu_history: {len(context.user_data.get('menu_history', []))} items")
+                          # استفاده از MenuManager برای مدیریت صحیح منوها
                         try:
                             new_menu_id = await MenuManager.show_menu(
                                 update, context,
@@ -516,22 +503,18 @@ async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_T
                                 short_description_keyboard,
                                 clear_previous=True
                             )
-                            logger.info(f"✅ MenuManager returned new menu ID: {new_menu_id}")
-                            logger.info(f"📊 MenuManager state after call - menu_history: {context.user_data.get('menu_history', [])}")
-                            logger.info(f"🔢 MenuManager state after call - current_menu_id: {context.user_data.get('current_menu_id', 'NOT_SET')}")
+                            logger.debug(f"MenuManager returned new menu ID: {new_menu_id}")
                         except Exception as menumanager_error:
-                            logger.error(f"❌ MenuManager failed: {menumanager_error}")
-                            logger.error(f"🔍 MenuManager error type: {type(menumanager_error).__name__}")
+                            logger.error(f"MenuManager failed: {menumanager_error}")
                             import traceback
-                            logger.error(f"📋 MenuManager traceback: {traceback.format_exc()}")
+                            logger.error(f"MenuManager traceback: {traceback.format_exc()}")
                     else:
-                        logger.info("✅ Menu edit successful or content identical - no need for MenuManager")
+                        logger.debug("Menu edit successful or content identical - no need for MenuManager")
                     
                     # ذخیره توضیحات موقت برای استفاده بعدی
                     context.user_data['temp_description'] = text
-                    logger.info(f"💾 Saved temp description: {text}")
-                    logger.info(f"📍 Staying in DESCRIPTION state for revision")
-                    logger.info(f"📊 Final user_data after short description handling: {context.user_data}")
+                    logger.debug(f"Saved temp description, staying in DESCRIPTION state for revision")                    
+                    logger.debug(f"Description accepted, continuing to DETAILS state")
                     return DESCRIPTION
                 
                 logger.info("Description length acceptable - proceeding to DETAILS state")
@@ -607,8 +590,7 @@ async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_T
                     logger.error(f"Traceback: {traceback.format_exc()}")
                     # Fallback to basic keyboard
                     logger.info("Using fallback keyboard")
-                    final_keyboard = InlineKeyboardMarkup([[InlineKeyboardButton(get_message("continue_to_next_step", context, update), callback_data="continue_to_submit")]])
-                  # تلاش برای edit کردن منوی قبلی
+                    final_keyboard = InlineKeyboardMarkup([[InlineKeyboardButton(get_message("continue_to_next_step", context, update), callback_data="continue_to_submit")]])                # تلاش برای edit کردن منوی قبلی
                 edit_successful = False
                 if 'current_menu_id' in context.user_data:
                     try:
@@ -619,7 +601,7 @@ async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_T
                             reply_markup=final_keyboard,
                             parse_mode='Markdown'
                         )
-                        logger.info(f"Successfully edited previous menu message {context.user_data['current_menu_id']} with DETAILS content")
+                        logger.debug(f"Successfully edited previous menu message with DETAILS content")
                         edit_successful = True
                         # ذخیره محتوای پیام برای مقایسه‌های بعدی
                         context.user_data['last_menu_message'] = message_text
@@ -627,19 +609,19 @@ async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_T
                         logger.warning(f"Could not edit previous menu: {edit_error}")
                         # اگر خطای "Message is not modified" است، یعنی محتوا تغییری نکرده
                         if "Message is not modified" in str(edit_error):
-                            logger.info(f"Menu content is identical - no need to edit, considering it successful")
+                            logger.debug(f"Menu content is identical - no need to edit")
                             edit_successful = True
                             context.user_data['last_menu_message'] = message_text
                   # اگر edit نشد، از MenuManager استفاده کن
                 if not edit_successful:
-                    logger.info("Edit failed, using MenuManager to show DETAILS")
+                    logger.debug("Edit failed, using MenuManager to show DETAILS")
                     await MenuManager.show_menu(update, context, message_text, final_keyboard, clear_previous=True)
-                    logger.info("Used MenuManager for DETAILS screen")
+                    logger.debug("Used MenuManager for DETAILS screen")
                 else:
-                    logger.info("✅ Menu edit successful or content identical - DETAILS screen updated")
+                    logger.debug("Menu edit successful or content identical - DETAILS screen updated")
                 
                 logger.info("=== DESCRIPTION PROCESSING COMPLETE ===")
-                logger.info(f"Final user data: {context.user_data}")
+                logger.debug(f"Description processing completed, moving to DETAILS state")
                 logger.info("Returning DETAILS state")
                 return DETAILS
 

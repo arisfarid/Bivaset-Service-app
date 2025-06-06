@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 
 @require_phone
 async def handle_category_selection(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    logger.info(f"[handle_category_selection] user_id={update.effective_user.id} | state={context.user_data.get('state')} | context.user_data={context.user_data}")
+    logger.debug(f"[handle_category_selection] user_id={update.effective_user.id} | state={context.user_data.get('state')}")
     """Handle category and subcategory selection"""
     query = update.callback_query
     message = update.message

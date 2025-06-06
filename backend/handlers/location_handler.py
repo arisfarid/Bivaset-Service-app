@@ -84,7 +84,7 @@ async def handle_location(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
                 context.user_data['menu_history'] = []
             if edited_message.message_id not in context.user_data['menu_history']:
                 context.user_data['menu_history'].append(edited_message.message_id)
-            logger.info(f"🔄 Updated current_menu_id to {edited_message.message_id} for back_to_description")
+            logger.debug(f"Updated current_menu_id to {edited_message.message_id} for back_to_description")
             
             return DESCRIPTION        # پردازش انتخاب نوع لوکیشن (حضوری یا غیرحضوری)
         elif data.startswith("location_"):
@@ -107,7 +107,7 @@ async def handle_location(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
                 )
                 # به‌روزرسانی current_menu_id برای description
                 context.user_data['current_menu_id'] = edited_message.message_id
-                logger.info(f"🔄 Updated current_menu_id to {edited_message.message_id} for remote service description")
+                logger.debug(f"Updated current_menu_id to {edited_message.message_id} for remote service description")
                 return DESCRIPTION
             else:
                 # اگر کاربر خدمات حضوری را انتخاب کند، درخواست ارسال لوکیشن می‌شود
@@ -146,7 +146,7 @@ async def handle_location(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
             if 'menu_history' not in context.user_data:
                 context.user_data['menu_history'] = []
             context.user_data['menu_history'].append(description_sent.message_id)
-            logger.info(f"🔄 Updated current_menu_id to {description_sent.message_id} for skip location description")
+            logger.debug(f"Updated current_menu_id to {description_sent.message_id} for skip location description")
             
             return DESCRIPTION
 

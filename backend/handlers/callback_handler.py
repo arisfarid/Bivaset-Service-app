@@ -46,7 +46,7 @@ async def handle_navigation_callback(update: Update, context: ContextTypes.DEFAU
     data = query.data
     current_state = context.user_data.get('state')
     
-    logger.info(f"Navigation callback: {data} from state {STATE_NAMES.get(current_state, current_state)}")
+    logger.debug(f"Navigation callback: {data} from state {STATE_NAMES.get(current_state, current_state)}")
     
     try:
         if data == "navigate_back":
@@ -58,7 +58,7 @@ async def handle_navigation_callback(update: Update, context: ContextTypes.DEFAU
                     previous_state = SERVICE_REQUEST_FLOW[current_index - 1]
                     context.user_data['previous_state'] = current_state
                     context.user_data['state'] = previous_state
-                    logger.info(f"Moving back to {STATE_NAMES.get(previous_state, previous_state)}")
+                    logger.debug(f"Moving back to {STATE_NAMES.get(previous_state, previous_state)}")
                     
                     # Handle specific states for back navigation
                     if previous_state == CATEGORY:
@@ -93,8 +93,7 @@ async def handle_navigation_callback(update: Update, context: ContextTypes.DEFAU
                         update,
                         context,
                         get_message("employer_menu_prompt", context, update),
-                        get_employer_menu_keyboard()
-                    )
+                        get_employer_menu_keyboard()                    )
                     await query.answer()
                     return EMPLOYER_MENU
             else:
@@ -103,7 +102,7 @@ async def handle_navigation_callback(update: Update, context: ContextTypes.DEFAU
                 if previous_state is not None:
                     context.user_data['state'] = previous_state
                     context.user_data['previous_state'] = current_state
-                    logger.info(f"Moving to stored previous state: {STATE_NAMES.get(previous_state, previous_state)}")
+                    logger.debug(f"Moving to stored previous state: {STATE_NAMES.get(previous_state, previous_state)}")
                     
                     # Handle specific previous states
                     if previous_state == EMPLOYER_MENU:
@@ -135,15 +134,14 @@ async def handle_navigation_callback(update: Update, context: ContextTypes.DEFAU
                     return EMPLOYER_MENU
         
         elif data == "navigate_next":
-            # If we're in the standard flow
-            if current_state in SERVICE_REQUEST_FLOW:
+            # If we're in the standard flow            if current_state in SERVICE_REQUEST_FLOW:
                 current_index = SERVICE_REQUEST_FLOW.index(current_state)
                 if current_index < len(SERVICE_REQUEST_FLOW) - 1:
                     # Move to next state in flow
                     next_state = SERVICE_REQUEST_FLOW[current_index + 1]
                     context.user_data['previous_state'] = current_state
                     context.user_data['state'] = next_state
-                    logger.info(f"Moving forward to {STATE_NAMES.get(next_state, next_state)}")
+                    logger.debug(f"Moving forward to {STATE_NAMES.get(next_state, next_state)}")
                     
                     # Handle specific states for next navigation
                     if next_state == SUBCATEGORY:
@@ -165,8 +163,7 @@ async def handle_navigation_callback(update: Update, context: ContextTypes.DEFAU
                             get_message("write_description_prompt", context, update),
                             create_service_flow_navigation_keyboard(next_state, context)
                         )
-                    elif next_state == DETAILS:
-                        await MenuManager.show_menu(
+                    elif next_state == DETAILS:                        await MenuManager.show_menu(
                             update,
                             context,
                             get_message("project_details", context, update),
@@ -175,8 +172,8 @@ async def handle_navigation_callback(update: Update, context: ContextTypes.DEFAU
                     await query.answer()
                     return next_state
             
-            await query.answer()
-            return current_state
+        await query.answer()
+        return current_state
     
     except Exception as e:
         logger.error(f"Error in navigation handler: {e}", exc_info=True)
@@ -191,14 +188,14 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not query:
         return START
 
-    logger.info(f"[handle_callback] user_id={update.effective_user.id} | state={context.user_data.get('state')} | prev_state={context.user_data.get('previous_state')} | context.user_data={context.user_data}")
+    logger.debug(f"[handle_callback] user_id={update.effective_user.id} | state={context.user_data.get('state')}")
     try:
         data = query.data
         current_state = context.user_data.get('state', ROLE)
         previous_state = context.user_data.get('previous_state')
-        logger.info(f"Handling callback: {data}")
-        logger.info(f"Current state: {current_state}")
-        logger.info(f"Previous state: {previous_state}")
+        logger.debug(f"Handling callback: {data}")
+        logger.debug(f"Current state: {current_state}")
+        logger.debug(f"Previous state: {previous_state}")
         logger.info(f"context.user_data: {context.user_data}")
         
         # handle continue_to_location: go to location selection directly

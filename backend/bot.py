@@ -24,8 +24,14 @@ logging.basicConfig(
     handlers=[logging.FileHandler("bot.log", mode='w'), logging.StreamHandler()]
 )
 logger = logging.getLogger(__name__)
+
+# تنظیم سطح لاگ برای کاهش حجم فایل لاگ
 logging.getLogger('httpx').setLevel(logging.WARNING)
 logging.getLogger('apscheduler').setLevel(logging.WARNING)
+logging.getLogger('telegram.ext.ExtBot').setLevel(logging.WARNING)
+logging.getLogger('telegram.ext.Updater').setLevel(logging.WARNING)
+logging.getLogger('telegram.ext.Application').setLevel(logging.WARNING)
+logging.getLogger('telegram.ext.ConversationHandler').setLevel(logging.WARNING)
 
 TOKEN = os.getenv('TELEGRAM_BOT_TOKEN')
 PERSISTENCE_PATH = os.path.join(os.path.dirname(__file__), 'data', 'persistence.pickle')

@@ -46,7 +46,7 @@ async def change_phone(update: Update, context: ContextTypes.DEFAULT_TYPE) -> in
 
 async def handle_new_phone(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """بررسی شماره تلفن جدید و ارسال کد تأیید"""
-    logger.info(f"[handle_new_phone] user_id={update.effective_user.id} | context.user_data={context.user_data}")
+    logger.debug(f"[handle_new_phone] user_id={update.effective_user.id}")
     new_phone = update.message.text.strip()
     if not new_phone.startswith('09') or not new_phone.isdigit() or len(new_phone) != 11:
         await update.message.reply_text(get_message("invalid_phone", context, update))
@@ -64,7 +64,7 @@ async def handle_new_phone(update: Update, context: ContextTypes.DEFAULT_TYPE) -
         'code_expires_at': datetime.now() + timedelta(minutes=2),
         'verify_attempts': 0
     })
-    logger.info(f"[handle_new_phone] updated context.user_data={context.user_data}")
+    logger.debug(f"[handle_new_phone] verification code generated for {new_phone}")
 
     if await send_verification_code(new_phone, verification_code):
         await update.message.reply_text(
@@ -77,7 +77,7 @@ async def handle_new_phone(update: Update, context: ContextTypes.DEFAULT_TYPE) -
 
 async def verify_new_phone(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """بررسی کد تأیید وارد شده"""
-    logger.info(f"[verify_new_phone] user_id={update.effective_user.id} | context.user_data={context.user_data}")
+    logger.debug(f"[verify_new_phone] user_id={update.effective_user.id}")
     code = update.message.text.strip()
     stored_code = context.user_data.get('verification_code')
     expires_at = context.user_data.get('code_expires_at')
@@ -97,7 +97,7 @@ async def verify_new_phone(update: Update, context: ContextTypes.DEFAULT_TYPE) -
         return CHANGE_PHONE
 
     context.user_data['verify_attempts'] += 1
-    logger.info(f"[verify_new_phone] verify_attempts increased: {context.user_data['verify_attempts']}")
+    logger.debug(f"[verify_new_phone] attempt {context.user_data['verify_attempts']}/{MAX_ATTEMPTS}")
     if code != stored_code:
         remaining = MAX_ATTEMPTS - context.user_data['verify_attempts']
         await update.message.reply_text(get_message("incorrect_verification_code", context, update))
@@ -110,8 +110,7 @@ async def verify_new_phone(update: Update, context: ContextTypes.DEFAULT_TYPE) -
             user = response.json()[0]
             user['phone'] = new_phone
             update_response = requests.put(f"{BASE_URL}users/{user['id']}/", json=user)
-            if update_response.status_code == 200:
-                await update.message.reply_text(
+            if update_response.status_code == 200:                await update.message.reply_text(
                     get_message("phone_registered", context, update),
                     reply_markup=get_main_menu_keyboard(context, update)
                 )
@@ -119,7 +118,7 @@ async def verify_new_phone(update: Update, context: ContextTypes.DEFAULT_TYPE) -
                 raise Exception("Failed to update phone number")
         for key in ['verification_code', 'code_expires_at', 'new_phone', 'verify_attempts']:
             context.user_data.pop(key, None)
-        logger.info(f"[verify_new_phone] cleaned up context.user_data={context.user_data}")
+        logger.debug("[verify_new_phone] cleaned up verification data")
     except Exception as e:
         logger.error(f"Error updating phone: {e}")
         await update.message.reply_text(get_message("error_registering_phone", context, update))
@@ -127,16 +126,15 @@ async def verify_new_phone(update: Update, context: ContextTypes.DEFAULT_TYPE) -
 
 async def check_phone(update: Update, context: ContextTypes.DEFAULT_TYPE) -> bool:
     """Check if user has registered phone number"""
-    logger.info(f"Checking phone for user {update.effective_user.id}")
+    logger.debug(f"Checking phone for user {update.effective_user.id}")
     
     try:
         async with aiohttp.ClientSession() as session:
             async with session.get(f'http://localhost:8000/api/users/?telegram_id={update.effective_user.id}') as response:
-                logger.info(f"Check phone response: {response.status} - {await response.text()}")
                 if response.status == 200:
                     data = json.loads(await response.text())
                     if data and len(data) > 0 and data[0].get('phone'):
-                        logger.info(f"Valid phone found: {data[0]['phone']}")
+                        logger.debug(f"Valid phone found for user {update.effective_user.id}")
                         return True
     except Exception as e:
         logger.error(f"Error checking phone requirement: {e}")
@@ -146,7 +144,7 @@ def require_phone(func):
     """دکوراتور برای چک کردن شماره تلفن"""
     @wraps(func)
     async def wrapper(update: Update, context: ContextTypes.DEFAULT_TYPE, *args, **kwargs):
-        logger.info(f"[require_phone] user_id={update.effective_user.id} | context.user_data={context.user_data}")
+        logger.debug(f"[require_phone] checking phone for user {update.effective_user.id}")
         try:
             if not await check_phone(update, context):
                 if update.callback_query:
@@ -180,7 +178,7 @@ def require_phone(func):
 
 async def handle_contact(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Handle received contact for phone registration"""
-    logger.info(f"[handle_contact] user_id={update.effective_user.id} | context.user_data={context.user_data}")
+    logger.info(f"[handle_contact] user_id={update.effective_user.id}")
     contact = update.message.contact
     
     if not contact.phone_number:
@@ -201,7 +199,7 @@ async def handle_contact(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         
         async with aiohttp.ClientSession() as session:
             async with session.post('http://localhost:8000/api/users/', json=user_data) as response:
-                logger.info(f"Register response: {response.status} - {await response.text()}")
+                logger.debug(f"Register response status: {response.status}")
                 if response.status in [200, 201]:
                     await update.message.reply_text(
                         get_message("phone_registered", context, update),
