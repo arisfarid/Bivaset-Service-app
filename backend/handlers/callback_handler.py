@@ -509,6 +509,17 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             )
             await query.answer()
             return CATEGORY
+        
+        # Handle restart callbacks after cancellation
+        elif data == "restart_to_main":
+            logger.info("Processing restart to main menu")
+            from handlers.start_handler import handle_restart_to_main
+            return await handle_restart_to_main(update, context)
+            
+        elif data == "restart_to_new_request":
+            logger.info("Processing restart to new request")
+            from handlers.start_handler import handle_restart_to_new_request
+            return await handle_restart_to_new_request(update, context)
             
         await query.answer()
         return context.user_data.get('state', START)

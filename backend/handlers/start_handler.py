@@ -213,9 +213,10 @@ async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
           # Check if this is a cancel confirmation response
         if query.data == "cancel_confirmed":
             logger.info("User confirmed cancellation - clearing data and ending conversation")
-            
-            # Store the cancellation message before clearing context
+              # Store all messages before clearing context
             cancellation_message = get_message("operation_cancelled", context, update)
+            back_to_main_text = get_message("back_to_main_menu", context, update)
+            start_new_request_text = get_message("start_new_request", context, update)
             logger.info(f"Got cancellation message: {cancellation_message}")
             
             # پاک کردن تاریخچه چت با استفاده از متد جدید
@@ -230,21 +231,33 @@ async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
                     logger.info("Fallback: cleared menus successfully")
                 except Exception as e2:
                     logger.error(f"Error in fallback clear_menus: {e2}")
-            
-            # Clear user data after getting the message
+                    
+            # Clear user data after getting the messages
             context.user_data.clear()
             logger.info("Cleared user data")
             
-            # Edit message with the stored cancellation message
+            # Create restart keyboard using pre-stored messages
+            restart_keyboard = InlineKeyboardMarkup([
+                [InlineKeyboardButton(back_to_main_text, callback_data="restart_to_main")],
+                [InlineKeyboardButton(start_new_request_text, callback_data="restart_to_new_request")]
+            ])
+            
+            # Edit message with the stored cancellation message and restart options
             try:
-                await query.edit_message_text(cancellation_message)
-                logger.info("Successfully edited message with cancellation text")
+                await query.edit_message_text(
+                    cancellation_message, 
+                    reply_markup=restart_keyboard
+                )
+                logger.info("Successfully edited message with cancellation text and restart buttons")
             except Exception as e:
                 logger.error(f"Error editing message with cancellation: {e}")
                 # Fallback: try to send a new message
                 try:
-                    await query.message.reply_text(cancellation_message)
-                    logger.info("Fallback: sent new message with cancellation text")
+                    await query.message.reply_text(
+                        cancellation_message,
+                        reply_markup=restart_keyboard
+                    )
+                    logger.info("Fallback: sent new message with cancellation text and restart buttons")
                 except Exception as e2:
                     logger.error(f"Error in fallback message send: {e2}")
             
@@ -319,3 +332,93 @@ async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
         context.user_data.clear()
         await update.message.reply_text(get_message("operation_cancelled", context, update))
         return ConversationHandler.END
+
+async def handle_restart_to_main(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    """Handle restart to main menu after cancellation"""
+    query = update.callback_query
+    await query.answer()
+    
+    logger.info("User chose to restart to main menu after cancellation")
+    
+    # Clear any existing data
+    context.user_data.clear()
+    
+    # Check if user has phone
+    has_phone = await check_phone(update, context)
+    
+    if has_phone:
+        # Show main menu
+        context.user_data['state'] = ROLE
+        welcome_message = get_message("welcome", context, update)
+        
+        await MenuManager.show_menu(
+            update,
+            context,
+            welcome_message,
+            get_main_menu_keyboard(context, update)
+        )
+        return ROLE
+    else:
+        # Need to register phone first
+        context.user_data['state'] = REGISTER
+        await query.edit_message_text(
+            get_message("share_phone_prompt", context, update),
+            reply_markup=get_register_menu_keyboard(context, update)
+        )
+        return REGISTER
+
+async def handle_restart_to_new_request(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    """Handle restart to new request after cancellation"""
+    query = update.callback_query
+    await query.answer()
+    
+    logger.info("User chose to start new request after cancellation")
+    
+    # Clear any existing data
+    context.user_data.clear()
+    context.user_data['state'] = CATEGORY
+    context.user_data['files'] = []
+    
+    # Check if user has phone
+    has_phone = await check_phone(update, context)
+    
+    if not has_phone:
+        # Need to register phone first
+        context.user_data['state'] = REGISTER
+        await query.edit_message_text(
+            get_message("share_phone_prompt", context, update),
+            reply_markup=get_register_menu_keyboard(context, update)
+        )
+        return REGISTER
+    
+    # Get categories and show category selection
+    try:
+        from utils import get_categories
+        categories = await get_categories()
+        if not categories:
+            await query.edit_message_text(get_message("error_fetching_categories", context, update))
+            return ROLE
+            
+        context.user_data['categories'] = categories
+        
+        # Show category selection menu
+        await MenuManager.show_menu(
+            update,
+            context,
+            get_message("category_main_select", context, update),
+            create_category_keyboard(context, update)
+        )
+        
+        return CATEGORY
+        
+    except Exception as e:
+        logger.error(f"Error starting new request: {e}")
+        # Fallback to main menu
+        context.user_data['state'] = ROLE
+        await MenuManager.show_menu(
+            update,
+            context,
+            get_message("welcome", context, update),
+            get_main_menu_keyboard(context, update)
+        )
+        return ROLE
