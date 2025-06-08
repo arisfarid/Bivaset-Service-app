@@ -5,6 +5,7 @@ from utils import clean_budget, validate_date, validate_deadline, log_chat, form
 from khayyam import JalaliDatetime
 from datetime import datetime, timedelta
 import logging
+import traceback
 from handlers.phone_handler import require_phone
 from handlers.submission_handler import submit_project
 from handlers.attachment_handler import handle_photo_navigation, init_photo_management
@@ -23,10 +24,11 @@ async def description_handler(message, context: ContextTypes.DEFAULT_TYPE, updat
     ارسال پیام راهنمای کامل برای مرحله وارد کردن توضیحات
     """
     logger.debug(f"description_handler called")
-    
-    # دریافت توضیحات قبلی اگر موجود باشد
-    last_description = context.user_data.get('description', context.user_data.get('temp_description', ''))
+      # دریافت توضیحات قبلی اگر موجود باشد
+    # اولویت با temp_description است چون شامل آخرین ورودی کاربر است
+    last_description = context.user_data.get('temp_description', context.user_data.get('description', ''))
     logger.debug(f"Last description found: {'Yes' if last_description else 'No'}")
+    logger.debug(f"Description source: {'temp' if 'temp_description' in context.user_data else 'permanent' if 'description' in context.user_data else 'none'}")
       # اگر توضیحات قبلی موجود باشد، آن را نمایش می‌دهیم
     guidance_text = get_message("description_guidance", context, update)
     if last_description:
@@ -510,12 +512,10 @@ async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_T
                                 update, context,
                                 short_description_message,
                                 short_description_keyboard,
-                                clear_previous=True
-                            )
+                                clear_previous=True                            )
                             logger.debug(f"MenuManager returned new menu ID: {new_menu_id}")
                         except Exception as menumanager_error:
                             logger.error(f"MenuManager failed: {menumanager_error}")
-                            import traceback
                             logger.error(f"MenuManager traceback: {traceback.format_exc()}")
                     else:
                         logger.debug("Menu edit successful or content identical - no need for MenuManager")
@@ -911,17 +911,25 @@ async def show_description_edit_interface(message, context: ContextTypes.DEFAULT
     """
     نمایش رابط ویرایش توضیحات بدون navigation buttons اضافی
     """
-    logger.debug(f"show_description_edit_interface called")
-    
-    # دریافت توضیحات قبلی
-    last_description = context.user_data.get('description', context.user_data.get('temp_description', ''))
+    logger.debug(f"show_description_edit_interface called")    # دریافت توضیحات قبلی
+    # اولویت با temp_description است چون شامل آخرین ورودی کاربر است
+    last_description = context.user_data.get('temp_description', context.user_data.get('description', ''))
     logger.debug(f"Last description for edit: {'Yes' if last_description else 'No'}")
-    
-    # ایجاد پیام راهنمای ویرایش
+    logger.debug(f"Edit description source: {'temp' if 'temp_description' in context.user_data else 'permanent' if 'description' in context.user_data else 'none'}")
+    logger.debug(f"temp_description value: {context.user_data.get('temp_description', 'Not set')}")
+    logger.debug(f"description value: {context.user_data.get('description', 'Not set')}")
+      # ایجاد پیام راهنمای ویرایش
     guidance_text = get_message("description_guidance", context, update)
     if last_description:
+        # ذخیره موقت توضیحات برای localization بدون overwrite کردن temp_description
+        original_description = context.user_data.get('description')
         context.user_data['description'] = last_description
         guidance_text += get_message("previous_description_with_confirm", context, update)
+        # بازگردانی مقدار اصلی description اگر موجود بود
+        if original_description is not None:
+            context.user_data['description'] = original_description
+        elif 'description' in context.user_data:
+            del context.user_data['description']
     else:
         guidance_text += get_message("write_description_prompt", context, update)
     
