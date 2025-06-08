@@ -284,7 +284,7 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 get_message("project_details", context, update),
                 create_dynamic_keyboard(context)
             )
-            await query.answer(get_message("back_to_details", context, update))
+            await query.answer(get_message("back", context, update))
             return DETAILS
 
         if data == "back_to_menu":

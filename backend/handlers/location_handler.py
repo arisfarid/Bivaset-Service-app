@@ -201,7 +201,7 @@ async def handle_location(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         if update.message.text and update.message.text == get_message("back", context, update):
             context.user_data['state'] = LOCATION_TYPE
             sent = await update.message.reply_text(
-                get_message("back_to_previous", context, update),
+                get_message("back", context, update),
                 reply_markup=REMOVE_KEYBOARD
             )
             await delete_previous_messages(sent, context, n=3)

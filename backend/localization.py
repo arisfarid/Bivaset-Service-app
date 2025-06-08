@@ -29,11 +29,7 @@ def get_message(key: str, context: ContextTypes.DEFAULT_TYPE = None, update: Upd
 
             # پیام‌های ناوبری
             "back": "⬅️ بازگشت",
-            "back_to_previous": "⬅️ بازگشت به مرحله قبل",
-            "back_to_details": "بازگشت به منوی جزئیات",
             "continue": "✅ ادامه",
-            "continue_to_next_step": "✅ ادامه به مرحله بعد",
-            "confirm_and_continue": "✅ تأیید و ادامه",
             "revise_description": "✏️ اصلاح توضیحات",
             "edit": "✏️ ویرایش",
             "cancel": "❌ لغو",
@@ -241,11 +237,7 @@ def get_message(key: str, context: ContextTypes.DEFAULT_TYPE = None, update: Upd
 
             # پیام‌های ناوبری
             "back": "⬅️ Back",
-            "back_to_previous": "⬅️ Back to previous step",
-            "back_to_details": "Return to details menu",
             "continue": "✅ Continue",
-            "continue_to_next_step": "✅ Continue to next step",
-            "confirm_and_continue": "✅ Confirm and continue",
             "revise_description": "✏️ Revise description",
             "edit": "✏️ Edit",
             "cancel": "❌ Cancel",

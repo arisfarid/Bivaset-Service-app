@@ -70,7 +70,7 @@ async def handle_photo_navigation(update: Update, context: ContextTypes.DEFAULT_
             )
             # Update current_menu_id for the edited menu
             context.user_data['current_menu_id'] = edited_message.message_id
-            await update.callback_query.answer(get_message("back_to_details", context, update))
+            await update.callback_query.answer(get_message("back", context, update))
         else:
             message = update.message or update.callback_query.message
             sent_message = await message.reply_text(

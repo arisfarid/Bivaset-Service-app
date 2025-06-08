@@ -42,7 +42,7 @@ async def description_handler(message, context: ContextTypes.DEFAULT_TYPE, updat
     
     # اگر توضیحات قبلی داریم، دکمه تأیید اضافه می‌کنیم
     if last_description:
-        keyboard.append([InlineKeyboardButton(get_message("confirm_and_continue", context, update), callback_data="continue_to_details")])
+        keyboard.append([InlineKeyboardButton(get_message("continue", context, update), callback_data="continue_to_details")])
       # اگر navigation keyboard داریم، آن را اضافه می‌کنیم (بدون تکرار دکمه‌ها)
     if navigation_keyboard:
         # دریافت متن‌های دکمه‌های موجود برای جلوگیری از تکرار
@@ -452,7 +452,7 @@ async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_T
                     # ایجاد کیبورد ساده و واضح برای warning
                     short_description_buttons = []
                     short_description_buttons.append([
-                        InlineKeyboardButton(get_message("continue_to_next_step", context, update), callback_data="continue_to_details")
+                        InlineKeyboardButton(get_message("continue", context, update), callback_data="continue_to_details")
                     ])
                     short_description_buttons.append([
                         InlineKeyboardButton(get_message("revise_description", context, update), callback_data="back_to_description")
@@ -565,7 +565,7 @@ async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_T
                 # دکمه‌های مخصوص ادامه فرآیند
                 logger.info("Creating continue keyboard")
                 continue_keyboard = [
-                    [InlineKeyboardButton(get_message("continue_to_next_step", context, update), callback_data="continue_to_submit")]
+                    [InlineKeyboardButton(get_message("continue", context, update), callback_data="continue_to_submit")]
                 ]
                 logger.info(f"Continue keyboard created: {continue_keyboard}")
                 
@@ -599,7 +599,7 @@ async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_T
                     logger.error(f"Traceback: {traceback.format_exc()}")
                     # Fallback to basic keyboard
                     logger.info("Using fallback keyboard")
-                    final_keyboard = InlineKeyboardMarkup([[InlineKeyboardButton(get_message("continue_to_next_step", context, update), callback_data="continue_to_submit")]])                # تلاش برای edit کردن منوی قبلی
+                    final_keyboard = InlineKeyboardMarkup([[InlineKeyboardButton(get_message("continue", context, update), callback_data="continue_to_submit")]])                # تلاش برای edit کردن منوی قبلی
                 edit_successful = False
                 if 'current_menu_id' in context.user_data:
                     try:
@@ -930,10 +930,10 @@ async def show_description_edit_interface(message, context: ContextTypes.DEFAULT
     
     # اگر توضیحات قبلی داریم، دکمه تأیید اضافه می‌کنیم
     if last_description:
-        keyboard.append([InlineKeyboardButton(get_message("confirm_and_continue", context, update), callback_data="continue_to_details")])
+        keyboard.append([InlineKeyboardButton(get_message("continue", context, update), callback_data="continue_to_details")])
     
     # دکمه بازگشت به لیست جزئیات (نه navigation)
-    keyboard.append([InlineKeyboardButton(get_message("back_to_details", context, update), callback_data="back_to_details")])
+    keyboard.append([InlineKeyboardButton(get_message("back", context, update), callback_data="back_to_details")])
     
     try:
         edited_message = await message.edit_text(
