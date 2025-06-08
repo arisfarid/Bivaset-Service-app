@@ -27,10 +27,11 @@ async def description_handler(message, context: ContextTypes.DEFAULT_TYPE, updat
     # دریافت توضیحات قبلی اگر موجود باشد
     last_description = context.user_data.get('description', context.user_data.get('temp_description', ''))
     logger.debug(f"Last description found: {'Yes' if last_description else 'No'}")
-    
-    # اگر توضیحات قبلی موجود باشد، آن را نمایش می‌دهیم
+      # اگر توضیحات قبلی موجود باشد، آن را نمایش می‌دهیم
     guidance_text = get_message("description_guidance", context, update)
     if last_description:
+        # Store the description in user_data temporarily to ensure the localization system can access it
+        context.user_data['description'] = last_description
         guidance_text += get_message("previous_description_with_confirm", context, update)
     else:
         guidance_text += get_message("write_description_prompt", context, update)
