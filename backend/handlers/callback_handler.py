@@ -58,21 +58,15 @@ async def handle_navigation_callback(update: Update, context: ContextTypes.DEFAU
                     previous_state = SERVICE_REQUEST_FLOW[current_index - 1]
                     context.user_data['previous_state'] = current_state
                     context.user_data['state'] = previous_state
-                    logger.debug(f"Moving back to {STATE_NAMES.get(previous_state, previous_state)}")
-                    
-                    # Handle specific states for back navigation
+                    logger.debug(f"Moving back to {STATE_NAMES.get(previous_state, previous_state)}")                    # Handle specific states for back navigation
                     if previous_state == CATEGORY:
-                        from handlers.category_handler import show_category_selection
-                        await show_category_selection(update, context)
+                        from handlers.category_handler import handle_category_selection
+                        await handle_category_selection(update, context)
                     elif previous_state == SUBCATEGORY:
-                        from handlers.category_handler import show_subcategories
-                        # Get the selected category from context
-                        category_id = context.user_data.get('selected_category')
-                        if category_id:
-                            await show_subcategories(update, context, category_id)
-                        else:
-                            from handlers.category_handler import show_category_selection
-                            await show_category_selection(update, context)
+                        # Since we don't have a separate subcategory handler, 
+                        # just use the main category handler
+                        from handlers.category_handler import handle_category_selection
+                        await handle_category_selection(update, context)
                     elif previous_state == LOCATION_TYPE:
                         from handlers.location_handler import select_location_type
                         await select_location_type(update, context)
@@ -142,17 +136,12 @@ async def handle_navigation_callback(update: Update, context: ContextTypes.DEFAU
                     context.user_data['previous_state'] = current_state
                     context.user_data['state'] = next_state
                     logger.debug(f"Moving forward to {STATE_NAMES.get(next_state, next_state)}")
-                    
-                    # Handle specific states for next navigation
+                      # Handle specific states for next navigation
                     if next_state == SUBCATEGORY:
-                        from handlers.category_handler import show_subcategories
-                        # Get the selected category from context
-                        category_id = context.user_data.get('selected_category')
-                        if category_id:
-                            await show_subcategories(update, context, category_id)
-                        else:
-                            from handlers.category_handler import show_category_selection
-                            await show_category_selection(update, context)
+                        # Since we don't have separate subcategory functions,
+                        # use the main category handler  
+                        from handlers.category_handler import handle_category_selection
+                        await handle_category_selection(update, context)
                     elif next_state == LOCATION_TYPE:
                         from handlers.location_handler import select_location_type
                         await select_location_type(update, context)
@@ -243,14 +232,13 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     await MenuManager.show_menu(
                         update,
                         context,
-                        get_message("welcome", context, update),
-                        get_main_menu_keyboard()
+                        get_message("welcome", context, update),                        get_main_menu_keyboard()
                     )
                     await query.answer()
                     return ROLE
                 elif previous_state == CATEGORY:
-                    from handlers.category_handler import show_category_selection
-                    return await show_category_selection(update, context)
+                    from handlers.category_handler import handle_category_selection
+                    return await handle_category_selection(update, context)
                 elif previous_state == DETAILS:
                     await MenuManager.show_menu(
                         update,

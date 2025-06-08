@@ -40,20 +40,19 @@ async def handle_navigation_callback(update: Update, context: ContextTypes.DEFAU
         try:
             next_state = int(callback_data.split("_")[-1])
             logger.debug(f"[handle_navigation_callback] nav_to_{next_state}")
-            
-            # Update user state
+              # Update user state
             context.user_data['previous_state'] = context.user_data.get('state')
             context.user_data['state'] = next_state
             logger.info(f"User {update.effective_user.id} navigated to state {next_state} ({STATE_NAMES.get(next_state, 'Unknown')})")
             
             # Handle navigation to specific states
             if next_state == CATEGORY:
-                from handlers.category_handler import show_category_selection
-                return await show_category_selection(update, context)
+                from handlers.category_handler import handle_category_selection
+                return await handle_category_selection(update, context)
                 
             elif next_state == SUBCATEGORY:
-                from handlers.category_handler import show_subcategory_selection
-                return await show_subcategory_selection(update, context)
+                from handlers.category_handler import handle_category_selection
+                return await handle_category_selection(update, context)
                 
             elif next_state == DESCRIPTION:
                 from handlers.project_details_handler import description_handler
