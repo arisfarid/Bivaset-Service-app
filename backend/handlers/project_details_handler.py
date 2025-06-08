@@ -935,13 +935,12 @@ async def show_description_edit_interface(message, context: ContextTypes.DEFAULT
     
     # ایجاد کیبورد ساده برای ویرایش - فقط دکمه‌های ضروری
     keyboard = []
-    
-    # اگر توضیحات قبلی داریم، دکمه تأیید اضافه می‌کنیم
+      # اگر توضیحات قبلی داریم، دکمه تأیید اضافه می‌کنیم
     if last_description:
         keyboard.append([InlineKeyboardButton(get_message("continue", context, update), callback_data="continue_to_details")])
     
-    # دکمه بازگشت به لیست جزئیات (نه navigation)
-    keyboard.append([InlineKeyboardButton(get_message("back", context, update), callback_data="back_to_details")])
+    # دکمه بازگشت به انتخاب نوع موقعیت
+    keyboard.append([InlineKeyboardButton(get_message("back", context, update), callback_data="back_to_location_type")])
     
     try:
         edited_message = await message.edit_text(
