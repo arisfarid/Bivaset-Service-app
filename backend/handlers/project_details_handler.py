@@ -132,13 +132,18 @@ async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_T
             else:
                 await query.message.edit_text(message_text, reply_markup=create_dynamic_keyboard(context, update))
                 
-            return DETAILS
-
-        # اضافه کردن callback برای بازگشت به مرحله توضیحات
+            return DETAILS        # اضافه کردن callback برای بازگشت به مرحله توضیحات
         elif data == "back_to_description":
-            # برگشت به مرحله توضیحات با پیام راهنمای کامل
+            # برگشت به مرحله توضیحات برای ویرایش
             context.user_data['state'] = DESCRIPTION
-            await description_handler(query.message, context, update)
+            
+            # اطمینان از اینکه current_menu_id درست تنظیم شده
+            if query.message:
+                context.user_data['current_menu_id'] = query.message.message_id
+                logger.debug(f"Set current_menu_id to {query.message.message_id} for back_to_description")
+            
+            # نمایش پیام راهنمای ویرایش توضیحات (بدون navigation buttons اضافی)
+            await show_description_edit_interface(query.message, context, update)
             return DESCRIPTION
         
         # پردازش مدیریت فایل ها و بازگشت به جزئیات
@@ -440,13 +445,14 @@ async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_T
                         await asyncio.sleep(0.1)
                     except Exception as delete_error:
                         logger.error(f"Could not delete user short description message: {delete_error}")                    # تلاش برای edit کردن منوی قبلی
-                    edit_successful = False
-                    short_description_message = get_message("description_too_short", context, update)
+                    edit_successful = False                    short_description_message = get_message("description_too_short", context, update)
                     
-                    # ایجاد کیبورد بدون تکرار دکمه‌ها
+                    # ایجاد کیبورد ساده و واضح برای warning
                     short_description_buttons = []
                     short_description_buttons.append([
-                        InlineKeyboardButton(get_message("continue_to_next_step", context, update), callback_data="continue_to_details"),
+                        InlineKeyboardButton(get_message("continue_to_next_step", context, update), callback_data="continue_to_details")
+                    ])
+                    short_description_buttons.append([
                         InlineKeyboardButton(get_message("revise_description", context, update), callback_data="back_to_description")
                     ])
                     short_description_keyboard = InlineKeyboardMarkup(short_description_buttons)
@@ -898,3 +904,64 @@ async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_T
         return DESCRIPTION
 
     return current_state
+
+async def show_description_edit_interface(message, context: ContextTypes.DEFAULT_TYPE, update: Update):
+    """
+    نمایش رابط ویرایش توضیحات بدون navigation buttons اضافی
+    """
+    logger.debug(f"show_description_edit_interface called")
+    
+    # دریافت توضیحات قبلی
+    last_description = context.user_data.get('description', context.user_data.get('temp_description', ''))
+    logger.debug(f"Last description for edit: {'Yes' if last_description else 'No'}")
+    
+    # ایجاد پیام راهنمای ویرایش
+    guidance_text = get_message("description_guidance", context, update)
+    if last_description:
+        context.user_data['description'] = last_description
+        guidance_text += get_message("previous_description_with_confirm", context, update)
+    else:
+        guidance_text += get_message("write_description_prompt", context, update)
+    
+    # ایجاد کیبورد ساده برای ویرایش - فقط دکمه‌های ضروری
+    keyboard = []
+    
+    # اگر توضیحات قبلی داریم، دکمه تأیید اضافه می‌کنیم
+    if last_description:
+        keyboard.append([InlineKeyboardButton(get_message("confirm_and_continue", context, update), callback_data="continue_to_details")])
+    
+    # دکمه بازگشت به لیست جزئیات (نه navigation)
+    keyboard.append([InlineKeyboardButton(get_message("back_to_details", context, update), callback_data="back_to_details")])
+    
+    try:
+        edited_message = await message.edit_text(
+            guidance_text,
+            reply_markup=InlineKeyboardMarkup(keyboard)
+        )
+        
+        # ذخیره ID پیام منو برای استفاده در edit های بعدی
+        menu_id = edited_message.message_id if edited_message else message.message_id
+        logger.debug(f"show_description_edit_interface menu ID: {menu_id}")
+        
+        # به‌روزرسانی user_data
+        context.user_data['current_menu_id'] = menu_id
+        context.user_data['last_menu_message'] = guidance_text
+        
+        if 'menu_history' not in context.user_data:
+            context.user_data['menu_history'] = []
+        
+        if menu_id not in context.user_data['menu_history']:
+            context.user_data['menu_history'].append(menu_id)
+            logger.debug(f"Added menu ID {menu_id} to history")
+        
+        logger.debug(f"show_description_edit_interface completed")
+        
+    except Exception as edit_error:
+        logger.error(f"Could not edit message in show_description_edit_interface: {edit_error}")
+        # Fallback: use MenuManager
+        await MenuManager.show_menu(
+            update, context,
+            guidance_text,
+            InlineKeyboardMarkup(keyboard),
+            clear_previous=True
+        )
