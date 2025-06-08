@@ -439,13 +439,15 @@ async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_T
                     try:
                         await context.bot.delete_message(chat_id=update.effective_chat.id, message_id=message.message_id)
                         logger.debug(f"Successfully deleted user short description message")
-                        
-                        # کمی صبر کنیم تا حذف تکمیل شود
+                          # کمی صبر کنیم تا حذف تکمیل شود
                         import asyncio
                         await asyncio.sleep(0.1)
                     except Exception as delete_error:
-                        logger.error(f"Could not delete user short description message: {delete_error}")                    # تلاش برای edit کردن منوی قبلی
-                    edit_successful = False                    short_description_message = get_message("description_too_short", context, update)
+                        logger.error(f"Could not delete user short description message: {delete_error}")
+                    
+                    # تلاش برای edit کردن منوی قبلی
+                    edit_successful = False
+                    short_description_message = get_message("description_too_short", context, update)
                     
                     # ایجاد کیبورد ساده و واضح برای warning
                     short_description_buttons = []
@@ -455,12 +457,12 @@ async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_T
                     short_description_buttons.append([
                         InlineKeyboardButton(get_message("revise_description", context, update), callback_data="back_to_description")
                     ])
-                    short_description_keyboard = InlineKeyboardMarkup(short_description_buttons)
-                      # بررسی اینکه آیا همین پیام قبلاً نمایش داده شده یا نه
+                    short_description_keyboard = InlineKeyboardMarkup(short_description_buttons)                      # بررسی اینکه آیا همین پیام قبلاً نمایش داده شده یا نه
                     last_menu_message = context.user_data.get('last_menu_message', '')
                     if last_menu_message == short_description_message:
                         logger.info(f"📋 Same warning message was already shown - no need to edit")
-                        edit_successful = True  # محتوا یکسان است، edit لازم نیست                    elif 'current_menu_id' in context.user_data:
+                        edit_successful = True  # محتوا یکسان است، edit لازم نیست
+                    elif 'current_menu_id' in context.user_data:
                         logger.debug(f"Attempting to edit previous menu message {context.user_data['current_menu_id']}")
                         
                         try:
@@ -517,10 +519,10 @@ async def handle_project_details(update: Update, context: ContextTypes.DEFAULT_T
                             logger.error(f"MenuManager traceback: {traceback.format_exc()}")
                     else:
                         logger.debug("Menu edit successful or content identical - no need for MenuManager")
-                    
-                    # ذخیره توضیحات موقت برای استفاده بعدی
+                      # ذخیره توضیحات موقت برای استفاده بعدی
                     context.user_data['temp_description'] = text
-                    logger.debug(f"Saved temp description, staying in DESCRIPTION state for revision")                    
+                    logger.debug(f"Saved temp description, staying in DESCRIPTION state for revision")
+                    
                     logger.debug(f"Description accepted, continuing to DETAILS state")
                     return DESCRIPTION
                 
